@@ -67,27 +67,51 @@ if [ ! -d "bloggy" ]; then
     exit 1
 fi
 
-cd bloggy
+PROJECT_ROOT=$(pwd)
 
-# Check if venv exists
-if [ ! -d "venv" ]; then
-    echo -e "${YELLOW}⚠️  Virtual environment not found. Setting up...${NC}"
-    if command -v uv &> /dev/null; then
-        uv venv
-        uv pip install emmett>=2.5.0 pytest>=7.0.0
-        echo -e "${GREEN}✅ Virtual environment created${NC}"
-    else
-        echo -e "${RED}❌ uv not found. Please run: ./setup/setup_bloggy.sh${NC}"
+# Check Python
+if ! command -v python3 &> /dev/null; then
+    echo -e "${RED}❌ Python 3 is required but not installed.${NC}"
+    exit 1
+fi
+
+# Check and install uv if needed
+if ! command -v uv &> /dev/null; then
+    echo -e "${YELLOW}⚠️  uv not found. Installing...${NC}"
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    export PATH="$HOME/.cargo/bin:$PATH"
+    if ! command -v uv &> /dev/null; then
+        echo -e "${RED}❌ uv installation failed${NC}"
         exit 1
     fi
 fi
 
+# Check if venv exists in project root
+if [ ! -d "$PROJECT_ROOT/venv" ]; then
+    echo -e "${YELLOW}⚠️  Virtual environment not found. Creating...${NC}"
+    uv venv venv
+    echo -e "${GREEN}✅ Virtual environment created${NC}"
+fi
+
 # Check if emmett is installed
-if ! uv pip list 2>/dev/null | grep -q "emmett"; then
-    echo -e "${YELLOW}Installing Emmett and pytest...${NC}"
-    uv pip install emmett>=2.5.0 pytest>=7.0.0
+if ! uv pip list --python venv/bin/python 2>/dev/null | grep -q "emmett"; then
+    echo -e "${YELLOW}⚠️  Emmett not installed. Installing dependencies...${NC}"
+    uv pip install --python venv/bin/python emmett>=2.5.0 pytest>=7.0.0
     echo -e "${GREEN}✅ Dependencies installed${NC}"
 fi
+
+# Check if database exists
+if [ ! -f "$PROJECT_ROOT/bloggy/databases/bloggy.db" ]; then
+    echo -e "${YELLOW}⚠️  Database not found. Setting up...${NC}"
+    cd bloggy
+    mkdir -p databases
+    uv run --python ../venv/bin/python emmett migrations up 2>/dev/null || true
+    uv run --python ../venv/bin/python emmett setup 2>/dev/null || true
+    cd ..
+    echo -e "${GREEN}✅ Database setup complete${NC}"
+fi
+
+cd bloggy
 
 # Build test command
 TEST_CMD="pytest tests.py"
@@ -98,9 +122,9 @@ fi
 
 if [ "$COVERAGE" = true ]; then
     # Install pytest-cov if needed
-    if ! uv pip list 2>/dev/null | grep -q "pytest-cov"; then
+    if ! uv pip list --python ../venv/bin/python 2>/dev/null | grep -q "pytest-cov"; then
         echo -e "${YELLOW}Installing pytest-cov...${NC}"
-        uv pip install pytest-cov
+        uv pip install --python ../venv/bin/python pytest-cov
     fi
     TEST_CMD="$TEST_CMD --cov=app --cov-report=html --cov-report=term"
 fi
@@ -109,7 +133,7 @@ fi
 echo -e "${YELLOW}Running Bloggy tests...${NC}"
 echo ""
 
-if uv run $TEST_CMD; then
+if uv run --python ../venv/bin/python $TEST_CMD; then
     echo ""
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo -e "${GREEN}✅ All tests passed!${NC}"

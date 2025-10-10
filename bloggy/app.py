@@ -11,6 +11,7 @@ app = App(__name__)
 app.config.auth.single_template = True
 app.config.auth.registration_verification = False
 app.config.auth.hmac_key = "november.5.1955"
+app.config.db.uri = "sqlite://bloggy.db"
 
 
 #: define models
@@ -70,6 +71,12 @@ db.define_models(Post, Comment)
 #: setup helping function
 def setup_admin():
     with db.connection():
+        # Check if user already exists
+        existing_user = User.where(lambda u: u.email == "doc@emmettbrown.com").select().first()
+        if existing_user:
+            print("Admin user already exists!")
+            return
+        
         # create the user
         user = User.create(
             email="doc@emmettbrown.com",
@@ -77,11 +84,18 @@ def setup_admin():
             last_name="Brown",
             password="fluxcapacitor"
         )
-        # create an admin group
-        admins = auth.create_group("admin")
+        
+        # create an admin group using raw database access
+        existing_group = db(db.auth_groups.role == "admin").select().first()
+        if existing_group:
+            group_id = existing_group.id
+        else:
+            group_id = db.auth_groups.insert(role="admin", description="Administrators")
+        
         # add user to admins group
-        auth.add_membership(admins, user.id)
+        db.auth_memberships.insert(user=user.id, auth_group=group_id)
         db.commit()
+        print("Admin user created: doc@emmettbrown.com")
 
 
 @app.command('setup')
