@@ -48,6 +48,10 @@ uv run emmett migrations up
 ### Running the Application
 
 ```bash
+# From project root
+./run_bloggy.sh
+
+# Or manually
 cd bloggy
 uv run emmett develop
 ```
@@ -110,8 +114,21 @@ Comments on posts with:
 Run the test suite:
 
 ```bash
+# From project root (recommended - includes coverage by default)
+./run_tests.sh
+
+# With verbose output
+./run_tests.sh -v
+
+# Without coverage report
+./run_tests.sh --no-coverage
+
+# Or manually from bloggy directory
 cd bloggy
 uv run pytest tests.py -v
+
+# With coverage
+uv run pytest tests.py --cov=app
 ```
 
 Tests include:

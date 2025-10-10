@@ -345,16 +345,10 @@ if [[ "$SETUP_MODE" == "2" ]] || [[ "$SETUP_MODE" == "3" ]]; then
 fi
 
 echo -e "${BLUE}🧪 Run tests:${NC}"
-if [[ "$SETUP_MODE" == "1" ]]; then
-    echo -e "   ${YELLOW}./run_tests.sh --docker${NC}"
-    echo -e "   ${YELLOW}./run_tests.sh --docker --quick${NC}  (fast)"
-elif [[ "$SETUP_MODE" == "2" ]]; then
-    echo -e "   ${YELLOW}./run_tests.sh${NC}"
-    echo -e "   ${YELLOW}./run_tests.sh --quick${NC}  (fast)"
-else
-    echo -e "   ${YELLOW}./run_tests.sh --docker${NC}  (recommended)"
-    echo -e "   ${YELLOW}./run_tests.sh${NC}  (local)"
-fi
+echo "   Bloggy tests (coverage enabled by default):"
+echo -e "     ${YELLOW}./run_tests.sh${NC}"
+echo -e "     ${YELLOW}./run_tests.sh -v${NC}  (verbose)"
+echo -e "     ${YELLOW}./run_tests.sh --no-coverage${NC}  (skip coverage)"
 echo ""
 echo -e "${BLUE}📚 Useful commands:${NC}"
 echo "   • Format code: cd djangobase && uv run ruff format ."
@@ -379,7 +373,7 @@ echo -e "${BLUE}🎓 Example Applications:${NC}"
 echo "   Bloggy - Micro-blogging app built with Emmett framework"
 echo "   Location: bloggy/"
 echo "   Setup: ./setup/setup_bloggy.sh"
-echo "   Run: cd bloggy && ./run.sh"
+echo "   Run: ./run_bloggy.sh"
 echo ""
 echo -e "${GREEN}Happy coding! 🚀${NC}"
 echo ""
