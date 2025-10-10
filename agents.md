@@ -194,6 +194,35 @@ Only modify `djangobase/` when user explicitly requests:
 
 ---
 
+## 📚 Reference Documentation
+
+### Emmett Framework Documentation
+
+The `emmett_documentation/` directory contains comprehensive documentation for the Emmett web framework, which may provide reference patterns and architectural guidance for this project:
+
+- **Location**: `/emmett_documentation/`
+- **Contents**: 
+  - `README.md` - Framework overview
+  - `CHANGES.md` - Version history and changes
+  - `docs/` - Detailed documentation on:
+    - ORM patterns (models, migrations, relations, operations)
+    - Routing and request handling
+    - Authentication and sessions
+    - Forms and validations
+    - WebSocket support
+    - Testing patterns
+    - Deployment strategies
+
+**When to Reference:**
+- When implementing similar features (ORM patterns, auth, routing)
+- When designing API structures or database models
+- When looking for best practices in web framework architecture
+- When implementing real-time features or WebSocket support
+
+**Note:** This is reference documentation only. Do not attempt to integrate Emmett framework directly into this Django-based project.
+
+---
+
 ## Project Overview
 
 DjangoBase is a Django-based PocketBase replacement - an API-centric, real-time, file-enabled authenticated platform. The project is built on Cookiecutter-Django and aims to provide feature parity with PocketBase while leveraging Django's ecosystem.
