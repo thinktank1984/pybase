@@ -927,15 +927,13 @@ async def create_collection_record(collection_name):
 - Data backup and restore tools
 
 **Planned (📋):**
-- S3/Azure/GCS file storage backends
+- file storage backends
 - Two-factor authentication (2FA/MFA)
-- GraphQL support (optional)
-- Real-time pub/sub with Redis
+- Real-time pub/sub
 - API versioning support
 - Advanced caching (multi-tier)
-- Dynamic collections (PocketBase-style)
 - Schema migration UI
 - Advanced webhooks with retry logic
 - Performance monitoring dashboard
 - CLI tools for code generation
-- Plugin/extension marketplace
+- Plugin/extension

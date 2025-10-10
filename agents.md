@@ -198,28 +198,102 @@ Only modify `djangobase/` when user explicitly requests:
 
 ### Emmett Framework Documentation
 
-The `emmett_documentation/` directory contains comprehensive documentation for the Emmett web framework, which may provide reference patterns and architectural guidance for this project:
+The `emmett_documentation/` directory contains comprehensive documentation for the Emmett web framework, which provides reference patterns and architectural guidance for this Django-based project.
 
-- **Location**: `/emmett_documentation/`
-- **Contents**: 
-  - `README.md` - Framework overview
-  - `CHANGES.md` - Version history and changes
-  - `docs/` - Detailed documentation on:
-    - ORM patterns (models, migrations, relations, operations)
-    - Routing and request handling
-    - Authentication and sessions
-    - Forms and validations
-    - WebSocket support
-    - Testing patterns
-    - Deployment strategies
+**Location**: `/emmett_documentation/`
+
+**Quick Reference**: See `emmett_documentation/documentation_summary.md` for a complete table of contents with descriptions of all available documentation.
+
+**Key Documentation Areas:**
+
+1. **Getting Started**
+   - Installation, Quickstart, Tutorial
+   - Building a complete micro-blogging application example
+
+2. **Application Structure**
+   - Application and module organization patterns
+   - Routing with decorators and variable paths
+   - Best practices for scaling applications
+
+3. **Request/Response Handling**
+   - Request object (headers, cookies, body, files)
+   - Response customization (status, headers, streaming)
+   - Pipeline system for request processing
+
+4. **Templates and Output**
+   - Renoir templating engine
+   - HTML generation without templates
+   - Service decorators for JSON/XML APIs
+
+5. **Forms and Validation**
+   - Form class with Field objects
+   - ModelForm for database-backed forms
+   - Built-in validators (email, URL, numeric, custom)
+
+6. **Database and ORM**
+   - ORM overview (based on pyDAL)
+   - Database connections and configuration
+   - Models with field types and validation
+   - Relations (belongs_to, has_many, has_one)
+   - CRUD operations and queries
+   - Migrations with up/down methods
+   - Callbacks (before/after insert/update/delete)
+   - Scopes for reusable query filters
+   - Virtuals and computed attributes
+   - Advanced patterns (inheritance, polymorphism)
+
+7. **Authentication and Security**
+   - Auth module with login/logout/registration
+   - Permission systems and group management
+   - @requires decorator for protected routes
+
+8. **Sessions and State**
+   - Cookie-based, file-based, and Redis-backed sessions
+   - Session configuration and expiration
+
+9. **Real-Time Communication**
+   - WebSocket routing and handling
+   - Bidirectional messaging patterns
+
+10. **Internationalization**
+    - Multi-language support with T() translator
+    - Translation file organization
+
+11. **Performance**
+    - Caching strategies (RAM, Disk, Redis)
+    - Cache decorators and manual operations
+
+12. **Utilities**
+    - Mailer for sending emails
+    - Extensions system for custom functionality
+
+13. **Development and Debugging**
+    - CLI commands and custom commands
+    - Logging configuration
+    - Testing with test client
+
+14. **Deployment**
+    - Production server configuration
+    - Docker deployment
+    - Upgrading between versions
 
 **When to Reference:**
-- When implementing similar features (ORM patterns, auth, routing)
-- When designing API structures or database models
-- When looking for best practices in web framework architecture
+- When implementing ORM patterns, relationships, or migrations
+- When designing API structures or REST endpoints
+- When looking for authentication/authorization patterns
 - When implementing real-time features or WebSocket support
+- When setting up forms and validation logic
+- When organizing application structure and modules
+- When implementing caching or performance optimizations
+- When designing testing strategies
 
-**Note:** This is reference documentation only. Do not attempt to integrate Emmett framework directly into this Django-based project.
+**How to Use:**
+- Consult `documentation_summary.md` for an overview of all topics
+- Read specific documentation files in `docs/` or `docs/orm/` for detailed guidance
+- Look for architectural patterns that can be adapted to Django/DRF
+- Use ORM documentation as reference for database design patterns
+
+**Important Note:** This is reference documentation only. Do not attempt to integrate the Emmett framework directly into this Django-based project. Use it for architectural inspiration and pattern guidance.
 
 ---
 
