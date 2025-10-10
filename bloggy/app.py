@@ -148,7 +148,7 @@ async def one(pid):
 
 
 @app.route("/new")
-@requires(lambda: auth.has_membership('admin'), url('index'))
+@requires(lambda: session.auth, url('index'))
 async def new_post():
     form = await Post.form()
     if form.accepted:
