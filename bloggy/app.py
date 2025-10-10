@@ -4,13 +4,22 @@ from emmett import App, session, now, url, redirect, abort
 from emmett.orm import Database, Model, Field, belongs_to, has_many
 from emmett.tools import requires
 from emmett.tools.auth import Auth, AuthUser
+from emmett.tools import Mailer
 from emmett.sessions import SessionManager
 
 
 app = App(__name__)
+
+#: mailer configuration
+app.config.mailer.sender = "bloggy@emmett.local"
+app.config.mailer.suppress = True  # Set to False in production with real SMTP
+
+#: auth configuration
 app.config.auth.single_template = True
 app.config.auth.registration_verification = False
 app.config.auth.hmac_key = "november.5.1955"
+
+#: database configuration
 app.config.db.uri = "sqlite://bloggy.db"
 
 
@@ -62,8 +71,9 @@ class Comment(Model):
     }
 
 
-#: init db and auth
+#: init db, mailer and auth
 db = Database(app)
+mailer = Mailer(app)
 auth = Auth(app, db, user_model=User)
 db.define_models(Post, Comment)
 
