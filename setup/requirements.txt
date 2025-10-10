@@ -3,6 +3,13 @@
 # Install with: uv pip install -r setup/requirements.txt
 
 # ============================================================================
+# Emmett Framework (for bloggy example application)
+# ============================================================================
+
+emmett>=2.5.0           # Emmett web framework
+emmett-sentry>=0.4.0    # Sentry integration for Emmett (optional)
+
+# ============================================================================
 # Development & Testing Extras
 # ============================================================================
 
