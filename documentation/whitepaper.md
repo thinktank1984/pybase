@@ -507,13 +507,435 @@ if __name__ == '__main__':
 </style>
 ```
 
-## 12. Roadmap
-- **Admin UI** – Auto-generated admin interface from models
-- **Advanced webhooks** – Event-driven architecture with retry logic
-- **Real-time pub/sub** – Redis-backed real-time channels
-- **API versioning** – Built-in API version management
-- **GraphQL support** – Optional GraphQL integration
-- **File storage backends** – S3/Azure/GCS integration
-- **Advanced caching** – Multi-tier caching strategies
-- **Monitoring** – Performance metrics and logging
-- **CLI tools** – Code generation and scaffolding utilities
+## 12. Implementing Missing PocketBase Features
+
+While Emmett provides the foundation, some PocketBase-specific features need custom implementation. Here's how to add them:
+
+### 12.1 CORS Support
+
+```python
+from emmett.pipeline import Pipe
+
+class CORSPipe(Pipe):
+    async def open(self):
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, PATCH'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+    
+    async def on_pipe_success(self):
+        pass
+
+app.pipeline = [CORSPipe(), db.pipe, auth.pipe]
+```
+
+### 12.2 Rate Limiting
+
+```python
+from emmett.cache import Cache
+from emmett.pipeline import Pipe
+from datetime import datetime, timedelta
+
+cache = Cache()
+
+class RateLimitPipe(Pipe):
+    def __init__(self, max_requests=100, window_seconds=60):
+        self.max_requests = max_requests
+        self.window_seconds = window_seconds
+    
+    async def open(self):
+        ip = request.headers.get('X-Forwarded-For', request.client)
+        key = f"ratelimit:{ip}"
+        
+        count = cache.get(key, 0)
+        if count >= self.max_requests:
+            response.status = 429
+            return {'error': 'Rate limit exceeded'}
+        
+        cache.set(key, count + 1, self.window_seconds)
+
+# Apply to specific routes
+@app.route('/api/products', pipeline=[RateLimitPipe(max_requests=60)])
+@service.json
+async def list_products():
+    return {'products': Product.all().select()}
+```
+
+### 12.3 Request Logging
+
+```python
+import logging
+from emmett.pipeline import Pipe
+
+logger = logging.getLogger('api')
+
+class LoggingPipe(Pipe):
+    async def open(self):
+        self.start_time = datetime.now()
+        logger.info(f"{request.method} {request.path} - {request.client}")
+    
+    async def close(self):
+        duration = (datetime.now() - self.start_time).total_seconds()
+        logger.info(f"Response {response.status} - {duration:.3f}s")
+
+app.pipeline = [LoggingPipe(), db.pipe, auth.pipe]
+```
+
+### 12.4 Health Check Endpoint
+
+```python
+@app.route('/health')
+@service.json
+async def health_check():
+    """Health check endpoint for monitoring"""
+    try:
+        # Check database connection
+        db._adapter.reconnect()
+        db_status = "healthy"
+    except Exception as e:
+        db_status = f"unhealthy: {str(e)}"
+        response.status = 503
+    
+    return {
+        'status': 'healthy' if db_status == 'healthy' else 'unhealthy',
+        'timestamp': datetime.utcnow().isoformat(),
+        'database': db_status,
+        'version': '1.0.0'
+    }
+```
+
+### 12.5 OAuth2 Authentication
+
+```python
+from emmett.tools.service import ServicePipe
+import requests
+
+class OAuth2Provider:
+    def __init__(self, client_id, client_secret, authorize_url, token_url):
+        self.client_id = client_id
+        self.client_secret = client_secret
+        self.authorize_url = authorize_url
+        self.token_url = token_url
+
+# Google OAuth2 example
+google_oauth = OAuth2Provider(
+    client_id=os.getenv('GOOGLE_CLIENT_ID'),
+    client_secret=os.getenv('GOOGLE_CLIENT_SECRET'),
+    authorize_url='https://accounts.google.com/o/oauth2/v2/auth',
+    token_url='https://oauth2.googleapis.com/token'
+)
+
+@app.route('/auth/google')
+async def oauth_google_login():
+    """Redirect to Google OAuth"""
+    redirect_uri = url('oauth_google_callback', _full=True)
+    auth_url = f"{google_oauth.authorize_url}?client_id={google_oauth.client_id}&redirect_uri={redirect_uri}&response_type=code&scope=openid email profile"
+    redirect(auth_url)
+
+@app.route('/auth/google/callback')
+async def oauth_google_callback():
+    """Handle OAuth callback"""
+    code = request.query_params.code
+    
+    # Exchange code for token
+    token_response = requests.post(google_oauth.token_url, data={
+        'code': code,
+        'client_id': google_oauth.client_id,
+        'client_secret': google_oauth.client_secret,
+        'redirect_uri': url('oauth_google_callback', _full=True),
+        'grant_type': 'authorization_code'
+    })
+    
+    token_data = token_response.json()
+    access_token = token_data.get('access_token')
+    
+    # Get user info
+    user_info = requests.get(
+        'https://www.googleapis.com/oauth2/v2/userinfo',
+        headers={'Authorization': f'Bearer {access_token}'}
+    ).json()
+    
+    # Find or create user
+    user = User.where(lambda u: u.email == user_info['email']).first()
+    if not user:
+        user = User.create(
+            email=user_info['email'],
+            first_name=user_info.get('given_name', ''),
+            last_name=user_info.get('family_name', '')
+        )
+    
+    # Log in user
+    auth.login_user(user)
+    redirect(url('index'))
+```
+
+### 12.6 Expand/Nested Queries
+
+```python
+@app.route('/api/posts/<int:post_id>', methods='get')
+@service.json
+async def api_get_post_expanded(post_id):
+    """Get post with expanded relationships"""
+    post = db.Post.get(post_id)
+    if not post:
+        response.status = 404
+        return {'error': 'Not found'}
+    
+    # Check if expand parameter is present
+    expand = request.query_params.expand
+    
+    result = {'post': post}
+    
+    if expand:
+        expand_fields = expand.split(',')
+        
+        if 'author' in expand_fields:
+            result['author'] = post.author
+        
+        if 'comments' in expand_fields:
+            result['comments'] = post.comments().select()
+            
+            if 'comments.author' in expand_fields:
+                # Nested expansion
+                for comment in result['comments']:
+                    comment['author'] = comment.author
+    
+    return result
+```
+
+### 12.7 Model Hooks/Callbacks
+
+```python
+class Post(Model):
+    title = Field.string()
+    body = Field.text()
+    slug = Field.string()
+    created_at = Field.datetime()
+    updated_at = Field.datetime()
+    
+    # Before insert callback
+    def _before_insert(self):
+        # Auto-generate slug from title
+        self.slug = self.title.lower().replace(' ', '-')
+        self.created_at = request.now
+        self.updated_at = request.now
+    
+    # Before update callback
+    def _before_update(self):
+        self.updated_at = request.now
+    
+    # After insert callback
+    def _after_insert(self):
+        # Send notification
+        print(f"New post created: {self.title}")
+    
+    # Custom validation
+    def validate(self):
+        errors = {}
+        if self.title and len(self.title) < 5:
+            errors['title'] = 'Title must be at least 5 characters'
+        return errors or None
+```
+
+### 12.8 Data Backup/Restore
+
+```python
+import json
+from datetime import datetime
+
+@app.route('/admin/backup')
+@requires(lambda: auth.has_membership('administrators'))
+@service.json
+async def backup_data():
+    """Export database to JSON"""
+    backup = {
+        'timestamp': datetime.utcnow().isoformat(),
+        'models': {}
+    }
+    
+    # Export all models
+    for model_name in ['User', 'Post', 'Comment']:
+        model = getattr(db, model_name)
+        records = model.all().select()
+        backup['models'][model_name] = records
+    
+    return backup
+
+@app.route('/admin/restore', methods='post')
+@requires(lambda: auth.has_membership('administrators'))
+@service.json
+async def restore_data():
+    """Import database from JSON"""
+    backup = request.body_params.backup
+    
+    for model_name, records in backup['models'].items():
+        model = getattr(db, model_name)
+        for record in records:
+            model.create(**record)
+    
+    return {'status': 'success', 'restored': len(backup['models'])}
+```
+
+### 12.9 Email Templates
+
+```python
+from emmett.tools.mail import Mailer
+
+# Configure mailer
+mailer = Mailer(
+    sender=os.getenv('MAIL_SENDER'),
+    server=os.getenv('MAIL_SERVER'),
+    username=os.getenv('MAIL_USERNAME'),
+    password=os.getenv('MAIL_PASSWORD')
+)
+
+# Custom email templates
+@auth.registration_mail
+def send_registration_email(user, data):
+    """Custom registration email with template"""
+    subject = "Welcome to EmmettBase!"
+    
+    # Render email template
+    html_body = f"""
+    <html>
+        <body>
+            <h1>Welcome {user.first_name}!</h1>
+            <p>Thank you for registering. Please verify your email by clicking the link below:</p>
+            <a href="{data['link']}">Verify Email</a>
+        </body>
+    </html>
+    """
+    
+    mailer.send_mail(
+        recipients=user.email,
+        subject=subject,
+        body=html_body,
+        html=True
+    )
+
+@auth.reset_password_mail
+def send_password_reset_email(user, data):
+    """Custom password reset email"""
+    subject = "Password Reset Request"
+    
+    html_body = f"""
+    <html>
+        <body>
+            <h1>Password Reset</h1>
+            <p>Click the link below to reset your password:</p>
+            <a href="{data['link']}">Reset Password</a>
+            <p>If you didn't request this, please ignore this email.</p>
+        </body>
+    </html>
+    """
+    
+    mailer.send_mail(
+        recipients=user.email,
+        subject=subject,
+        body=html_body,
+        html=True
+    )
+```
+
+### 12.10 Dynamic Collections (PocketBase-style)
+
+```python
+from emmett.orm import Field
+
+class Collection(Model):
+    """Meta-model for defining dynamic collections"""
+    name = Field.string()
+    schema = Field.json()  # Store field definitions as JSON
+    created_at = Field.datetime()
+
+class CollectionRecord(Model):
+    """Generic record storage for dynamic collections"""
+    collection = Field.belongs_to('Collection')
+    data = Field.json()  # Store record data as JSON
+    created_at = Field.datetime()
+    updated_at = Field.datetime()
+
+@app.route('/api/collections/<collection_name>', methods='get')
+@service.json
+async def get_collection_records(collection_name):
+    """Get records from a dynamic collection"""
+    collection = Collection.where(
+        lambda c: c.name == collection_name
+    ).first()
+    
+    if not collection:
+        response.status = 404
+        return {'error': 'Collection not found'}
+    
+    records = CollectionRecord.where(
+        lambda r: r.collection == collection.id
+    ).select()
+    
+    return {
+        'collection': collection_name,
+        'records': [r.data for r in records]
+    }
+
+@app.route('/api/collections/<collection_name>', methods='post')
+@service.json
+async def create_collection_record(collection_name):
+    """Create a record in a dynamic collection"""
+    collection = Collection.where(
+        lambda c: c.name == collection_name
+    ).first()
+    
+    if not collection:
+        response.status = 404
+        return {'error': 'Collection not found'}
+    
+    # Validate against schema
+    data = request.body_params
+    # TODO: Add schema validation
+    
+    record = CollectionRecord.create(
+        collection=collection.id,
+        data=data,
+        created_at=request.now,
+        updated_at=request.now
+    )
+    
+    return {'id': record.id, 'data': record.data}
+```
+
+## 13. Roadmap
+
+**Current Features (✅):**
+- Auto-generated forms from models
+- REST API with `@service.json`
+- Real-time WebSocket support
+- File uploads (local storage)
+- Built-in authentication (email/password)
+- Groups and permissions
+- Validation system
+- Database migrations
+- Multiple database engines
+- Model relationships and nested queries
+- CSRF and XSS protection
+
+**In Progress (🔄):**
+- Admin UI auto-generated from models
+- OAuth2 provider integrations (Google, GitHub, Facebook)
+- Advanced rate limiting with Redis
+- Request logging and monitoring
+- CORS configuration middleware
+- Health check and metrics endpoints
+- Email template system enhancements
+- Data backup and restore tools
+
+**Planned (📋):**
+- S3/Azure/GCS file storage backends
+- Two-factor authentication (2FA/MFA)
+- GraphQL support (optional)
+- Real-time pub/sub with Redis
+- API versioning support
+- Advanced caching (multi-tier)
+- Dynamic collections (PocketBase-style)
+- Schema migration UI
+- Advanced webhooks with retry logic
+- Performance monitoring dashboard
+- CLI tools for code generation
+- Plugin/extension marketplace
