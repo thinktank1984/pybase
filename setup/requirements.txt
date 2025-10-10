@@ -1,0 +1,126 @@
+# Additional optional dependencies for DjangoBase
+# These are NOT required for core functionality but provide useful extras
+# Install with: uv pip install -r setup/requirements.txt
+
+# ============================================================================
+# Development & Testing Extras
+# ============================================================================
+
+# Enhanced debugging
+ipdb>=0.13.13           # Already in pyproject.toml, listed for reference
+django-silk>=5.0.0      # Request profiling and performance monitoring (NEW)
+
+# API Testing & Documentation
+requests>=2.31.0        # HTTP library for testing APIs
+httpx>=0.25.0           # Async HTTP client (alternative to requests)
+
+# ============================================================================
+# Data & File Processing
+# ============================================================================
+
+# Excel & CSV handling
+openpyxl>=3.1.0         # Excel file operations (NEW)
+pandas>=2.0.0           # Data manipulation (NEW)
+tablib>=3.5.0           # Data export formats (CSV, Excel, JSON, YAML) (NEW)
+
+# Image processing
+pillow>=11.0.0          # Already in pyproject.toml (via dependencies)
+pillow-heif>=0.15.0     # HEIF/HEIC image support (NEW)
+
+# PDF generation
+reportlab>=4.0.0        # PDF generation (NEW)
+weasyprint>=60.0        # HTML to PDF (NEW)
+
+# ============================================================================
+# External Services Integration
+# ============================================================================
+
+# Cloud services (Google Cloud Platform)
+google-cloud-storage>=2.10.0    # GCS for file storage (NEW)
+google-auth>=2.23.0             # Google authentication (NEW)
+
+# AWS services
+boto3>=1.28.0           # AWS SDK (already supported via django-storages)
+
+# Email templates
+premailer>=3.10.0       # Inline CSS for emails (NEW)
+
+# ============================================================================
+# Utilities
+# ============================================================================
+
+# Web scraping & crawling
+beautifulsoup4>=4.12.0  # HTML parsing (NEW)
+html2text>=2020.1.16    # Convert HTML to markdown (NEW)
+scrapy>=2.11.0          # Web scraping framework (NEW)
+
+# Data validation
+phonenumbers>=8.13.0    # Phone number validation (NEW)
+email-validator>=2.1.0  # Email validation (already in dependencies via pydantic)
+
+# Timezone utilities
+pytz>=2023.3            # Already in pyproject.toml via dependencies
+
+# Code generation & templating
+cookiecutter>=2.5.0     # Project/code scaffolding (NEW)
+jinja2>=3.1.0           # Template engine (already in dependencies)
+
+# ============================================================================
+# Monitoring & Logging
+# ============================================================================
+
+# Sentry integration
+sentry-sdk>=2.0.0       # Error tracking (NEW)
+
+# Logging enhancements
+python-json-logger>=2.0.7   # JSON logging (NEW)
+colorlog>=6.8.0             # Colored console logs (NEW)
+
+# ============================================================================
+# Task Queue Enhancements
+# ============================================================================
+
+# Celery monitoring
+flower>=2.0.0           # Already in pyproject.toml
+
+# ============================================================================
+# Database Utilities
+# ============================================================================
+
+# Database tools
+django-extensions>=4.0.0    # Already in pyproject.toml
+psycopg[binary]>=3.1.0      # PostgreSQL adapter (already in pyproject.toml as psycopg[c])
+
+# ============================================================================
+# API Enhancements
+# ============================================================================
+
+# API rate limiting
+django-ratelimit>=4.1.0     # Rate limiting for views (NEW)
+
+# GraphQL (optional)
+graphene-django>=3.2.0      # GraphQL integration (NEW)
+
+# WebSocket enhancements
+channels-redis>=4.2.0       # Redis layer for Django Channels (NEW)
+
+# ============================================================================
+# Notes
+# ============================================================================
+# 
+# Most core dependencies are already in djangobase/pyproject.toml:
+# - Django 5.2.7
+# - Django REST Framework 3.16.1
+# - Celery 5.5.3
+# - Redis, PostgreSQL drivers
+# - Django Allauth (authentication)
+# - drf-spectacular (API docs)
+# - All testing libraries (pytest, pytest-django, pytest-cov, etc.)
+#
+# This file contains OPTIONAL extras for specific use cases:
+# - Advanced data processing (pandas, Excel)
+# - Cloud integrations (Google Cloud, AWS)
+# - Web scraping
+# - Enhanced monitoring
+# - PDF generation
+# - GraphQL support
