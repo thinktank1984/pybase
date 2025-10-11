@@ -8,7 +8,7 @@ from emmett.tools import Mailer
 from emmett.sessions import SessionManager
 
 
-app = App(__name__)
+app = App('main')
 
 #: mailer configuration
 app.config.mailer.sender = "bloggy@emmett.local"
