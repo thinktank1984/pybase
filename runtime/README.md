@@ -271,16 +271,6 @@ This application follows Emmett framework patterns:
 - **ORM Guide**: `/emmett_documentation/docs/orm/`
 - **Auth System**: `/emmett_documentation/docs/auth.md`
 
-## Comparison with DjangoBase
-
-While DjangoBase (in `/djangobase/`) is a full-featured Django application, Bloggy demonstrates:
-- Simpler, more direct patterns
-- Less boilerplate code
-- Integrated ORM and auth
-- Single-file application structure
-
-Both frameworks offer similar capabilities but with different architectural approaches.
-
 ## Troubleshooting
 
 ### Database Issues

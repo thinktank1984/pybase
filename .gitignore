@@ -50,7 +50,7 @@ coverage.xml
 *.mo
 *.pot
 
-# Django stuff:
+
 staticfiles/
 
 # Sphinx documentation
@@ -269,11 +269,11 @@ tags
 dump.rdb
 
 ### Project template
-djangobase/media/
+
 
 .pytest_cache/
 .ipython/
-djangobase/static/webpack_bundles/
+
 webpack-stats.json
 .env
 .envs/*

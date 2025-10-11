@@ -11,7 +11,6 @@ Emmett is a Python web framework designed to be simple, fast, and full-featured.
 ### Getting Started
 
 #### **[Foreword](docs/foreword.md)**
-The philosophy behind Emmett, explaining the author's journey from Django and web2py to Flask, and the decision to create a new framework. Discusses the core principles: ease of use, control over magic, and focus on your product rather than the framework itself. Includes acknowledgments to Python, web2py, and Flask communities.
 
 #### **[Installation](docs/installation.md)**
 Guide to installing Emmett using virtualenv on Python 3.9+. Covers setting up virtual environments, installing Emmett with pip, and preparing your development environment for both Python 3 systems.
