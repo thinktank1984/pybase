@@ -85,7 +85,7 @@ services:
   runtime:
     build:
       context: ..
-      dockerfile: runtime/Dockerfile
+      dockerfile: docker/Dockerfile
     container_name: runtime
     restart: unless-stopped
     ports:

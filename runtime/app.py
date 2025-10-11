@@ -8,7 +8,8 @@ from emmett.tools import Mailer
 from emmett.sessions import SessionManager
 
 
-app = App('main')
+app = App(__name__, template_folder='templates')
+app.config.url_default_namespace = 'app'
 
 #: mailer configuration
 app.config.mailer.sender = "bloggy@emmett.local"
@@ -20,7 +21,8 @@ app.config.auth.registration_verification = False
 app.config.auth.hmac_key = "november.5.1955"
 
 #: database configuration
-app.config.db.uri = "sqlite://bloggy.db"
+import os
+app.config.db.uri = f"sqlite://{os.path.join(os.path.dirname(__file__), 'databases', 'bloggy.db')}"
 
 
 #: define models
@@ -122,13 +124,13 @@ app.pipeline = [
 
 
 #: exposing functions
-@app.route("/", name="index")
+@app.route("/")
 async def index():
     posts = Post.all().select(orderby=~Post.date)
     return dict(posts=posts)
 
 
-@app.route("/post/<int:pid>", name="one")
+@app.route("/post/<int:pid>")
 async def one(pid):
     def _validate_comment(form):
         # manually set post id in comment form
@@ -147,7 +149,7 @@ async def one(pid):
     return locals()
 
 
-@app.route("/new", name="new_post")
+@app.route("/new")
 @requires(lambda: session.auth, '/')
 async def new_post():
     form = await Post.form()

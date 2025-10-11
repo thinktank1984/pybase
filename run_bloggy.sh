@@ -82,9 +82,14 @@ if [ "$USE_DOCKER" = true ]; then
     # DOCKER MODE
     # ============================================================================
     
-    echo "Access the application at: ${GREEN}http://localhost:8081${NC}"
+    echo "Access the services at:"
+    echo "  Runtime App: ${GREEN}http://localhost:8081${NC}"
+    echo "  Bugsink:     ${GREEN}http://localhost:8000${NC}"
+    echo "  Prometheus:  ${GREEN}http://localhost:9090${NC}"
+    echo "  Grafana:     ${GREEN}http://localhost:3000${NC}"
+    echo "  cAdvisor:    ${GREEN}http://localhost:8080${NC}"
     echo ""
-    echo "Login with:"
+    echo "Login to Runtime App with:"
     echo "  Email: ${YELLOW}doc@emmettbrown.com${NC}"
     echo "  Password: ${YELLOW}fluxcapacitor${NC}"
     echo ""
@@ -92,18 +97,18 @@ if [ "$USE_DOCKER" = true ]; then
     # Run docker compose (without --build since setup.sh handles that)
     cd docker
     if [ "$USE_BACKGROUND" = true ]; then
-        docker compose up -d runtime
-        echo -e "${GREEN}✅ Runtime started in background${NC}"
+        docker compose up -d
+        echo -e "${GREEN}✅ All services started in background${NC}"
         echo ""
-        echo "To view logs: ${BLUE}docker compose -f docker/docker-compose.yaml logs -f runtime${NC}"
+        echo "To view logs: ${BLUE}docker compose -f docker/docker-compose.yaml logs -f${NC}"
         echo "Or use: ${BLUE}just runtime-logs${NC}"
         echo ""
         echo "To stop: ${BLUE}docker compose -f docker/docker-compose.yaml down${NC}"
         echo "Or use: ${BLUE}just down${NC}"
     else
-        echo -e "${BLUE}Press Ctrl+C to stop the server${NC}"
+        echo -e "${BLUE}Press Ctrl+C to stop all services${NC}"
         echo ""
-        docker compose up runtime
+        docker compose up
     fi
     
 else

@@ -8,7 +8,16 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
+    curl \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js 24
+RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
+    && apt-get install -y nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Gemini CLI globally
+RUN npm install -g @google/gemini-cli
 
 # Install Python dependencies for Emmett
 RUN pip install --no-cache-dir \
