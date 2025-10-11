@@ -13,6 +13,37 @@ A micro-blogging application built with the [Emmett](https://emmett.sh) web fram
 
 ## Quick Start
 
+### Option 1: Docker (Recommended)
+
+The easiest way to run the application is using Docker:
+
+```bash
+# From the docker directory
+cd docker
+
+# Build and start the runtime service
+docker compose up runtime --build
+
+# Or run in detached mode
+docker compose up runtime -d --build
+
+# View logs
+docker compose logs -f runtime
+
+# Stop the service
+docker compose down
+```
+
+The application will be available at: **http://localhost:8081/**
+
+**Benefits:**
+- No Python installation required
+- Full repository mounted (live code changes)
+- Isolated environment
+- Easy to manage
+
+### Option 2: Local Development
+
 ### Prerequisites
 
 - Python 3.9+ (Python 3.13+ recommended)
@@ -139,6 +170,32 @@ Tests include:
 - Comment functionality
 
 ## Development Commands
+
+### Docker Commands
+
+```bash
+# Start the runtime service
+docker compose -f docker/docker-compose.yaml up runtime
+
+# Rebuild after dependency changes
+docker compose -f docker/docker-compose.yaml up runtime --build
+
+# Run commands inside the container
+docker compose -f docker/docker-compose.yaml exec runtime emmett setup
+docker compose -f docker/docker-compose.yaml exec runtime emmett migrations up
+docker compose -f docker/docker-compose.yaml exec runtime pytest tests.py
+
+# Access container shell
+docker compose -f docker/docker-compose.yaml exec runtime bash
+
+# View logs
+docker compose -f docker/docker-compose.yaml logs -f runtime
+
+# Stop the service
+docker compose -f docker/docker-compose.yaml down
+```
+
+### Local Development Commands
 
 ```bash
 # Start development server

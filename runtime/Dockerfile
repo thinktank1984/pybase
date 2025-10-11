@@ -1,0 +1,33 @@
+# Dockerfile for Emmett Runtime Application
+FROM python:3.12-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies for Emmett
+RUN pip install --no-cache-dir \
+    emmett>=2.5.0 \
+    granian>=2.5.0 \
+    pytest>=8.0.0 \
+    pytest-cov>=7.0.0
+
+# The full repository will be mounted at runtime via volume
+# No need to copy files - they'll be available via volume mount
+
+# Expose port for the Emmett application
+EXPOSE 8081
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV EMMETT_ENV=development
+
+# Command will be specified in docker-compose.yaml
+# Default command for standalone usage:
+CMD ["granian", "--interface", "asgi", "--host", "0.0.0.0", "--port", "8081", "runtime.app:app"]
+
