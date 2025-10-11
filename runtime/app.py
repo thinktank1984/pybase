@@ -122,13 +122,13 @@ app.pipeline = [
 
 
 #: exposing functions
-@app.route("/")
+@app.route("/", name="index")
 async def index():
     posts = Post.all().select(orderby=~Post.date)
     return dict(posts=posts)
 
 
-@app.route("/post/<int:pid>")
+@app.route("/post/<int:pid>", name="one")
 async def one(pid):
     def _validate_comment(form):
         # manually set post id in comment form
@@ -147,7 +147,7 @@ async def one(pid):
     return locals()
 
 
-@app.route("/new")
+@app.route("/new", name="new_post")
 @requires(lambda: session.auth, '/')
 async def new_post():
     form = await Post.form()

@@ -6,15 +6,12 @@ This file provides guidance to AI agents (Claude Code, Gemini, etc.) when workin
 
 ## ⚡ Quick Summary
 
-**This is an Emmett Framework application - NOT Django**
+**This is an Emmett Framework application **
 
 - ✅ **DO**: Work with Emmett patterns (app.py, routes, ORM models)
 - ✅ **DO**: Reference Emmett documentation in `/emmett_documentation/`
 - ✅ **DO**: Create application code in `runtime/` directory
 - ✅ **DO**: Use Emmett's pyDAL ORM for database operations
-- ❌ **DON'T**: Use Django patterns, Django ORM, or Django REST Framework
-- ❌ **DON'T**: Reference Django settings or Django apps
-- ❌ **DON'T**: Use Django management commands
 
 ---
 
@@ -324,12 +321,12 @@ Emmett follows these patterns:
 ## Important Notes
 
 - The project uses Python 3.9+ (3.13+ recommended)
-- Emmett uses pyDAL for ORM (NOT SQLAlchemy or Django ORM)
+- Emmett uses pyDAL for ORM 
 - Migrations are managed via `emmett migrations` command
 - Templates use Renoir syntax (similar to Django templates but with differences)
 - Authentication uses Emmett's built-in `Auth` module
 - WebSocket support is built-in
-- The framework emphasizes simplicity and less boilerplate than Django
+
 
 ## Example Application
 
