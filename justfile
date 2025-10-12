@@ -87,7 +87,7 @@ runtime-migrate:
 # runtime-test: Run runtime tests.
 runtime-test:
     @echo "Running tests..."
-    @docker compose exec runtime pytest runtime/tests.py -v
+    @docker compose exec runtime pytest integration_tests/ -v
 
 # ps: Show running containers.
 ps:

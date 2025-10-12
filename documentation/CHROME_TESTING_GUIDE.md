@@ -16,7 +16,8 @@ This guide explains how to run REAL Chrome browser integration tests using the M
 
 ### 1. Integration Tests ✅ (Always Active)
 
-**File**: `runtime/tests.py`  
+**Directory**: `integration_tests/`  
+**Main File**: `integration_tests/tests.py`  
 **Status**: ✅ **Passing**  
 **Browser**: No (uses Emmett TestClient)
 
@@ -30,11 +31,11 @@ These are **real backend integration tests** that test:
 
 **Run with**:
 ```bash
-cd runtime
-pytest tests.py --no-cov -v
+# From project root
+pytest integration_tests/ --no-cov -v
 
 # Or via Docker
-docker compose -f docker/docker-compose.yaml exec runtime pytest tests.py -v
+docker compose -f docker/docker-compose.yaml exec runtime pytest integration_tests/ -v
 ```
 
 **Pros**:

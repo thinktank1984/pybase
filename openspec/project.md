@@ -63,7 +63,7 @@ The project serves as both a reference implementation and learning resource for 
 - Static files in `runtime/static/`
 - Database files in `runtime/databases/`
 - Migrations in `runtime/migrations/`
-- Tests in `runtime/tests.py`
+- Integration tests in `integration_tests/` (at project root)
 
 **Naming Conventions:**
 - Models: PascalCase (e.g., `Post`, `Comment`, `User`)

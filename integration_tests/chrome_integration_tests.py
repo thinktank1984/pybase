@@ -37,14 +37,8 @@ import os
 import sys
 
 # Check if we're running in an environment with MCP Chrome DevTools access
-# This will be True when running via Cursor with MCP integration
+# Tests FAIL if Chrome MCP is not available (no skipping allowed)
 HAS_CHROME_MCP = os.environ.get('HAS_CHROME_MCP', 'false').lower() == 'true'
-
-# Mark all tests to skip if Chrome MCP is not available
-pytestmark = pytest.mark.skipif(
-    not HAS_CHROME_MCP,
-    reason="Chrome MCP integration not available. Set HAS_CHROME_MCP=true to enable."
-)
 
 
 class TestBloggyChromeLive:
@@ -55,6 +49,11 @@ class TestBloggyChromeLive:
     @pytest.fixture(scope="class", autouse=True)
     def setup_chrome(self, request):
         """Setup Chrome browser for testing"""
+        if not HAS_CHROME_MCP:
+            pytest.fail(
+                "Chrome MCP integration not available. Set HAS_CHROME_MCP=true to enable. "
+                "Tests cannot be skipped - they must either run or fail."
+            )
         print(f"\n🌐 Setting up Chrome for testing {self.BASE_URL}...")
         
         # Store initial state

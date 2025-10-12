@@ -352,7 +352,7 @@ VIEWPORTS = {
 }
 
 
-def test_viewports(helper: ChromeTestHelper, path: str = "/") -> Dict[str, str]:
+def check_viewports(helper: ChromeTestHelper, path: str = "/") -> Dict[str, str]:
     """
     Test a page across multiple viewports and take screenshots.
     

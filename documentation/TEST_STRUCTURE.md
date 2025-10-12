@@ -6,19 +6,23 @@
 
 ## Test Organization
 
-All tests are located in the `runtime/` directory alongside the application code.
+All tests are located in the `integration_tests/` directory at the project root.
 
 ### Active Test Files
 
 ```
-runtime/
+integration_tests/
+├── conftest.py                   # Test configuration and fixtures ✅
 ├── tests.py                      # Main integration tests (pytest) ✅
 ├── test_ui_chrome_real.py        # Real Chrome DevTools tests ✅
 ├── chrome_integration_tests.py   # Additional Chrome tests ✅
-├── chrome_test_helpers.py        # Chrome testing helpers ✅
 ├── test_oauth_real.py            # OAuth integration tests ✅
 ├── test_roles_integration.py     # Role system integration tests ✅
+├── test_roles.py                 # Role system validation tests ✅
 └── test_auto_ui.py               # Auto-UI generation tests ✅
+
+runtime/
+└── chrome_test_helpers.py        # Chrome testing helpers (imported by tests) ✅
 ```
 
 ## Test File Descriptions
@@ -47,11 +51,11 @@ runtime/
 ./run_tests.sh --app -v
 
 # Directly in Docker
-docker compose -f docker/docker-compose.yaml exec runtime pytest tests.py -v
+docker compose -f docker/docker-compose.yaml exec runtime pytest integration_tests/ -v
 
 # With coverage
 docker compose -f docker/docker-compose.yaml exec runtime \
-    pytest tests.py --cov=app --cov-report=html --cov-report=term-missing
+    pytest integration_tests/ --cov=runtime --cov-report=html --cov-report=term-missing
 ```
 
 **Philosophy:** NO MOCKING (ILLEGAL)
@@ -284,8 +288,8 @@ docker compose -f docker/docker-compose.yaml down
 
 **Setup:**
 ```bash
-cd runtime
-uv run pytest tests.py -v
+# From project root
+uv run pytest integration_tests/ -v
 ```
 
 **Note:** Local environment may have dependency or configuration differences.
@@ -335,8 +339,8 @@ def _prepare_db(request):
 - **Reason:** Mock tests have been DELETED per repository policy
 - **Solution:** Use real integration tests instead
 
-**Issue: "File or directory not found: runtime/tests.py"**
-- **Solution:** Run from project root, not from runtime/
+**Issue: "File or directory not found: integration_tests/"**
+- **Solution:** Run from project root with correct path: `pytest integration_tests/`
 
 **Issue: "Session context errors"**
 - **Solution:** Use factory fixtures, not module-scoped fixtures with session
@@ -358,7 +362,7 @@ def _prepare_db(request):
 
 # Show all fixtures
 docker compose -f docker/docker-compose.yaml exec runtime \
-    pytest tests.py --fixtures
+    pytest integration_tests/ --fixtures
 ```
 
 ---

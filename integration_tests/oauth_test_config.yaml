@@ -1,0 +1,105 @@
+# OAuth Testing Configuration
+# This file contains test user credentials for OAuth integration testing
+#
+# 🚨 IMPORTANT: This file contains real user information for testing.
+# DO NOT commit real OAuth secrets or production credentials to version control.
+#
+# For OAuth testing, you need:
+# 1. Real OAuth provider credentials (Google, GitHub, etc.) in environment variables
+# 2. Test user account with the OAuth provider
+# 3. Email address that will be used for OAuth login
+
+# Test User Configuration
+test_user:
+  name: "Ed"
+  email: "ed.s.sharood@gmail.com"
+  # This email will be used to:
+  # - Test OAuth login flows
+  # - Test account linking
+  # - Verify OAuth account creation
+  # - Test OAuth token management
+
+# OAuth Provider Configuration
+# Set these environment variables before running OAuth tests:
+providers:
+  google:
+    # Required environment variables:
+    # - GOOGLE_CLIENT_ID
+    # - GOOGLE_CLIENT_SECRET
+    enabled: true
+    test_email: "ed.s.sharood@gmail.com"
+    scopes:
+      - "openid"
+      - "email"
+      - "profile"
+  
+  github:
+    # Required environment variables:
+    # - GITHUB_CLIENT_ID
+    # - GITHUB_CLIENT_SECRET
+    enabled: false  # Enable when you have GitHub OAuth configured
+    test_email: "ed.s.sharood@gmail.com"
+    scopes:
+      - "user:email"
+  
+  microsoft:
+    # Required environment variables:
+    # - MICROSOFT_CLIENT_ID
+    # - MICROSOFT_CLIENT_SECRET
+    # - MICROSOFT_TENANT (optional, defaults to 'common')
+    enabled: false  # Enable when you have Microsoft OAuth configured
+    test_email: "ed.s.sharood@gmail.com"
+    scopes:
+      - "openid"
+      - "email"
+      - "profile"
+  
+  facebook:
+    # Required environment variables:
+    # - FACEBOOK_APP_ID
+    # - FACEBOOK_APP_SECRET
+    enabled: false  # Enable when you have Facebook OAuth configured
+    test_email: "ed.s.sharood@gmail.com"
+    scopes:
+      - "email"
+      - "public_profile"
+
+# Testing Notes:
+# 1. Manual OAuth Flow Testing:
+#    - Start the app: docker compose -f docker/docker-compose.yaml up runtime
+#    - Navigate to: http://localhost:8081/auth/login
+#    - Click "Continue with Google" (or other provider)
+#    - Log in with ed.s.sharood@gmail.com
+#    - Verify successful login
+#
+# 2. Automated OAuth Testing:
+#    - Use Chrome DevTools MCP for UI testing
+#    - Tests will simulate OAuth flow with real browser
+#    - Tests will verify database state changes
+#
+# 3. Account Linking Testing:
+#    - Create account with email/password using ed.s.sharood@gmail.com
+#    - Log in
+#    - Go to Account Settings
+#    - Click "Connect Google"
+#    - Verify OAuth account is linked
+#
+# 4. Token Management Testing:
+#    - Tests verify token encryption
+#    - Tests verify token refresh
+#    - Tests verify token expiration handling
+
+# Security Notes:
+# - OAuth tokens are encrypted at rest using Fernet
+# - Encryption key must be set in OAUTH_TOKEN_ENCRYPTION_KEY environment variable
+# - State parameters prevent CSRF attacks
+# - PKCE prevents authorization code interception
+# - All tokens are validated before use
+
+# Environment Variables Required for Testing:
+# OAUTH_TOKEN_ENCRYPTION_KEY=<generated-fernet-key>
+# OAUTH_BASE_URL=http://localhost:8081
+# GOOGLE_CLIENT_ID=<your-google-client-id>
+# GOOGLE_CLIENT_SECRET=<your-google-client-secret>
+# (Add other providers as needed)
+

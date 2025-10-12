@@ -38,9 +38,67 @@ This is a **ZERO-TOLERANCE POLICY**:
 - ✅ Real database operations with actual SQL
 - ✅ Real HTTP requests through test client
 - ✅ Real browser interactions with Chrome DevTools MCP
-- ✅ Real external service calls (or skip tests if unavailable)
+- ✅ Real external service calls (or FAIL tests if unavailable)
 
 **If you write a test with mocks, the test is INVALID and must be rewritten.**
+
+---
+
+## 🚨 CRITICAL POLICY: NO SKIPPING TESTS ALLOWED 🚨
+
+**⚠️ SKIPPING TESTS IS ILLEGAL IN THIS REPOSITORY ⚠️**
+
+This is a **ZERO-TOLERANCE POLICY**:
+- ❌ **FORBIDDEN**: `@pytest.mark.skip` decorator
+- ❌ **FORBIDDEN**: `@pytest.mark.skipif` decorator
+- ❌ **FORBIDDEN**: `pytest.skip()` calls in tests or fixtures
+- ❌ **FORBIDDEN**: Conditional test execution that skips tests
+- ❌ **FORBIDDEN**: Commenting out tests to avoid failures
+
+**✅ TESTS MUST EITHER RUN OR FAIL:**
+- ✅ Use `pytest.fail()` with clear error message if dependencies unavailable
+- ✅ Make dependencies available in Docker environment
+- ✅ Tests fail with actionable error message explaining what's missing
+- ✅ Configure environment properly to run all tests
+- ✅ Remove tests that cannot be implemented properly
+
+**If a test is skipped, it is INVALID and must be fixed or removed.**
+
+### Why Skipping Is Illegal
+
+**Skipped tests create false confidence:**
+- ✗ Skipped tests hide broken functionality
+- ✗ Skipped tests accumulate and never get fixed
+- ✗ Skip conditions become outdated
+- ✗ Developers forget why tests were skipped
+- ✗ CI/CD shows green but functionality is untested
+
+**Failing tests force action:**
+- ✓ Failed tests demand immediate attention
+- ✓ Clear error messages guide setup/configuration
+- ✓ Forces proper environment setup in Docker
+- ✓ Ensures all dependencies are available
+- ✓ Tests either work or block deployment
+
+**Example of proper test dependency handling:**
+```python
+# ❌ WRONG - Skipping test (ILLEGAL)
+@pytest.mark.skipif(not HAS_CHROME, reason="Chrome not available")
+def test_ui():
+    pass
+
+# ✅ CORRECT - Failing with clear message
+@pytest.fixture
+def chrome():
+    if not HAS_CHROME:
+        pytest.fail(
+            "Chrome MCP not available. Set HAS_CHROME_MCP=true. "
+            "Tests cannot be skipped - they must either run or fail."
+        )
+    return get_chrome()
+```
+
+---
 
 See "Integration Testing Philosophy" section below for complete details.
 
@@ -60,8 +118,10 @@ See "Integration Testing Philosophy" section below for complete details.
 - ✅ **DO**: Build Tailwind CSS before running (`npm run build:css` in runtime/)
 - ⚠️ **PREFERRED**: Always use Docker commands over local development scripts
 - 🚫 **ILLEGAL**: Using mocks, stubs, or test doubles in tests is FORBIDDEN
+- 🚫 **ILLEGAL**: Skipping tests with @pytest.mark.skip or pytest.skip() is FORBIDDEN
 - ❌ **NEVER**: Mock database calls, HTTP requests, or external services in tests
 - ❌ **NEVER**: Use unittest.mock, pytest-mock, or any mocking libraries
+- ❌ **NEVER**: Skip tests - tests must either run or fail with clear error messages
 
 ---
 
@@ -187,8 +247,16 @@ runtime/                 # Main application directory
 │   ├── layout.html    # Base template
 │   ├── index.html     # Home page
 │   └── auth/          # Authentication templates
-├── static/            # Static files (CSS, JS, images)
-└── tests.py           # Application tests
+└── static/            # Static files (CSS, JS, images)
+
+integration_tests/     # Integration tests (NO MOCKING)
+├── conftest.py        # Test configuration and fixtures
+├── tests.py           # Main application tests
+├── test_oauth_real.py # OAuth integration tests
+├── test_roles_integration.py  # Role-based access control tests
+├── test_auto_ui.py    # Auto UI generation tests
+├── chrome_integration_tests.py  # Chrome DevTools tests
+└── test_ui_chrome_real.py      # Chrome UI tests
 
 documentation/         # Project documentation
 ├── agents.md          # This file - AI agent instructions
@@ -236,10 +304,10 @@ docker compose -f docker/docker-compose.yaml down
 
 # Run commands in container
 docker compose -f docker/docker-compose.yaml exec runtime emmett migrations up
-docker compose -f docker/docker-compose.yaml exec runtime pytest tests.py
+docker compose -f docker/docker-compose.yaml exec runtime pytest integration_tests/
 
 # Run tests in Docker
-docker compose -f docker/docker-compose.yaml exec runtime pytest tests.py -v
+docker compose -f docker/docker-compose.yaml exec runtime pytest integration_tests/ -v
 
 # Access Gemini CLI in container
 docker compose -f docker/docker-compose.yaml exec runtime gemini --version
@@ -260,9 +328,8 @@ uv run emmett develop
 # Run tests
 ./run_tests.sh
 
-# Or manually
-cd runtime
-uv run pytest tests.py
+# Or manually (from project root)
+uv run pytest integration_tests/
 
 # Database migrations
 cd runtime
@@ -372,9 +439,8 @@ docker compose -f docker/docker-compose.yaml exec runtime pytest tests.py -vv
 # Run without coverage
 ./run_tests.sh --no-coverage
 
-# Run specific test
-cd runtime
-uv run pytest tests.py -k test_name
+# Run specific test (from project root)
+uv run pytest integration_tests/ -k test_name
 ```
 
 ## Integration Testing Philosophy - NO MOCKING POLICY
@@ -395,14 +461,23 @@ uv run pytest tests.py -k test_name
    - ✅ **REQUIRED** to test complete request/response cycle
    - ✅ **REQUIRED** to verify actual database state changes
 
-2. **REAL DATABASE CHANGES**
+2. **NO SKIPPING TESTS - EVER - THIS IS NON-NEGOTIABLE**
+   - ❌ **ILLEGAL** to use `@pytest.mark.skip` or `@pytest.mark.skipif`
+   - ❌ **ILLEGAL** to call `pytest.skip()` in tests or fixtures
+   - ❌ **ILLEGAL** to conditionally skip tests based on environment
+   - ❌ **ILLEGAL** to comment out failing tests
+   - ✅ **REQUIRED** to use `pytest.fail()` with clear error message if dependencies missing
+   - ✅ **REQUIRED** to configure Docker environment with all dependencies
+   - ✅ **REQUIRED** tests either run successfully or fail with actionable message
+
+3. **REAL DATABASE CHANGES**
    - Tests must create, update, and delete real database records
    - Use test database or isolated database for tests
    - Verify database state before and after operations
    - Test actual SQL queries, not simulated behavior
    - Test database relationships and constraints for real
 
-3. **REAL UI TESTING WITH CHROME DEVTOOLS**
+4. **REAL UI TESTING WITH CHROME DEVTOOLS**
    - Use MCP Chrome DevTools for UI integration tests
    - Test actual browser interactions (clicks, form fills, navigation)
    - Verify real DOM elements and page content
@@ -609,16 +684,16 @@ def _prepare_db(request):
 
 ```bash
 # Run all integration tests (real database, real HTTP)
-docker compose -f docker/docker-compose.yaml exec runtime pytest tests.py
+docker compose -f docker/docker-compose.yaml exec runtime pytest integration_tests/
 
 # Run with coverage (measure real code execution)
-docker compose -f docker/docker-compose.yaml exec runtime pytest tests.py --cov=app --cov-report=term-missing
+docker compose -f docker/docker-compose.yaml exec runtime pytest integration_tests/ --cov=runtime --cov-report=term-missing
 
 # Run specific integration test
-docker compose -f docker/docker-compose.yaml exec runtime pytest tests.py -k test_api_posts_create
+docker compose -f docker/docker-compose.yaml exec runtime pytest integration_tests/ -k test_api_posts_create
 
-# Run real Chrome UI tests (requires HAS_CHROME_MCP=true)
-HAS_CHROME_MCP=true ./run_tests.sh --chrome
+# Run real Chrome UI tests
+./run_tests.sh --chrome
 ```
 
 ### Why Mocking Is Illegal In This Repository

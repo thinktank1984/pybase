@@ -2,631 +2,238 @@
 [0;34m🧪 Bloggy Test Runner (Docker)[0m
 [0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
 
-[0;36m📋 Test Mode: ALL (App + Chrome)[0m
+[0;36m📋 Test Mode: Application Tests Only[0m
 
 [1;33m🔬 Running Application Tests...[0m
 [0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
-[0;36m📝 Command: cd /app && pytest tests/ --cov=runtime --cov-report=html --cov-report=term[0m
+[1;33m🧹 Cleaning screenshots directory...[0m
+[0;36mℹ️  No screenshots to clean[0m
+[0;36m📝 Command: cd /app && pytest integration_tests/ --cov=runtime --cov-report=html --cov-report=term[0m
 
-time="2025-10-13T11:21:02+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+time="2025-10-13T11:41:41+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
 ============================= test session starts ==============================
 platform linux -- Python 3.12.12, pytest-8.4.2, pluggy-1.6.0
 rootdir: /app
 plugins: cov-7.0.0, asyncio-1.2.0, anyio-4.11.0
 asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
-collected 75 items
+collected 74 items
 
-tests/test_auto_ui.py ..............                                     [ 18%]
-tests/test_oauth_real.py ............FFFF.......                         [ 49%]
-tests/test_roles.py .....                                                [ 56%]
-tests/test_roles_integration.py ........F..FFFF..FF                      [ 81%]
-tests/test_ui_chrome_real.py ssssssssssssss                              [100%]
+integration_tests/test_auto_ui.py ..............                         [ 18%]
+integration_tests/test_oauth_real.py .......................             [ 50%]
+integration_tests/test_roles.py .....                                    [ 56%]
+integration_tests/test_roles_integration.py ...................          [ 82%]
+integration_tests/test_ui_chrome_real.py EEEEEEEEEEEEE                   [100%]
 
-=================================== FAILURES ===================================
-________ TestRealOAuthDatabaseOperations.test_create_real_oauth_account ________
+==================================== ERRORS ====================================
+______________ ERROR at setup of TestHomepage.test_homepage_loads ______________
 
-self = <test_oauth_real.TestRealOAuthDatabaseOperations object at 0xffffafaac260>
-test_user = None
-
-    def test_create_real_oauth_account(self, test_user):
-        """Test creating real OAuthAccount in database"""
-        with db.connection():
-            # Create real OAuth account
-            oauth_account = OAuthAccount.create(
-                user=test_user,
-                provider='google',
-                provider_user_id='google_123',
-                email='test@gmail.com',
-                profile_data={'name': 'Test User'}
+    @pytest.fixture(scope="session")
+    def chrome():
+        """Get Chrome test helper for the session"""
+        if not HAS_CHROME_MCP:
+>           pytest.fail(
+                "Chrome MCP not available. Set HAS_CHROME_MCP=true to enable. "
+                "Tests cannot be skipped - they must either run or fail."
             )
-            account_id = oauth_account.id
-    
-        # Verify real database record
-        with db.connection():
->           account = OAuthAccount.get(account_id)
-                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: Chrome MCP not available. Set HAS_CHROME_MCP=true to enable. Tests cannot be skipped - they must either run or fail.
 
-tests/test_oauth_real.py:310: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
-/usr/local/lib/python3.12/site-packages/emmett/orm/models.py:913: in get
-    return cls.table(**{pks[idx]: val for idx, val in enumerate(args)})
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.12/site-packages/pydal/objects.py:562: in __call__
-    return self._db(query).select(limitby=(0, 1),
-/usr/local/lib/python3.12/site-packages/emmett/orm/objects.py:466: in select
-    return obj._run_select_(*fields, **options)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.12/site-packages/emmett/orm/objects.py:451: in _run_select_
-    return self.db._adapter.select(self.query, fields, options)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.12/site-packages/pydal/adapters/sqlite.py:82: in select
-    return super(SQLite, self).select(query, fields, attributes)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.12/site-packages/pydal/adapters/base.py:760: in select
-    return self._select_aux(sql, fields, attributes, colnames)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.12/site-packages/emmett/orm/adapters.py:49: in wrapped
-    return f(adapter, *args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.12/site-packages/emmett/orm/adapters.py:182: in _select_aux
-    rows = adapter._select_aux_execute(sql)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.12/site-packages/pydal/adapters/base.py:710: in _select_aux_execute
-    self.execute(sql)
-/usr/local/lib/python3.12/site-packages/pydal/adapters/__init__.py:67: in wrap
-    return f(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+integration_tests/test_ui_chrome_real.py:52: Failed
+____________ ERROR at setup of TestHomepage.test_navigation_present ____________
 
-self = <emmett.orm.engines.sqlite.SQLite object at 0xffffafdd70b0>
-args = ('SELECT "oauth_accounts"."id", "oauth_accounts"."provider", "oauth_accounts"."provider_user_id", "oauth_accounts"."em...ast_login_at", "oauth_accounts"."user" FROM "oauth_accounts" WHERE ("oauth_accounts"."id" IS NULL) LIMIT 1 OFFSET 0;',)
-kwargs = {}
-command = 'SELECT "oauth_accounts"."id", "oauth_accounts"."provider", "oauth_accounts"."provider_user_id", "oauth_accounts"."ema..."last_login_at", "oauth_accounts"."user" FROM "oauth_accounts" WHERE ("oauth_accounts"."id" IS NULL) LIMIT 1 OFFSET 0;'
-handlers = []
-
-    @with_connection_or_raise
-    def execute(self, *args, **kwargs):
-        command = self.filter_sql_command(args[0])
-        handlers = self._build_handlers_for_execution()
-        for handler in handlers:
-            handler.before_execute(command)
->       rv = self.cursor.execute(command, *args[1:], **kwargs)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-E       sqlite3.OperationalError: no such table: oauth_accounts
-
-/usr/local/lib/python3.12/site-packages/pydal/adapters/base.py:410: OperationalError
-_________ TestRealOAuthDatabaseOperations.test_create_real_oauth_token _________
-
-self = <test_oauth_real.TestRealOAuthDatabaseOperations object at 0xffffafaac440>
-test_user = None
-
-    def test_create_real_oauth_token(self, test_user):
-        """Test creating real OAuthToken in database"""
-        with db.connection():
-            # Create OAuth account first
-            oauth_account = OAuthAccount.create(
-                user=test_user,
-                provider='github',
-                provider_user_id='github_456',
-                email='test@github.com'
+    @pytest.fixture(scope="session")
+    def chrome():
+        """Get Chrome test helper for the session"""
+        if not HAS_CHROME_MCP:
+>           pytest.fail(
+                "Chrome MCP not available. Set HAS_CHROME_MCP=true to enable. "
+                "Tests cannot be skipped - they must either run or fail."
             )
-    
-            # Create real OAuth token with real encryption
-            access_token = "real_access_token"
-            refresh_token = "real_refresh_token"
-    
->           token = OAuthToken.create(
-                oauth_account=oauth_account.id,
-                access_token_encrypted=encrypt_token(access_token),
-                refresh_token_encrypted=encrypt_token(refresh_token),
-                access_token_expires_at=datetime.now() + timedelta(hours=1),
-                token_type='Bearer',
-                scope='user email'
+E           Failed: Chrome MCP not available. Set HAS_CHROME_MCP=true to enable. Tests cannot be skipped - they must either run or fail.
+
+integration_tests/test_ui_chrome_real.py:52: Failed
+____________ ERROR at setup of TestHomepage.test_responsive_layouts ____________
+
+    @pytest.fixture(scope="session")
+    def chrome():
+        """Get Chrome test helper for the session"""
+        if not HAS_CHROME_MCP:
+>           pytest.fail(
+                "Chrome MCP not available. Set HAS_CHROME_MCP=true to enable. "
+                "Tests cannot be skipped - they must either run or fail."
             )
+E           Failed: Chrome MCP not available. Set HAS_CHROME_MCP=true to enable. Tests cannot be skipped - they must either run or fail.
 
-tests/test_oauth_real.py:335: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
-/usr/local/lib/python3.12/site-packages/emmett/orm/models.py:865: in create
-    return cls.table.validate_and_insert(skip_callbacks=skip_callbacks, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.12/site-packages/emmett/orm/objects.py:127: in validate_and_insert
-    response, new_fields = self._validate_fields(fields)
-                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.12/site-packages/pydal/objects.py:748: in _validate_fields
-    value, error = self[fieldname].validate(raw_value)
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.12/site-packages/pydal/objects.py:1810: in validate
-    (value, error) = validator(value)
-                     ^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.12/site-packages/emmett/validators/inside.py:192: in __call__
-    if self.dbset.where(self.field == value).count():
-       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.12/site-packages/pydal/objects.py:2199: in count
-    return db._adapter.count(self.query, distinct)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.12/site-packages/pydal/adapters/base.py:788: in count
-    self.execute(self._count(query, distinct))
-/usr/local/lib/python3.12/site-packages/pydal/adapters/__init__.py:67: in wrap
-    return f(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+integration_tests/test_ui_chrome_real.py:52: Failed
+__________ ERROR at setup of TestAuthentication.test_login_page_loads __________
 
-self = <emmett.orm.engines.sqlite.SQLite object at 0xffffafdd70b0>
-args = ('SELECT count(*) FROM "oauth_accounts" WHERE (("oauth_accounts"."id" IS NOT NULL) AND ("oauth_accounts"."id" IS NULL));',)
-kwargs = {}
-command = 'SELECT count(*) FROM "oauth_accounts" WHERE (("oauth_accounts"."id" IS NOT NULL) AND ("oauth_accounts"."id" IS NULL));'
-handlers = []
-
-    @with_connection_or_raise
-    def execute(self, *args, **kwargs):
-        command = self.filter_sql_command(args[0])
-        handlers = self._build_handlers_for_execution()
-        for handler in handlers:
-            handler.before_execute(command)
->       rv = self.cursor.execute(command, *args[1:], **kwargs)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-E       sqlite3.OperationalError: no such table: oauth_accounts
-
-/usr/local/lib/python3.12/site-packages/pydal/adapters/base.py:410: OperationalError
-__ TestRealOAuthDatabaseOperations.test_query_real_oauth_accounts_by_provider __
-
-self = <test_oauth_real.TestRealOAuthDatabaseOperations object at 0xffffafa83b00>
-test_user = None
-
-    def test_query_real_oauth_accounts_by_provider(self, test_user):
-        """Test querying real OAuth accounts from database"""
-        with db.connection():
-            # Create multiple real accounts
-            google_account = OAuthAccount.create(
-                user=test_user,
-                provider='google',
-                provider_user_id='g123',
-                email='test@gmail.com'
+    @pytest.fixture(scope="session")
+    def chrome():
+        """Get Chrome test helper for the session"""
+        if not HAS_CHROME_MCP:
+>           pytest.fail(
+                "Chrome MCP not available. Set HAS_CHROME_MCP=true to enable. "
+                "Tests cannot be skipped - they must either run or fail."
             )
-    
-            github_account = OAuthAccount.create(
-                user=test_user,
-                provider='github',
-                provider_user_id='gh456',
-                email='test@github.com'
+E           Failed: Chrome MCP not available. Set HAS_CHROME_MCP=true to enable. Tests cannot be skipped - they must either run or fail.
+
+integration_tests/test_ui_chrome_real.py:52: Failed
+________ ERROR at setup of TestAuthentication.test_register_page_loads _________
+
+    @pytest.fixture(scope="session")
+    def chrome():
+        """Get Chrome test helper for the session"""
+        if not HAS_CHROME_MCP:
+>           pytest.fail(
+                "Chrome MCP not available. Set HAS_CHROME_MCP=true to enable. "
+                "Tests cannot be skipped - they must either run or fail."
             )
-    
-        # Query real database
-        with db.connection():
-            google_accounts = OAuthAccount.where(
-                lambda oa: oa.provider == 'google'
->           ).select()
-              ^^^^^^^^
+E           Failed: Chrome MCP not available. Set HAS_CHROME_MCP=true to enable. Tests cannot be skipped - they must either run or fail.
 
-tests/test_oauth_real.py:384: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
-/usr/local/lib/python3.12/site-packages/emmett/orm/objects.py:466: in select
-    return obj._run_select_(*fields, **options)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.12/site-packages/emmett/orm/objects.py:451: in _run_select_
-    return self.db._adapter.select(self.query, fields, options)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.12/site-packages/pydal/adapters/sqlite.py:82: in select
-    return super(SQLite, self).select(query, fields, attributes)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.12/site-packages/pydal/adapters/base.py:760: in select
-    return self._select_aux(sql, fields, attributes, colnames)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.12/site-packages/emmett/orm/adapters.py:49: in wrapped
-    return f(adapter, *args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.12/site-packages/emmett/orm/adapters.py:182: in _select_aux
-    rows = adapter._select_aux_execute(sql)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.12/site-packages/pydal/adapters/base.py:710: in _select_aux_execute
-    self.execute(sql)
-/usr/local/lib/python3.12/site-packages/pydal/adapters/__init__.py:67: in wrap
-    return f(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+integration_tests/test_ui_chrome_real.py:52: Failed
+________ ERROR at setup of TestAuthentication.test_login_page_has_form _________
 
-self = <emmett.orm.engines.sqlite.SQLite object at 0xffffafdd70b0>
-args = ('SELECT "oauth_accounts"."id", "oauth_accounts"."provider", "oauth_accounts"."provider_user_id", "oauth_accounts"."em...ts"."last_login_at", "oauth_accounts"."user" FROM "oauth_accounts" WHERE ("oauth_accounts"."provider" = \'google\');',)
-kwargs = {}
-command = 'SELECT "oauth_accounts"."id", "oauth_accounts"."provider", "oauth_accounts"."provider_user_id", "oauth_accounts"."ema...unts"."last_login_at", "oauth_accounts"."user" FROM "oauth_accounts" WHERE ("oauth_accounts"."provider" = \'google\');'
-handlers = []
-
-    @with_connection_or_raise
-    def execute(self, *args, **kwargs):
-        command = self.filter_sql_command(args[0])
-        handlers = self._build_handlers_for_execution()
-        for handler in handlers:
-            handler.before_execute(command)
->       rv = self.cursor.execute(command, *args[1:], **kwargs)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-E       sqlite3.OperationalError: no such table: oauth_accounts
-
-/usr/local/lib/python3.12/site-packages/pydal/adapters/base.py:410: OperationalError
-____ TestRealOAuthDatabaseOperations.test_delete_real_oauth_account_cascade ____
-
-self = <test_oauth_real.TestRealOAuthDatabaseOperations object at 0xffffafa83590>
-test_user = None
-
-    def test_delete_real_oauth_account_cascade(self, test_user):
-        """Test deleting OAuth account deletes associated tokens (real DB)"""
-        with db.connection():
-            # Create account and token
-            account = OAuthAccount.create(
-                user=test_user,
-                provider='microsoft',
-                provider_user_id='ms789',
-                email='test@outlook.com'
+    @pytest.fixture(scope="session")
+    def chrome():
+        """Get Chrome test helper for the session"""
+        if not HAS_CHROME_MCP:
+>           pytest.fail(
+                "Chrome MCP not available. Set HAS_CHROME_MCP=true to enable. "
+                "Tests cannot be skipped - they must either run or fail."
             )
-            account_id = account.id
-    
->           token = OAuthToken.create(
-                oauth_account=account_id,
-                access_token_encrypted=encrypt_token("token"),
-                token_type='Bearer'
+E           Failed: Chrome MCP not available. Set HAS_CHROME_MCP=true to enable. Tests cannot be skipped - they must either run or fail.
+
+integration_tests/test_ui_chrome_real.py:52: Failed
+____________ ERROR at setup of TestPerformance.test_console_errors _____________
+
+    @pytest.fixture(scope="session")
+    def chrome():
+        """Get Chrome test helper for the session"""
+        if not HAS_CHROME_MCP:
+>           pytest.fail(
+                "Chrome MCP not available. Set HAS_CHROME_MCP=true to enable. "
+                "Tests cannot be skipped - they must either run or fail."
             )
+E           Failed: Chrome MCP not available. Set HAS_CHROME_MCP=true to enable. Tests cannot be skipped - they must either run or fail.
 
-tests/test_oauth_real.py:412: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
-/usr/local/lib/python3.12/site-packages/emmett/orm/models.py:865: in create
-    return cls.table.validate_and_insert(skip_callbacks=skip_callbacks, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.12/site-packages/emmett/orm/objects.py:127: in validate_and_insert
-    response, new_fields = self._validate_fields(fields)
-                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.12/site-packages/pydal/objects.py:748: in _validate_fields
-    value, error = self[fieldname].validate(raw_value)
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.12/site-packages/pydal/objects.py:1810: in validate
-    (value, error) = validator(value)
-                     ^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.12/site-packages/emmett/validators/inside.py:192: in __call__
-    if self.dbset.where(self.field == value).count():
-       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.12/site-packages/pydal/objects.py:2199: in count
-    return db._adapter.count(self.query, distinct)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.12/site-packages/pydal/adapters/base.py:788: in count
-    self.execute(self._count(query, distinct))
-/usr/local/lib/python3.12/site-packages/pydal/adapters/__init__.py:67: in wrap
-    return f(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+integration_tests/test_ui_chrome_real.py:52: Failed
+___________ ERROR at setup of TestPerformance.test_network_requests ____________
 
-self = <emmett.orm.engines.sqlite.SQLite object at 0xffffafdd70b0>
-args = ('SELECT count(*) FROM "oauth_accounts" WHERE (("oauth_accounts"."id" IS NOT NULL) AND ("oauth_accounts"."id" IS NULL));',)
-kwargs = {}
-command = 'SELECT count(*) FROM "oauth_accounts" WHERE (("oauth_accounts"."id" IS NOT NULL) AND ("oauth_accounts"."id" IS NULL));'
-handlers = []
-
-    @with_connection_or_raise
-    def execute(self, *args, **kwargs):
-        command = self.filter_sql_command(args[0])
-        handlers = self._build_handlers_for_execution()
-        for handler in handlers:
-            handler.before_execute(command)
->       rv = self.cursor.execute(command, *args[1:], **kwargs)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-E       sqlite3.OperationalError: no such table: oauth_accounts
-
-/usr/local/lib/python3.12/site-packages/pydal/adapters/base.py:410: OperationalError
-___________________ test_user_inherits_permissions_from_role ___________________
-
-    def test_user_inherits_permissions_from_role():
-        """Test user inherits permissions from assigned role in real database"""
-        with db.connection():
-            # Create real user
-            user_id = db.users.insert(
-                email=unique_email('test_perms'),
-                password='password123',
-                first_name='Perm',
-                last_name='User'
+    @pytest.fixture(scope="session")
+    def chrome():
+        """Get Chrome test helper for the session"""
+        if not HAS_CHROME_MCP:
+>           pytest.fail(
+                "Chrome MCP not available. Set HAS_CHROME_MCP=true to enable. "
+                "Tests cannot be skipped - they must either run or fail."
             )
-            db.commit()
-    
-            user = User.get(user_id)
-            author_role = Role.get_by_name('author')
-    
-            # Assign role in real database
-            user_add_role(user_id, author_role)
-    
-            # Verify permissions from real database
->           assert user_has_permission(user_id, 'post.create') is True
-E           AssertionError: assert False is True
-E            +  where False = user_has_permission(66, 'post.create')
+E           Failed: Chrome MCP not available. Set HAS_CHROME_MCP=true to enable. Tests cannot be skipped - they must either run or fail.
 
-tests/test_roles_integration.py:269: AssertionError
------------------------------ Captured stdout call -----------------------------
-Error getting permissions for user 66: 'RoleRow' object has no attribute 'get_permissions'
-Error getting permissions for user 66: 'RoleRow' object has no attribute 'get_permissions'
-_______________________ test_ownership_based_permissions _______________________
+integration_tests/test_ui_chrome_real.py:52: Failed
+___________ ERROR at setup of TestPerformance.test_page_performance ____________
 
-    def test_ownership_based_permissions():
-        """Test ownership-based permission checks with real database"""
-        with db.connection():
-            # Create two real users
-            owner_id = db.users.insert(
-                email=unique_email('owner'),
-                password='password',
-                first_name='Owner',
-                last_name='User'
+    @pytest.fixture(scope="session")
+    def chrome():
+        """Get Chrome test helper for the session"""
+        if not HAS_CHROME_MCP:
+>           pytest.fail(
+                "Chrome MCP not available. Set HAS_CHROME_MCP=true to enable. "
+                "Tests cannot be skipped - they must either run or fail."
             )
-            other_id = db.users.insert(
-                email=unique_email('other'),
-                password='password',
-                first_name='Other',
-                last_name='User'
+E           Failed: Chrome MCP not available. Set HAS_CHROME_MCP=true to enable. Tests cannot be skipped - they must either run or fail.
+
+integration_tests/test_ui_chrome_real.py:52: Failed
+___ ERROR at setup of TestVisualRegression.test_page_screenshots[homepage-/] ___
+
+    @pytest.fixture(scope="session")
+    def chrome():
+        """Get Chrome test helper for the session"""
+        if not HAS_CHROME_MCP:
+>           pytest.fail(
+                "Chrome MCP not available. Set HAS_CHROME_MCP=true to enable. "
+                "Tests cannot be skipped - they must either run or fail."
             )
-            db.commit()
-    
-            owner = User.get(owner_id)
-            other = User.get(other_id)
-            author_role = Role.get_by_name('author')
-    
-            # Assign author role to both in real database
-            user_add_role(owner_id, author_role)
-            user_add_role(other_id, author_role)
-    
-            # Create real post owned by owner
-            post_id = db.posts.insert(
-                title='Owner Post',
-                text='Content',
-                user=owner_id
+E           Failed: Chrome MCP not available. Set HAS_CHROME_MCP=true to enable. Tests cannot be skipped - they must either run or fail.
+
+integration_tests/test_ui_chrome_real.py:52: Failed
+_ ERROR at setup of TestVisualRegression.test_page_screenshots[login-/auth/login] _
+
+    @pytest.fixture(scope="session")
+    def chrome():
+        """Get Chrome test helper for the session"""
+        if not HAS_CHROME_MCP:
+>           pytest.fail(
+                "Chrome MCP not available. Set HAS_CHROME_MCP=true to enable. "
+                "Tests cannot be skipped - they must either run or fail."
             )
-            db.commit()
-    
-            post = Post.get(post_id)
-    
-            # Verify ownership checks in real database
->           assert user_can_access_resource(owner_id, 'post', 'edit', post) is True
-E           AssertionError: assert False is True
-E            +  where False = user_can_access_resource(69, 'post', 'edit', <Row {'id': 40, 'title': 'Owner Post', 'text': 'Content', 'date': datetime.datetime(2025, 10, 12, 22, 21, 7), 'user': 69}>)
+E           Failed: Chrome MCP not available. Set HAS_CHROME_MCP=true to enable. Tests cannot be skipped - they must either run or fail.
 
-tests/test_roles_integration.py:374: AssertionError
------------------------------ Captured stdout call -----------------------------
-Error getting permissions for user 69: 'RoleRow' object has no attribute 'get_permissions'
-Error getting permissions for user 70: 'RoleRow' object has no attribute 'get_permissions'
-Error getting permissions for user 69: 'RoleRow' object has no attribute 'get_permissions'
-_______________________ test_moderator_can_edit_any_post _______________________
+integration_tests/test_ui_chrome_real.py:52: Failed
+_ ERROR at setup of TestVisualRegression.test_page_screenshots[register-/auth/register] _
 
-    def test_moderator_can_edit_any_post():
-        """Test moderator with .any permission can edit any post in real database"""
-        with db.connection():
-            # Create real users
-            owner_id = db.users.insert(
-                email=unique_email('post_owner'),
-                password='password',
-                first_name='Owner',
-                last_name='User'
+    @pytest.fixture(scope="session")
+    def chrome():
+        """Get Chrome test helper for the session"""
+        if not HAS_CHROME_MCP:
+>           pytest.fail(
+                "Chrome MCP not available. Set HAS_CHROME_MCP=true to enable. "
+                "Tests cannot be skipped - they must either run or fail."
             )
-            mod_id = db.users.insert(
-                email=unique_email('moderator'),
-                password='password',
-                first_name='Mod',
-                last_name='User'
+E           Failed: Chrome MCP not available. Set HAS_CHROME_MCP=true to enable. Tests cannot be skipped - they must either run or fail.
+
+integration_tests/test_ui_chrome_real.py:52: Failed
+_______ ERROR at setup of TestVisualRegression.test_viewport_screenshots _______
+
+    @pytest.fixture(scope="session")
+    def chrome():
+        """Get Chrome test helper for the session"""
+        if not HAS_CHROME_MCP:
+>           pytest.fail(
+                "Chrome MCP not available. Set HAS_CHROME_MCP=true to enable. "
+                "Tests cannot be skipped - they must either run or fail."
             )
-            db.commit()
-    
-            owner = User.get(owner_id)
-            moderator = User.get(mod_id)
-    
-            # Assign roles in real database
-            author_role = Role.get_by_name('author')
-            moderator_role = Role.get_by_name('moderator')
-            user_add_role(owner_id, author_role)
-            user_add_role(mod_id, moderator_role)
-    
-            # Create real post
-            post_id = db.posts.insert(
-                title='Owner Post',
-                text='Content',
-                user=owner_id
-            )
-            db.commit()
-    
-            post = Post.get(post_id)
-    
-            # Verify moderator can edit any post in real database
->           assert user_can_access_resource(mod_id, 'post', 'edit', post) is True
-E           AssertionError: assert False is True
-E            +  where False = user_can_access_resource(72, 'post', 'edit', <Row {'id': 41, 'title': 'Owner Post', 'text': 'Content', 'date': datetime.datetime(2025, 10, 12, 22, 21, 7), 'user': 71}>)
+E           Failed: Chrome MCP not available. Set HAS_CHROME_MCP=true to enable. Tests cannot be skipped - they must either run or fail.
 
-tests/test_roles_integration.py:424: AssertionError
------------------------------ Captured stdout call -----------------------------
-Error getting permissions for user 71: 'RoleRow' object has no attribute 'get_permissions'
-Error getting permissions for user 72: 'RoleRow' object has no attribute 'get_permissions'
-Error getting permissions for user 72: 'RoleRow' object has no attribute 'get_permissions'
-_________________________ test_post_can_edit_as_owner __________________________
-
-    def test_post_can_edit_as_owner():
-        """Test Post.can_edit() for owner with real database"""
-        with db.connection():
-            # Create real user with author role
-            user_id = db.users.insert(
-                email=unique_email('can_edit'),
-                password='password',
-                first_name='Can',
-                last_name='Edit'
-            )
-            db.commit()
-    
-            user = User.get(user_id)
-            author_role = Role.get_by_name('author')
-            user_add_role(user_id, author_role)
-    
-            # Create real post
-            post_id = db.posts.insert(
-                title='My Post',
-                text='Content',
-                user=user_id
-            )
-            db.commit()
-    
-            post = Post.get(post_id)
-    
-            # Verify can_edit in real database
->           assert post.can_edit(user) is True
-                   ^^^^^^^^^^^^^
-
-tests/test_roles_integration.py:466: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
-/usr/local/lib/python3.12/site-packages/emmett/orm/objects.py:1174: in __getattr__
-    return self.__getitem__(name)
-           ^^^^^^^^^^^^^^^^^^^^^^
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
-
-self = <Row {'id': 42, 'title': 'My Post', 'text': 'Content', 'date': datetime.datetime(2025, 10, 12, 22, 21, 7), 'user': 73}>
-name = 'can_edit'
-
-    def __getitem__(self, name):
->       return object.__getattribute__(self, name)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-E       AttributeError: 'PostRow' object has no attribute 'can_edit'
-
-/usr/local/lib/python3.12/site-packages/emmett/orm/objects.py:1211: AttributeError
------------------------------ Captured stdout call -----------------------------
-Error getting permissions for user 73: 'RoleRow' object has no attribute 'get_permissions'
-________________________ test_post_can_delete_as_owner _________________________
-
-    def test_post_can_delete_as_owner():
-        """Test Post.can_delete() for owner with real database"""
-        with db.connection():
-            # Create real user with author role
-            user_id = db.users.insert(
-                email=unique_email('can_delete'),
-                password='password',
-                first_name='Can',
-                last_name='Delete'
-            )
-            db.commit()
-    
-            user = User.get(user_id)
-            author_role = Role.get_by_name('author')
-            user_add_role(user_id, author_role)
-    
-            # Create real post
-            post_id = db.posts.insert(
-                title='My Post',
-                text='Content',
-                user=user_id
-            )
-            db.commit()
-    
-            post = Post.get(post_id)
-    
-            # Verify can_delete in real database
->           assert post.can_delete(user) is True
-                   ^^^^^^^^^^^^^^^
-
-tests/test_roles_integration.py:502: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
-/usr/local/lib/python3.12/site-packages/emmett/orm/objects.py:1174: in __getattr__
-    return self.__getitem__(name)
-           ^^^^^^^^^^^^^^^^^^^^^^
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
-
-self = <Row {'id': 43, 'title': 'My Post', 'text': 'Content', 'date': datetime.datetime(2025, 10, 12, 22, 21, 7), 'user': 74}>
-name = 'can_delete'
-
-    def __getitem__(self, name):
->       return object.__getattribute__(self, name)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-E       AttributeError: 'PostRow' object has no attribute 'can_delete'
-
-/usr/local/lib/python3.12/site-packages/emmett/orm/objects.py:1211: AttributeError
------------------------------ Captured stdout call -----------------------------
-Error getting permissions for user 74: 'RoleRow' object has no attribute 'get_permissions'
-______________________ test_role_permission_associations _______________________
-
-    def test_role_permission_associations():
-        """Verify roles have permissions assigned in real database"""
-        with db.connection():
-            author = Role.get_by_name('author')
->           author_perms = author.get_permissions()
-                           ^^^^^^^^^^^^^^^^^^^^^^
-
-tests/test_roles_integration.py:547: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
-/usr/local/lib/python3.12/site-packages/emmett/orm/objects.py:1174: in __getattr__
-    return self.__getitem__(name)
-           ^^^^^^^^^^^^^^^^^^^^^^
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
-
-self = <Row {'id': 3, 'name': 'author', 'description': 'Content creation and management of own content', 'created_at': datetime.datetime(2025, 10, 12, 22, 8, 20)}>
-name = 'get_permissions'
-
-    def __getitem__(self, name):
->       return object.__getattribute__(self, name)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-E       AttributeError: 'RoleRow' object has no attribute 'get_permissions'. Did you mean: 'role_permissions'?
-
-/usr/local/lib/python3.12/site-packages/emmett/orm/objects.py:1211: AttributeError
-_________________________ test_user_has_any_permission _________________________
-
-    def test_user_has_any_permission():
-        """Test has_any_permission method with real database"""
-        with db.connection():
-            # Create real user
-            user_id = db.users.insert(
-                email=unique_email('test_any_perm'),
-                password='password',
-                first_name='Any',
-                last_name='Perm'
-            )
-            db.commit()
-    
-            user = User.get(user_id)
-            author_role = Role.get_by_name('author')
-            user_add_role(user_id, author_role)
-    
-            # Test has_any_permission in real database
->           assert user_has_any_permission(user_id, 'post.create', 'user.manage') is True
-E           AssertionError: assert False is True
-E            +  where False = user_has_any_permission(75, 'post.create', 'user.manage')
-
-tests/test_roles_integration.py:575: AssertionError
------------------------------ Captured stdout call -----------------------------
-Error getting permissions for user 75: 'RoleRow' object has no attribute 'get_permissions'
-Error getting permissions for user 75: 'RoleRow' object has no attribute 'get_permissions'
+integration_tests/test_ui_chrome_real.py:52: Failed
 =============================== warnings summary ===============================
-tests/test_auto_ui.py:47
-  /app/tests/test_auto_ui.py:47: PytestCollectionWarning: cannot collect test class 'TestPost' because it has a __init__ constructor (from: tests/test_auto_ui.py)
+integration_tests/test_auto_ui.py:47
+  /app/integration_tests/test_auto_ui.py:47: PytestCollectionWarning: cannot collect test class 'TestPost' because it has a __init__ constructor (from: integration_tests/test_auto_ui.py)
     class TestPost(Model):
 
-tests/test_auto_ui.py:63
-  /app/tests/test_auto_ui.py:63: PytestCollectionWarning: cannot collect test class 'TestComment' because it has a __init__ constructor (from: tests/test_auto_ui.py)
+integration_tests/test_auto_ui.py:63
+  /app/integration_tests/test_auto_ui.py:63: PytestCollectionWarning: cannot collect test class 'TestComment' because it has a __init__ constructor (from: integration_tests/test_auto_ui.py)
     class TestComment(Model):
 
-tests/test_oauth_real.py: 17 warnings
-tests/test_roles_integration.py: 45 warnings
+integration_tests/test_oauth_real.py: 17 warnings
+integration_tests/test_roles_integration.py: 45 warnings
   /usr/local/lib/python3.12/site-packages/emmett/ctx.py:31: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
     return pendulum.instance(datetime.utcnow())
 
-tests/test_roles.py::test_model_imports
-  /usr/local/lib/python3.12/site-packages/_pytest/python.py:161: PytestReturnNotNoneWarning: Test functions should return None, but tests/test_roles.py::test_model_imports returned <class 'bool'>.
+integration_tests/test_roles.py::test_model_imports
+  /usr/local/lib/python3.12/site-packages/_pytest/python.py:161: PytestReturnNotNoneWarning: Test functions should return None, but integration_tests/test_roles.py::test_model_imports returned <class 'bool'>.
   Did you mean to use `assert` instead of `return`?
   See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
     warnings.warn(
 
-tests/test_roles.py::test_decorator_imports
-  /usr/local/lib/python3.12/site-packages/_pytest/python.py:161: PytestReturnNotNoneWarning: Test functions should return None, but tests/test_roles.py::test_decorator_imports returned <class 'bool'>.
+integration_tests/test_roles.py::test_decorator_imports
+  /usr/local/lib/python3.12/site-packages/_pytest/python.py:161: PytestReturnNotNoneWarning: Test functions should return None, but integration_tests/test_roles.py::test_decorator_imports returned <class 'bool'>.
   Did you mean to use `assert` instead of `return`?
   See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
     warnings.warn(
 
-tests/test_roles.py::test_seeder_imports
-  /usr/local/lib/python3.12/site-packages/_pytest/python.py:161: PytestReturnNotNoneWarning: Test functions should return None, but tests/test_roles.py::test_seeder_imports returned <class 'bool'>.
+integration_tests/test_roles.py::test_seeder_imports
+  /usr/local/lib/python3.12/site-packages/_pytest/python.py:161: PytestReturnNotNoneWarning: Test functions should return None, but integration_tests/test_roles.py::test_seeder_imports returned <class 'bool'>.
   Did you mean to use `assert` instead of `return`?
   See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
     warnings.warn(
 
-tests/test_roles.py::test_user_model_extensions
-  /usr/local/lib/python3.12/site-packages/_pytest/python.py:161: PytestReturnNotNoneWarning: Test functions should return None, but tests/test_roles.py::test_user_model_extensions returned <class 'bool'>.
+integration_tests/test_roles.py::test_user_model_extensions
+  /usr/local/lib/python3.12/site-packages/_pytest/python.py:161: PytestReturnNotNoneWarning: Test functions should return None, but integration_tests/test_roles.py::test_user_model_extensions returned <class 'bool'>.
   Did you mean to use `assert` instead of `return`?
   See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
     warnings.warn(
 
-tests/test_roles.py::test_post_comment_permissions
-  /usr/local/lib/python3.12/site-packages/_pytest/python.py:161: PytestReturnNotNoneWarning: Test functions should return None, but tests/test_roles.py::test_post_comment_permissions returned <class 'bool'>.
+integration_tests/test_roles.py::test_post_comment_permissions
+  /usr/local/lib/python3.12/site-packages/_pytest/python.py:161: PytestReturnNotNoneWarning: Test functions should return None, but integration_tests/test_roles.py::test_post_comment_permissions returned <class 'bool'>.
   Did you mean to use `assert` instead of `return`?
   See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
     warnings.warn(
@@ -637,7 +244,7 @@ _______________ coverage: platform linux, python 3.12.12-final-0 _______________
 
 Name                                       Stmts   Miss  Cover
 --------------------------------------------------------------
-runtime/app.py                               455    313    31%
+runtime/app.py                               486    336    31%
 runtime/auth/__init__.py                       4      0   100%
 runtime/auth/linking.py                      106     98     8%
 runtime/auth/oauth_manager.py                 35      9    74%
@@ -671,48 +278,35 @@ runtime/models/post/__init__.py                2      0   100%
 runtime/models/post/model.py                  86     52    40%
 runtime/models/role/__init__.py                2      0   100%
 runtime/models/role/api.py                     4      4     0%
-runtime/models/role/model.py                  70     47    33%
+runtime/models/role/model.py                  72     49    32%
 runtime/models/role/views.py                   2      2     0%
 runtime/models/role_permission.py             51     35    31%
 runtime/models/seeder.py                      83     28    66%
 runtime/models/user/__init__.py                2      0   100%
 runtime/models/user/model.py                 191    161    16%
 runtime/models/user_role.py                   59     20    66%
-runtime/models/utils.py                      149     61    59%
+runtime/models/utils.py                      149     58    61%
 runtime/openapi_generator.py                  82     65    21%
 runtime/validate_models.py                   227    227     0%
 --------------------------------------------------------------
-TOTAL                                       3219   2284    29%
+TOTAL                                       3252   2306    29%
 Coverage HTML written to dir htmlcov
 =========================== short test summary info ============================
-FAILED tests/test_oauth_real.py::TestRealOAuthDatabaseOperations::test_create_real_oauth_account
-FAILED tests/test_oauth_real.py::TestRealOAuthDatabaseOperations::test_create_real_oauth_token
-FAILED tests/test_oauth_real.py::TestRealOAuthDatabaseOperations::test_query_real_oauth_accounts_by_provider
-FAILED tests/test_oauth_real.py::TestRealOAuthDatabaseOperations::test_delete_real_oauth_account_cascade
-FAILED tests/test_roles_integration.py::test_user_inherits_permissions_from_role
-FAILED tests/test_roles_integration.py::test_ownership_based_permissions - As...
-FAILED tests/test_roles_integration.py::test_moderator_can_edit_any_post - As...
-FAILED tests/test_roles_integration.py::test_post_can_edit_as_owner - Attribu...
-FAILED tests/test_roles_integration.py::test_post_can_delete_as_owner - Attri...
-FAILED tests/test_roles_integration.py::test_role_permission_associations - A...
-FAILED tests/test_roles_integration.py::test_user_has_any_permission - Assert...
-============ 11 failed, 50 passed, 14 skipped, 69 warnings in 7.26s ============
+ERROR integration_tests/test_ui_chrome_real.py::TestHomepage::test_homepage_loads
+ERROR integration_tests/test_ui_chrome_real.py::TestHomepage::test_navigation_present
+ERROR integration_tests/test_ui_chrome_real.py::TestHomepage::test_responsive_layouts
+ERROR integration_tests/test_ui_chrome_real.py::TestAuthentication::test_login_page_loads
+ERROR integration_tests/test_ui_chrome_real.py::TestAuthentication::test_register_page_loads
+ERROR integration_tests/test_ui_chrome_real.py::TestAuthentication::test_login_page_has_form
+ERROR integration_tests/test_ui_chrome_real.py::TestPerformance::test_console_errors
+ERROR integration_tests/test_ui_chrome_real.py::TestPerformance::test_network_requests
+ERROR integration_tests/test_ui_chrome_real.py::TestPerformance::test_page_performance
+ERROR integration_tests/test_ui_chrome_real.py::TestVisualRegression::test_page_screenshots[homepage-/]
+ERROR integration_tests/test_ui_chrome_real.py::TestVisualRegression::test_page_screenshots[login-/auth/login]
+ERROR integration_tests/test_ui_chrome_real.py::TestVisualRegression::test_page_screenshots[register-/auth/register]
+ERROR integration_tests/test_ui_chrome_real.py::TestVisualRegression::test_viewport_screenshots
+================== 61 passed, 69 warnings, 13 errors in 1.35s ==================
 [0;31m❌ Application tests failed[0m
-
-[1;33m🌐 Running Chrome DevTools Tests...[0m
-[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
-[0;36mℹ️  Chrome MCP integration not enabled[0m
-[1;33m⚠️  Skipping Chrome tests (NO MOCKING ALLOWED per repository policy)[0m
-
-[0;36m   To enable REAL Chrome testing:[0m
-[0;36m   1. Export environment variable: export HAS_CHROME_MCP=true[0m
-[0;36m   2. Ensure Chrome browser is running on host[0m
-[0;36m   3. Ensure app is running at http://localhost:8081[0m
-[0;36m   4. Ensure MCP Chrome DevTools is available[0m
-
-[0;36m   Then run: HAS_CHROME_MCP=true ./run_tests.sh --chrome[0m
-
-[0;32m✅ Chrome tests skipped (prerequisites not met)[0m
 
 [0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
 [0;31m❌ Some tests failed[0m

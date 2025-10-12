@@ -21,6 +21,8 @@ STOP_ON_FAILURE=false
 TEST_PATTERN=""
 SHOW_DURATIONS=false
 PYTEST_EXTRA_ARGS=""
+CLEAN_SCREENSHOTS=true  # Clean screenshots by default
+HEADED_MODE=false  # Run Chrome in visible/headed mode
 
 # Show help
 show_help() {
@@ -44,6 +46,12 @@ show_help() {
     echo "  --no-coverage      Skip coverage report (coverage enabled by default)"
     echo "  --cov-min=N        Fail if coverage below N% (default: no minimum)"
     echo ""
+    echo "Cleanup Options:"
+    echo "  --keep-screenshots   Keep existing screenshots (cleanup enabled by default)"
+    echo ""
+    echo "Chrome Options:"
+    echo "  --headed             Run Chrome tests in visible/foreground mode (not headless)"
+    echo ""
     echo "Other Options:"
     echo "  -h, --help         Show this help message"
     echo ""
@@ -57,7 +65,9 @@ show_help() {
     echo "  ./run_tests.sh --durations=5 --app      # Show 5 slowest tests"
     echo "  ./run_tests.sh --no-coverage --app      # Run without coverage"
     echo "  ./run_tests.sh -vv -x -k test_login     # Very verbose, stop on fail, specific test"
-    echo "  HAS_CHROME_MCP=true ./run_tests.sh --chrome  # Run real Chrome UI tests"
+    echo "  ./run_tests.sh --keep-screenshots --chrome  # Keep screenshots and run Chrome tests"
+    echo "  ./run_tests.sh --chrome                     # Run real Chrome UI tests (auto-cleans)"
+    echo "  ./run_tests.sh --chrome --headed            # Run Chrome tests in visible browser"
     echo ""
     exit 0
 }
@@ -117,6 +127,14 @@ while [[ $# -gt 0 ]]; do
             TEST_MODE="chrome"
             shift
             ;;
+        --keep-screenshots)
+            CLEAN_SCREENSHOTS=false
+            shift
+            ;;
+        --headed)
+            HEADED_MODE=true
+            shift
+            ;;
         -h|--help)
             show_help
             ;;
@@ -129,7 +147,12 @@ while [[ $# -gt 0 ]]; do
 done
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${BLUE}🧪 Bloggy Test Runner (Docker)${NC}"
+echo -e "${BLUE}🧪 Bloggy Test Runner${NC}"
+if [ "$TEST_MODE" = "chrome" ] && [ "$HEADED_MODE" = true ]; then
+    echo -e "${BLUE}🐳 App tests in Docker | 💻 Chrome --headed on HOST${NC}"
+else
+    echo -e "${BLUE}🐳 ALL TESTS RUN IN DOCKER${NC}"
+fi
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
@@ -182,15 +205,54 @@ fi
 if [ "$SHOW_DURATIONS" != "false" ]; then
     echo -e "${CYAN}⏱️  Show slowest: ${SHOW_DURATIONS} tests${NC}"
 fi
+if [ "$CLEAN_SCREENSHOTS" = false ]; then
+    echo -e "${CYAN}📸 Screenshots: Will be kept (cleanup disabled)${NC}"
+fi
+if [ "$HEADED_MODE" = true ]; then
+    echo -e "${CYAN}👁️  Chrome Mode: Visible/Foreground (--headed)${NC}"
+fi
 
 echo ""
+
+# Function to clean screenshots
+clean_screenshots() {
+    local SCREENSHOT_DIR="$PROJECT_ROOT/runtime/screenshots"
+    
+    if [ ! -d "$SCREENSHOT_DIR" ]; then
+        echo -e "${CYAN}ℹ️  Screenshot directory does not exist, skipping cleanup${NC}"
+        return 0
+    fi
+    
+    echo -e "${YELLOW}🧹 Cleaning screenshots directory...${NC}"
+    
+    # Count files before cleanup
+    local FILE_COUNT=$(find "$SCREENSHOT_DIR" -type f -name "*.png" 2>/dev/null | wc -l | tr -d ' ')
+    
+    if [ "$FILE_COUNT" -eq 0 ]; then
+        echo -e "${CYAN}ℹ️  No screenshots to clean${NC}"
+        return 0
+    fi
+    
+    # Remove all PNG files
+    find "$SCREENSHOT_DIR" -type f -name "*.png" -delete
+    
+    echo -e "${GREEN}✅ Removed $FILE_COUNT screenshot(s)${NC}"
+    echo ""
+}
 
 # Function to run app tests
 run_app_tests() {
     echo -e "${YELLOW}🔬 Running Application Tests...${NC}"
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${CYAN}🐳 Running in Docker container: runtime${NC}"
+    echo ""
     
-    TEST_CMD="cd /app && pytest tests/"
+    # Clean screenshots if requested (some app tests generate screenshots too)
+    if [ "$CLEAN_SCREENSHOTS" = true ]; then
+        clean_screenshots
+    fi
+    
+    TEST_CMD="cd /app && pytest integration_tests/"
     
     # Add verbosity
     if [ "$VERBOSE" = "vv" ]; then
@@ -225,14 +287,14 @@ run_app_tests() {
         TEST_CMD="$TEST_CMD $PYTEST_EXTRA_ARGS"
     fi
     
-    echo -e "${CYAN}📝 Command: $TEST_CMD${NC}"
+    echo -e "${CYAN}📝 Docker Command: docker compose exec runtime bash -c \"$TEST_CMD\"${NC}"
     echo ""
     
     if $DOCKER_COMPOSE exec runtime bash -c "$TEST_CMD"; then
-        echo -e "${GREEN}✅ Application tests passed!${NC}"
+        echo -e "${GREEN}✅ Application tests passed! (ran in Docker)${NC}"
         return 0
     else
-        echo -e "${RED}❌ Application tests failed${NC}"
+        echo -e "${RED}❌ Application tests failed (ran in Docker)${NC}"
         return 1
     fi
 }
@@ -245,27 +307,31 @@ run_chrome_tests() {
     echo ""
     echo -e "${YELLOW}🌐 Running Chrome DevTools Tests...${NC}"
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    if [ "$HEADED_MODE" = true ]; then
+        echo -e "${CYAN}💻 Running on HOST (--headed mode for visible browser)${NC}"
+    else
+        echo -e "${CYAN}🐳 Running in Docker container: runtime${NC}"
+    fi
+    echo ""
     
-    # Check if Chrome is available
-    if [ -z "$HAS_CHROME_MCP" ]; then
-        echo -e "${CYAN}ℹ️  Chrome MCP integration not enabled${NC}"
-        echo -e "${YELLOW}⚠️  Skipping Chrome tests (NO MOCKING ALLOWED per repository policy)${NC}"
-        echo ""
-        echo -e "${CYAN}   To enable REAL Chrome testing:${NC}"
-        echo -e "${CYAN}   1. Export environment variable: export HAS_CHROME_MCP=true${NC}"
-        echo -e "${CYAN}   2. Ensure Chrome browser is running on host${NC}"
-        echo -e "${CYAN}   3. Ensure app is running at http://localhost:8081${NC}"
-        echo -e "${CYAN}   4. Ensure MCP Chrome DevTools is available${NC}"
-        echo ""
-        echo -e "${CYAN}   Then run: HAS_CHROME_MCP=true ./run_tests.sh --chrome${NC}"
-        echo ""
-        echo -e "${GREEN}✅ Chrome tests skipped (prerequisites not met)${NC}"
-        return 0
+    # Clean screenshots if requested
+    if [ "$CLEAN_SCREENSHOTS" = true ]; then
+        clean_screenshots
     fi
     
-    # Real Chrome tests (run on HOST, not in Docker)
-    echo -e "${CYAN}🌐 Running REAL Chrome integration tests...${NC}"
-    echo -e "${CYAN}   This will actually open Chrome and test the UI${NC}"
+    # Chrome MCP tests will run if MCP Chrome DevTools is available
+    # If not available, tests will fail with clear error message (no skipping per policy)
+    
+    # Real Chrome integration tests
+    echo -e "${CYAN}🌐 Running REAL Chrome integration tests via MCP...${NC}"
+    if [ "$HEADED_MODE" = true ]; then
+        echo -e "${CYAN}   👁️  VISIBLE MODE: Running on HOST (not Docker)${NC}"
+        echo -e "${CYAN}   Chrome window will be visible during tests${NC}"
+        echo -e "${CYAN}   You can watch the tests interact with the browser in real-time!${NC}"
+    else
+        echo -e "${CYAN}   This will run in Docker container via MCP Chrome DevTools${NC}"
+        echo -e "${CYAN}   Tip: Use --headed flag to run on host with visible browser${NC}"
+    fi
     echo ""
     
     # Check if app is running
@@ -273,56 +339,119 @@ run_chrome_tests() {
     if ! curl -s http://localhost:8081 > /dev/null 2>&1; then
         echo -e "${RED}❌ App not accessible at http://localhost:8081${NC}"
         echo -e "${YELLOW}   Start the app first:${NC}"
-        echo -e "${YELLOW}   cd runtime && emmett develop${NC}"
+        echo -e "${YELLOW}   docker compose -f docker/docker-compose.yaml up runtime -d${NC}"
         return 1
     fi
     echo -e "${GREEN}✅ App is running${NC}"
     echo ""
     
-    # Run Chrome tests on HOST (not in Docker)
-    cd "$PROJECT_ROOT/runtime"
-    
-    TEST_CMD="pytest test_ui_chrome_real.py"
-    
-    # Add verbosity
-    if [ "$VERBOSE" = "vv" ]; then
-        TEST_CMD="$TEST_CMD -vv"
-    elif [ "$VERBOSE" = true ]; then
-        TEST_CMD="$TEST_CMD -v"
-    fi
-    
-    # Add stop on failure
-    if [ "$STOP_ON_FAILURE" = true ]; then
-        TEST_CMD="$TEST_CMD -x"
-    fi
-    
-    # Add test pattern
-    if [ -n "$TEST_PATTERN" ]; then
-        TEST_CMD="$TEST_CMD -k \"$TEST_PATTERN\""
-        echo -e "${CYAN}🔍 Running tests matching: $TEST_PATTERN${NC}"
-    fi
-    
-    # Always add -s for Chrome tests (to see output)
-    TEST_CMD="$TEST_CMD -s"
-    
-    # Add extra pytest args
-    if [ -n "$PYTEST_EXTRA_ARGS" ]; then
-        TEST_CMD="$TEST_CMD $PYTEST_EXTRA_ARGS"
-    fi
-    
-    echo -e "${CYAN}📝 Command: $TEST_CMD${NC}"
-    echo -e "${CYAN}📁 Working directory: runtime/${NC}"
-    echo ""
-    
-    if eval "$TEST_CMD"; then
+    # Check if running in headed mode (runs on HOST) or headless mode (runs in Docker)
+    if [ "$HEADED_MODE" = true ]; then
+        # ============================================
+        # HEADED MODE: Run on HOST (visible browser)
+        # ============================================
+        echo -e "${CYAN}💻 Running on HOST (not Docker) for visible browser${NC}"
         echo ""
-        echo -e "${GREEN}✅ Chrome tests passed!${NC}"
-        echo -e "${GREEN}📸 Screenshots saved to: runtime/screenshots/${NC}"
-        return 0
+        
+        # Use venv pytest if it exists, otherwise assume pytest is in PATH
+        if [ -f "$PROJECT_ROOT/venv/bin/pytest" ]; then
+            PYTEST_CMD="$PROJECT_ROOT/venv/bin/pytest"
+        else
+            PYTEST_CMD="pytest"
+        fi
+        
+        TEST_CMD="$PYTEST_CMD integration_tests/test_ui_chrome_real.py"
+        
+        # Add verbosity
+        if [ "$VERBOSE" = "vv" ]; then
+            TEST_CMD="$TEST_CMD -vv"
+        elif [ "$VERBOSE" = true ]; then
+            TEST_CMD="$TEST_CMD -v"
+        fi
+        
+        # Add stop on failure
+        if [ "$STOP_ON_FAILURE" = true ]; then
+            TEST_CMD="$TEST_CMD -x"
+        fi
+        
+        # Add test pattern
+        if [ -n "$TEST_PATTERN" ]; then
+            TEST_CMD="$TEST_CMD -k \"$TEST_PATTERN\""
+            echo -e "${CYAN}🔍 Running tests matching: $TEST_PATTERN${NC}"
+        fi
+        
+        # Always add -s for Chrome tests (to see output)
+        TEST_CMD="$TEST_CMD -s"
+        
+        # Add extra pytest args
+        if [ -n "$PYTEST_EXTRA_ARGS" ]; then
+            TEST_CMD="$TEST_CMD $PYTEST_EXTRA_ARGS"
+        fi
+        
+        echo -e "${CYAN}📝 Host Command: $TEST_CMD${NC}"
+        echo ""
+        
+        # Run on HOST
+        cd "$PROJECT_ROOT"
+        if eval "$TEST_CMD"; then
+            echo ""
+            echo -e "${GREEN}✅ Chrome tests passed! (ran on HOST)${NC}"
+            echo -e "${GREEN}📸 Screenshots saved to: runtime/screenshots/${NC}"
+            return 0
+        else
+            echo ""
+            echo -e "${RED}❌ Chrome tests failed (ran on HOST)${NC}"
+            return 1
+        fi
     else
+        # ============================================
+        # HEADLESS MODE: Run in Docker container
+        # ============================================
+        echo -e "${CYAN}🐳 Running in Docker container (headless mode)${NC}"
         echo ""
-        echo -e "${RED}❌ Chrome tests failed${NC}"
-        return 1
+        
+        TEST_CMD="cd /app && pytest integration_tests/test_ui_chrome_real.py"
+        
+        # Add verbosity
+        if [ "$VERBOSE" = "vv" ]; then
+            TEST_CMD="$TEST_CMD -vv"
+        elif [ "$VERBOSE" = true ]; then
+            TEST_CMD="$TEST_CMD -v"
+        fi
+        
+        # Add stop on failure
+        if [ "$STOP_ON_FAILURE" = true ]; then
+            TEST_CMD="$TEST_CMD -x"
+        fi
+        
+        # Add test pattern
+        if [ -n "$TEST_PATTERN" ]; then
+            TEST_CMD="$TEST_CMD -k \"$TEST_PATTERN\""
+            echo -e "${CYAN}🔍 Running tests matching: $TEST_PATTERN${NC}"
+        fi
+        
+        # Always add -s for Chrome tests (to see output)
+        TEST_CMD="$TEST_CMD -s"
+        
+        # Add extra pytest args
+        if [ -n "$PYTEST_EXTRA_ARGS" ]; then
+            TEST_CMD="$TEST_CMD $PYTEST_EXTRA_ARGS"
+        fi
+        
+        echo -e "${CYAN}📝 Docker Command: docker compose exec runtime bash -c \"$TEST_CMD\"${NC}"
+        echo ""
+        
+        # Run in Docker container
+        if $DOCKER_COMPOSE exec runtime bash -c "$TEST_CMD"; then
+            echo ""
+            echo -e "${GREEN}✅ Chrome tests passed! (ran in Docker)${NC}"
+            echo -e "${GREEN}📸 Screenshots saved to: runtime/screenshots/${NC}"
+            return 0
+        else
+            echo ""
+            echo -e "${RED}❌ Chrome tests failed (ran in Docker)${NC}"
+            return 1
+        fi
     fi
 }
 

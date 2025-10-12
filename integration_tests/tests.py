@@ -621,7 +621,10 @@ def valkey_cache():
     from app import ValkeyCache, VALKEY_AVAILABLE
     
     if not VALKEY_AVAILABLE:
-        pytest.skip("Valkey not available for testing")
+        pytest.fail(
+            "Valkey not available for testing. Install Valkey or redis-py package. "
+            "Tests cannot be skipped - they must either run or fail."
+        )
     
     # Use environment variables or defaults for testing
     host = os.environ.get('VALKEY_HOST', 'localhost')
@@ -643,7 +646,11 @@ def valkey_cache():
         # Clear test database after tests
         cache.clear()
     except Exception as e:
-        pytest.skip(f"Cannot connect to Valkey: {e}")
+        pytest.fail(
+            f"Cannot connect to Valkey at {host}:{port}: {e}. "
+            "Ensure Valkey is running or set VALKEY_HOST/VALKEY_PORT. "
+            "Tests cannot be skipped - they must either run or fail."
+        )
 
 
 def test_valkey_basic_set_get(valkey_cache):

@@ -360,7 +360,7 @@ jobs:
         run: docker compose -f docker/docker-compose.yaml up -d runtime
       
       - name: Run Integration Tests (Always)
-        run: docker compose -f docker/docker-compose.yaml exec -T runtime pytest tests.py -v
+        run: docker compose -f docker/docker-compose.yaml exec -T runtime pytest integration_tests/ -v
       
       - name: Run Chrome Tests (Optional)
         if: env.HAS_CHROME_MCP == 'true'
