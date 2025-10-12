@@ -44,9 +44,6 @@ except ImportError:
 app = App(__name__, template_folder='templates')
 app.config.url_default_namespace = 'app'
 
-# Configure static files
-app.config.static_folder = 'static'
-
 #: mailer configuration
 app.config.mailer.sender = "bloggy@emmett.local"
 app.config.mailer.suppress = True  # Set to False in production with real SMTP

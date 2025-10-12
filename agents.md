@@ -32,7 +32,11 @@ This file provides guidance to AI agents (Claude Code, Gemini, etc.) when workin
 - ✅ **DO**: Reference Emmett documentation in `/emmett_documentation/`
 - ✅ **DO**: Create application code in `runtime/` directory
 - ✅ **DO**: Use Emmett's pyDAL ORM for database operations
+- ✅ **DO**: Write REAL integration tests with actual database changes
+- ✅ **DO**: Test real UI with Chrome DevTools MCP (not Selenium)
+- ✅ **DO**: Build Tailwind CSS before running (`npm run build:css` in runtime/)
 - ⚠️ **PREFERRED**: Always use Docker commands over local development scripts
+- ❌ **NEVER**: Mock database calls, HTTP requests, or external services in tests
 
 ---
 
@@ -337,6 +341,290 @@ cd runtime
 uv run pytest tests.py -k test_name
 ```
 
+## Integration Testing Philosophy
+
+**⚠️ CRITICAL: This project uses REAL integration tests, not mocked unit tests.**
+
+### Core Principles
+
+1. **NO MOCKING - EVER**
+   - ❌ **NEVER** mock database calls
+   - ❌ **NEVER** mock HTTP requests
+   - ❌ **NEVER** mock external services
+   - ❌ **NEVER** use test doubles, stubs, or mocks
+   - ✅ **ALWAYS** test against real database
+   - ✅ **ALWAYS** test complete request/response cycle
+   - ✅ **ALWAYS** verify actual database state changes
+
+2. **REAL DATABASE CHANGES**
+   - Tests must create, update, and delete real database records
+   - Use test database or isolated database for tests
+   - Verify database state before and after operations
+   - Test actual SQL queries, not simulated behavior
+   - Test database relationships and constraints for real
+
+3. **REAL UI TESTING WITH CHROME DEVTOOLS**
+   - Use MCP Chrome DevTools for UI integration tests
+   - Test actual browser interactions (clicks, form fills, navigation)
+   - Verify real DOM elements and page content
+   - Test JavaScript execution in real browser
+   - Capture screenshots and snapshots for validation
+   - Test actual network requests and responses
+
+### Integration Test Structure
+
+```python
+# ✅ CORRECT - Real integration test
+def test_create_post_integration(logged_client):
+    """Test post creation with real database"""
+    # Make real HTTP request
+    response = logged_client.post('/api/posts', data={
+        'title': 'Integration Test Post',
+        'text': 'Real content'
+    })
+    
+    # Verify HTTP response
+    assert response.status == 201
+    
+    # Verify REAL database state changed
+    with db.connection():
+        post = Post.where(lambda p: p.title == 'Integration Test Post').first()
+        assert post is not None
+        assert post.text == 'Real content'
+        assert post.user == logged_client.user_id
+    
+    # Cleanup (also real database operation)
+    with db.connection():
+        post.delete_record()
+
+# ❌ WRONG - Mocked test (DO NOT DO THIS)
+def test_create_post_mocked(mock_db):  # ❌ NO MOCKS!
+    """This is NOT how we test"""
+    mock_db.create.return_value = Mock(id=1)  # ❌ NEVER MOCK
+    # ... rest of fake test
+```
+
+### UI Testing with Chrome DevTools MCP
+
+```python
+# ✅ CORRECT - Real browser UI test
+async def test_login_ui_real_browser():
+    """Test login with real Chrome browser"""
+    from mcp_chrome_devtools import navigate_page, take_snapshot, fill, click
+    
+    # Navigate to real page
+    await navigate_page(url='http://localhost:8081/auth/login')
+    
+    # Take snapshot of real DOM
+    snapshot = await take_snapshot()
+    
+    # Find real form fields by UID from snapshot
+    email_field = find_element_by_label(snapshot, 'Email')
+    password_field = find_element_by_label(snapshot, 'Password')
+    
+    # Fill real form fields
+    await fill(uid=email_field.uid, value='doc@emmettbrown.com')
+    await fill(uid=password_field.uid, value='fluxcapacitor')
+    
+    # Click real submit button
+    submit_button = find_element_by_text(snapshot, 'Login')
+    await click(uid=submit_button.uid)
+    
+    # Verify real navigation happened
+    await wait_for(text='Welcome')
+    
+    # Verify real database session was created
+    with db.connection():
+        session = Session.where(lambda s: s.user_email == 'doc@emmettbrown.com').first()
+        assert session is not None
+
+# ❌ WRONG - Mocked UI test (DO NOT DO THIS)
+def test_login_ui_mocked(mock_browser):  # ❌ NO MOCKS!
+    """This is NOT how we test UI"""
+    mock_browser.navigate.return_value = True  # ❌ NEVER MOCK
+    # ... rest of fake test
+```
+
+### What to Test (Integration Level)
+
+#### ✅ DO Test:
+- **Complete HTTP request/response cycles**
+  - Route handlers with real requests
+  - Form submissions with real validation
+  - API endpoints with real serialization
+  - Redirects and status codes
+  
+- **Real Database Operations**
+  - Create: Insert records and verify in database
+  - Read: Query records and verify results
+  - Update: Modify records and verify changes
+  - Delete: Remove records and verify deletion
+  - Relationships: Test joins and foreign keys
+  - Constraints: Test uniqueness, required fields
+  
+- **Real Authentication Flows**
+  - Login with real password hashing
+  - Session creation and persistence
+  - Authorization checks with real permissions
+  - CSRF token generation and validation
+  
+- **Real UI Interactions**
+  - Page navigation in real browser
+  - Form filling with real input
+  - Button clicks with real events
+  - JavaScript execution
+  - CSS rendering and layout
+  - Network requests from browser
+
+#### ❌ DON'T Test (Use Integration, Not Mocks):
+- **Isolated function logic** → Test via real HTTP endpoint instead
+- **Database queries in isolation** → Test via complete route handlers
+- **Template rendering alone** → Test by requesting page and verifying HTML
+- **Form validation alone** → Test by submitting real forms
+
+### Test Data Management
+
+```python
+# ✅ CORRECT - Real test data with cleanup
+@pytest.fixture()
+def test_posts():
+    """Create real test posts in database"""
+    posts = []
+    with db.connection():
+        for i in range(3):
+            post = Post.create(
+                title=f'Test Post {i}',
+                text=f'Test content {i}',
+                user=1
+            )
+            posts.append(post)
+    
+    yield posts
+    
+    # Real cleanup
+    with db.connection():
+        for post in posts:
+            post.delete_record()
+
+# ❌ WRONG - Fake in-memory test data (DO NOT DO THIS)
+@pytest.fixture()
+def mock_posts():  # ❌ NO MOCKS!
+    """DO NOT create fake test data"""
+    return [Mock(id=1, title='Fake'), Mock(id=2, title='Fake')]  # ❌ NEVER
+```
+
+### Chrome DevTools MCP Tools Available
+
+When testing UI, use these MCP tools:
+
+- `navigate_page(url)` - Navigate to real page
+- `take_snapshot()` - Get real DOM snapshot with UIDs
+- `click(uid)` - Click real element
+- `fill(uid, value)` - Fill real form field
+- `fill_form(elements)` - Fill multiple form fields
+- `hover(uid)` - Hover over real element
+- `take_screenshot(filePath)` - Capture real screenshot
+- `wait_for(text, timeout)` - Wait for real content
+- `list_network_requests()` - Get real network activity
+- `list_console_messages()` - Get real console logs
+
+See `runtime/README_UI_TESTING.md` for complete UI testing guide.
+
+### Test Database Isolation
+
+```python
+# Test database configuration
+@pytest.fixture(scope='module', autouse=True)
+def _prepare_db(request):
+    """Setup real test database"""
+    with db.connection():
+        # Run real migrations
+        migration = generate_runtime_migration(db)
+        migration.up()
+        
+        # Create real admin user
+        setup_admin()
+    
+    yield
+    
+    # Real teardown
+    with db.connection():
+        # Delete real data
+        User.all().delete()
+        Post.all().delete()
+        Comment.all().delete()
+        auth.delete_group('admin')
+        
+        # Rollback real migrations
+        migration.down()
+```
+
+### Coverage Requirements
+
+- **95%+ line coverage** - All code paths tested with real requests
+- **90%+ branch coverage** - All conditionals tested with real data
+- **100% endpoint coverage** - Every route tested with real HTTP
+- **100% database operations** - Every CRUD operation tested for real
+
+### Running Integration Tests
+
+```bash
+# Run all integration tests (real database, real HTTP)
+docker compose -f docker/docker-compose.yaml exec runtime pytest tests.py
+
+# Run with coverage (measure real code execution)
+docker compose -f docker/docker-compose.yaml exec runtime pytest tests.py --cov=app --cov-report=term-missing
+
+# Run UI tests (real browser)
+docker compose -f docker/docker-compose.yaml exec runtime pytest ui_tests.py
+
+# Run specific integration test
+docker compose -f docker/docker-compose.yaml exec runtime pytest tests.py -k test_api_posts_create
+```
+
+### Why No Mocking?
+
+**Mocking creates false confidence:**
+- ✗ Mocked tests pass but real code fails
+- ✗ Mocks don't catch integration issues
+- ✗ Mocks don't test actual database behavior
+- ✗ Mocks don't test real serialization/deserialization
+- ✗ Mocks don't test real error handling
+- ✗ Mocks become outdated when implementation changes
+
+**Integration tests provide real confidence:**
+- ✓ Tests fail when real code has bugs
+- ✓ Tests catch integration issues between components
+- ✓ Tests verify actual database behavior and constraints
+- ✓ Tests verify real API contracts
+- ✓ Tests verify real error handling
+- ✓ Tests verify actual user experience
+
+**Example of mock hiding bug:**
+```python
+# ❌ Mocked test passes but hides bug
+def test_create_post_mocked(mock_db):
+    mock_db.create.return_value = Mock(id=1)  # ❌ Always succeeds
+    # Test passes but doesn't catch that Post.create() has a bug
+    
+# ✅ Real test catches bug
+def test_create_post_integration(client):
+    response = client.post('/api/posts', data={'title': '', 'text': 'content'})
+    # Real test FAILS because title validation is broken
+    # We catch the bug before production!
+```
+
+### When Tests Are Slow
+
+If integration tests become slow:
+- ✅ Use module-scoped fixtures for expensive setup (database, admin user)
+- ✅ Use function-scoped fixtures for test-specific data
+- ✅ Parallelize with pytest-xdist if needed
+- ✅ Optimize database operations (bulk creates)
+- ❌ **NEVER** switch to mocking to make tests faster
+
+**Speed is not a reason to compromise test quality.**
+
 ## Key Dependencies
 
 - **Emmett 2.5.0+**: Web framework
@@ -345,6 +633,7 @@ uv run pytest tests.py -k test_name
 - **pytest**: Testing framework
 - **coverage**: Test coverage
 - **granian**: ASGI server
+- **Chrome DevTools MCP**: UI testing (via MCP server)
 
 ## Environment & Configuration
 
