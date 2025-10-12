@@ -450,6 +450,17 @@ async def new_post():
 auth_routes = auth.module(__name__)
 
 
+#: Prometheus metrics endpoint
+if PROMETHEUS_ENABLED and PROMETHEUS_AVAILABLE:
+    @app.route('/metrics')
+    async def metrics():
+        """Expose Prometheus metrics in standard format"""
+        response.headers['Content-Type'] = CONTENT_TYPE_LATEST
+        return generate_latest().decode('utf-8')
+    
+    print(f"✓ Prometheus metrics helper available: @app.track_metrics()")
+
+
 #: REST API configuration
 # REST endpoints for Posts
 posts_api = app.rest_module(
