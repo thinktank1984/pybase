@@ -41,8 +41,11 @@ except ImportError:
     print("Warning: valkey not installed. Valkey cache backend unavailable.")
 
 
-app = App(__name__, template_folder='templates', static_folder='static')
+app = App(__name__, template_folder='templates')
 app.config.url_default_namespace = 'app'
+
+# Configure static files
+app.config.static_folder = 'static'
 
 #: mailer configuration
 app.config.mailer.sender = "bloggy@emmett.local"
