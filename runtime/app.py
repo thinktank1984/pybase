@@ -1,12 +1,19 @@
 # -*- coding: utf-8 -*-
 
-from emmett import App, session, now, url, redirect, abort
+from emmett import App, session, now, url, redirect, abort, response
 from emmett.orm import Database, Model, Field, belongs_to, has_many
-from emmett.tools import requires
+from emmett.tools import requires, service
 from emmett.tools.auth import Auth, AuthUser
 from emmett.tools import Mailer
 from emmett.sessions import SessionManager
 from emmett_rest import REST
+import json
+
+# Import OpenAPI generator (deferred to avoid import issues)
+import sys
+import os
+sys.path.insert(0, os.path.dirname(__file__))
+from openapi_generator import OpenAPIGenerator
 
 
 app = App(__name__, template_folder='templates')
@@ -216,3 +223,115 @@ def set_comment_user(attrs):
     """Automatically set user from session if authenticated"""
     if session.auth and 'user' not in attrs:
         attrs['user'] = session.auth.user.id
+
+
+#: OpenAPI / Swagger Documentation
+# Initialize OpenAPI generator
+openapi_gen = OpenAPIGenerator(
+    app,
+    title="Bloggy REST API",
+    version="1.0.0",
+    description="""
+    # Bloggy REST API
+    
+    A complete REST API for a micro-blogging platform built with Emmett Framework.
+    
+    ## Features
+    - **Posts**: Create, read, update, and delete blog posts
+    - **Comments**: Add and manage comments on posts
+    - **Users**: View user information (read-only)
+    
+    ## Authentication
+    Currently, the API endpoints are accessible without authentication.
+    User context is automatically set from session cookies when available.
+    
+    ## Response Format
+    - List endpoints return paginated data with metadata
+    - Single resource endpoints return the object directly
+    - Validation errors return a 422 status with error details
+    """
+)
+
+# Register all REST modules with the OpenAPI generator
+openapi_gen.register_rest_module('posts_api', Post, 'api/posts')
+openapi_gen.register_rest_module('comments_api', Comment, 'api/comments')
+openapi_gen.register_rest_module('users_api', User, 'api/users', 
+                                disabled_methods=['create', 'update', 'delete'])
+
+
+@app.route('/api/openapi.json')
+@service.json
+async def openapi_spec():
+    """Serve OpenAPI 3.0 specification as JSON"""
+    return openapi_gen.generate()
+
+
+@app.route('/api/docs')
+async def swagger_ui():
+    """Serve Swagger UI for interactive API documentation"""
+    html = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bloggy API Documentation</title>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.10.3/swagger-ui.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+        .topbar {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="swagger-ui"></div>
+    <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.10.3/swagger-ui-bundle.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.10.3/swagger-ui-standalone-preset.js"></script>
+    <script>
+        window.onload = function() {
+            window.ui = SwaggerUIBundle({
+                url: '/api/openapi.json',
+                dom_id: '#swagger-ui',
+                deepLinking: true,
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIStandalonePreset
+                ],
+                plugins: [
+                    SwaggerUIBundle.plugins.DownloadUrl
+                ],
+                layout: "StandaloneLayout",
+                defaultModelsExpandDepth: 1,
+                defaultModelExpandDepth: 1,
+                docExpansion: "list",
+                filter: true,
+                tryItOutEnabled: true
+            });
+        }
+    </script>
+</body>
+</html>"""
+    response.headers['Content-Type'] = 'text/html'
+    return html
+
+
+@app.route('/api')
+@service.json
+async def api_root():
+    """API root with links to documentation"""
+    return {
+        'message': 'Bloggy REST API',
+        'version': '1.0.0',
+        'documentation': {
+            'swagger_ui': 'http://localhost:8081/api/docs',
+            'openapi_spec': 'http://localhost:8081/api/openapi.json'
+        },
+        'endpoints': {
+            'posts': '/api/posts',
+            'comments': '/api/comments',
+            'users': '/api/users'
+        }
+    }
