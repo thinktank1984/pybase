@@ -17,7 +17,13 @@ from openapi_generator import OpenAPIGenerator
 from auto_ui_generator import auto_ui
 
 # Import models
-from models import User, Post, Comment, is_admin, get_current_user, is_authenticated
+from models import (
+    User, Post, Comment, Role, Permission, UserRole, RolePermission,
+    OAuthAccount, OAuthToken,
+    is_admin, get_current_user, is_authenticated, get_or_404,
+    requires_role, requires_any_role, requires_permission,
+    seed_all, ensure_roles_exist
+)
 
 # Import Sentry extension for error tracking
 try:
@@ -59,6 +65,17 @@ app.config.auth.hmac_key = "november.5.1955"
 
 #: database configuration
 app.config.db.uri = f"sqlite://{os.path.join(os.path.dirname(__file__), 'databases', 'bloggy.db')}"
+
+#: inject OAuth providers into templates
+# Note: Disabled - @app.before_routes doesn't exist in this Emmett version
+# OAuth providers are injected via context in OAuth routes when needed
+# @app.before_routes
+# async def inject_oauth_providers():
+#     """Make OAuth providers available to all templates."""
+#     from emmett import current
+#     from auth import get_oauth_manager
+#     oauth_mgr = get_oauth_manager()
+#     current.oauth_providers = oauth_mgr.list_enabled_providers()
 
 #: sentry/bugsink error tracking configuration
 SENTRY_ENABLED = os.environ.get('SENTRY_ENABLED', 'true').lower() == 'true'
@@ -344,67 +361,18 @@ def get_current_session():
         return None
 
 
-def get_current_user():
-    """
-    Get currently authenticated user.
-    
-    Returns:
-        User object or None if not authenticated
-    """
-    try:
-        # Try to get from current context first (works in request context)
-        if hasattr(current, 'session') and hasattr(current.session, 'auth') and current.session.auth:
-            return current.session.auth.user
-    except:
-        pass
-    
-    # Fall back to explicit session retrieval
-    sess = get_current_session()
-    if sess and hasattr(sess, 'auth') and sess.auth:
-        return sess.auth.user
-    return None
-
-
-def is_authenticated():
-    """
-    Check if user is authenticated.
-    
-    Returns:
-        True if user is authenticated, False otherwise
-    """
-    return get_current_user() is not None
-
-
-# is_admin function moved to models/user/model.py
+# Authentication helper functions moved to models/user/model.py
 
 
 #: init db, mailer and auth
 db = Database(app)
 mailer = Mailer(app)
 auth = Auth(app, db, user_model=User)
-db.define_models(Post, Comment)
+db.define_models(Post, Comment, Role, Permission, UserRole, RolePermission)
 
 
 #: database helper functions (defined after db is initialized)
-def get_or_404(model, record_id):
-    """
-    Get model instance by ID or abort with 404.
-    
-    Args:
-        model: Emmett Model class
-        record_id: Primary key value
-        
-    Returns:
-        Model instance
-        
-    Raises:
-        404 if not found
-    """
-    with db.connection():
-        record = model.get(record_id)
-        if not record:
-            abort(404, f"{model.__name__} not found")
-        return record
+# get_or_404 helper function moved to models/utils.py
 
 
 def safe_first(query, default=None):
@@ -467,6 +435,10 @@ rest_ext = app.ext.REST
 auto_ui(app, Post, '/admin/posts')
 # Enable auto-generated CRUD interface for Comment model
 auto_ui(app, Comment, '/admin/comments')
+# Enable auto-generated CRUD interface for Role model
+auto_ui(app, Role, '/admin/roles')
+# Enable auto-generated CRUD interface for Permission model
+auto_ui(app, Permission, '/admin/permissions')
 
 
 #: setup helping function
@@ -474,19 +446,22 @@ def setup_admin():
     with db.connection():
         # Check if user already exists
         existing_user = User.where(lambda u: u.email == "doc@emmettbrown.com").select().first()
+        
         if existing_user:
             print("Admin user already exists!")
-            return
+            user_id = existing_user.id
+        else:
+            # create the user
+            user = User.create(
+                email="doc@emmettbrown.com",
+                first_name="Emmett",
+                last_name="Brown",
+                password="fluxcapacitor"
+            )
+            user_id = user.id
+            print("✅ Created admin user: doc@emmettbrown.com")
         
-        # create the user
-        user = User.create(
-            email="doc@emmettbrown.com",
-            first_name="Emmett",
-            last_name="Brown",
-            password="fluxcapacitor"
-        )
-        
-        # create an admin group using raw database access
+        # create an admin group using raw database access (for backward compatibility)
         existing_group = db(db.auth_groups.role == "admin").select().first()
         if existing_group:
             group_id = existing_group.id
@@ -494,8 +469,32 @@ def setup_admin():
             group_id = db.auth_groups.insert(role="admin", description="Administrators")
         
         # add user to admins group (field name is 'user', not 'auth_user')
-        db.auth_memberships.insert(user=user.id, auth_group=group_id)
+        existing_membership = db(
+            (db.auth_memberships.user == user_id) &
+            (db.auth_memberships.auth_group == group_id)
+        ).select().first()
+        
+        if not existing_membership:
+            db.auth_memberships.insert(user=user_id, auth_group=group_id)
+        
         db.commit()
+        
+        # Seed role-based access control system
+        print("\n" + "="*60)
+        print("🔐 Setting up Role-Based Access Control System")
+        print("="*60)
+        
+        try:
+            # Seed permissions and roles
+            permissions, roles = seed_all(db, admin_user_id=user_id)
+            print(f"✅ Role system setup complete!")
+            print(f"   - Created {len(permissions)} permissions")
+            print(f"   - Created {len(roles)} roles")
+            print(f"   - Assigned Admin role to {user_id}")
+        except Exception as e:
+            print(f"⚠️  Error setting up role system: {e}")
+            import traceback
+            traceback.print_exc()
         print("Admin user created: doc@emmettbrown.com")
 
 
@@ -520,13 +519,391 @@ else:
     ]
 
 
-#: setup model routes
-# Routes are now organized in their respective model packages
-from models import setup_all_routes
-setup_all_routes(app)
-
-
 auth_routes = auth.module(__name__)
+
+
+#: OAuth Routes
+# Import and configure OAuth functionality
+from auth import get_oauth_manager
+from auth.tokens import encrypt_token
+from auth.rate_limit import rate_limit
+from auth.token_refresh import setup_commands as setup_oauth_commands
+import logging
+
+oauth_manager = get_oauth_manager()
+
+# Setup OAuth CLI commands
+setup_oauth_commands(app)
+
+# Setup OAuth logging
+oauth_logger = logging.getLogger('oauth')
+oauth_logger.setLevel(logging.INFO)
+
+# Create OAuth routes module
+oauth_routes = app.module(__name__, 'oauth', url_prefix='auth/oauth')
+
+
+@oauth_routes.route('/<str:provider>/login')
+@rate_limit(max_requests=10, window_seconds=60)
+async def oauth_login(provider):
+    """
+    Initiate OAuth flow for a provider.
+    Generates PKCE challenge, state, and redirects to provider.
+    """
+    from emmett import redirect, url, session
+    from auth.providers.base import BaseOAuthProvider
+    
+    # Check if provider is enabled
+    if not oauth_manager.is_provider_enabled(provider):
+        session.flash = f"OAuth provider '{provider}' is not available"
+        return redirect(url('auth.login'))
+    
+    # Get provider instance
+    provider_instance = oauth_manager.get_provider(provider)
+    
+    # Generate PKCE pair and state
+    code_verifier, code_challenge = BaseOAuthProvider.generate_pkce_pair()
+    state = BaseOAuthProvider.generate_state()
+    
+    # Store in session
+    session[f'oauth_{provider}_code_verifier'] = code_verifier
+    session[f'oauth_{provider}_state'] = state
+    
+    # Check if this is a linking request
+    if session.get('oauth_link_mode'):
+        session[f'oauth_{provider}_link_mode'] = True
+    
+    # Build authorization URL
+    auth_url = provider_instance.build_authorization_url(state, code_challenge)
+    
+    return redirect(auth_url)
+
+
+@oauth_routes.route('/<str:provider>/callback')
+@rate_limit(max_requests=20, window_seconds=60)
+async def oauth_callback(provider):
+    """
+    Handle OAuth callback from provider.
+    Validates state, exchanges code for tokens, creates/links account.
+    """
+    from emmett import request, redirect, url, session, abort
+    import traceback
+    
+    # Check if provider is enabled
+    if not oauth_manager.is_provider_enabled(provider):
+        session.flash = f"OAuth provider '{provider}' is not available"
+        return redirect(url('auth.login'))
+    
+    # Get provider instance
+    provider_instance = oauth_manager.get_provider(provider)
+    
+    # Check for errors from provider
+    if request.query_params.get('error'):
+        error = request.query_params.get('error')
+        error_description = request.query_params.get('error_description', '')
+        
+        if error == 'access_denied':
+            session.flash = "You cancelled the login. Please try again."
+        else:
+            session.flash = f"Authentication error: {error_description or error}"
+        
+        return redirect(url('auth.login'))
+    
+    # Get authorization code and state
+    code = request.query_params.get('code')
+    state = request.query_params.get('state')
+    
+    if not code or not state:
+        session.flash = "Invalid OAuth callback"
+        return redirect(url('auth.login'))
+    
+    # Validate state (CSRF protection)
+    expected_state = session.get(f'oauth_{provider}_state')
+    if not expected_state or state != expected_state:
+        session.flash = "Security validation failed. Please try again."
+        # Clear OAuth session data
+        _clear_oauth_session(provider)
+        return redirect(url('auth.login'))
+    
+    # Get code verifier
+    code_verifier = session.get(f'oauth_{provider}_code_verifier')
+    if not code_verifier:
+        session.flash = "Session expired. Please try again."
+        _clear_oauth_session(provider)
+        return redirect(url('auth.login'))
+    
+    try:
+        # Exchange code for tokens
+        token_data = provider_instance.exchange_code_for_tokens(code, code_verifier)
+        access_token = token_data.get('access_token')
+        refresh_token = token_data.get('refresh_token')
+        expires_in = token_data.get('expires_in')
+        
+        # Get user info from provider
+        user_info = provider_instance.get_user_info(access_token)
+        provider_user_id = str(user_info.get('id'))
+        email = user_info.get('email')
+        email_verified = user_info.get('email_verified', False)
+        
+        # Check if this is a linking request
+        link_mode = session.get(f'oauth_{provider}_link_mode', False)
+        
+        if link_mode:
+            # User is trying to link OAuth account to existing account
+            if not session.auth or not session.auth.user:
+                session.flash = "Please log in first to link your account"
+                _clear_oauth_session(provider)
+                return redirect(url('auth.login'))
+            
+            current_user = session.auth.user
+            
+            # Link the account
+            try:
+                from auth.linking import link_oauth_account
+                link_oauth_account(current_user, provider, provider_user_id, user_info)
+                
+                # Store tokens
+                oauth_account = OAuthAccount.get_by_user_and_provider(current_user.id, provider)
+                if oauth_account:
+                    OAuthToken.create_for_oauth_account(
+                        oauth_account.id,
+                        access_token,
+                        refresh_token,
+                        expires_in
+                    )
+                
+                session.flash = f"Successfully connected {provider.title()} account!"
+                _clear_oauth_session(provider)
+                return redirect(url('account_settings'))
+                
+            except ValueError as e:
+                session.flash = str(e)
+                _clear_oauth_session(provider)
+                return redirect(url('account_settings'))
+        
+        else:
+            # Regular OAuth login/signup
+            # Check if OAuth account already exists
+            oauth_account = OAuthAccount.get_by_provider(provider, provider_user_id)
+            
+            if oauth_account:
+                # Existing OAuth account - log in
+                user = User.get(oauth_account.auth_user)
+                if not user:
+                    session.flash = "Account error. Please contact support."
+                    _clear_oauth_session(provider)
+                    return redirect(url('auth.login'))
+                
+                # Update profile data and last login
+                oauth_account.update_profile_data(user_info)
+                
+                # Update tokens
+                token = OAuthToken.where(lambda t: t.oauth_account == oauth_account.id).first()
+                if token:
+                    token.update_tokens(access_token, refresh_token, expires_in)
+                else:
+                    OAuthToken.create_for_oauth_account(
+                        oauth_account.id,
+                        access_token,
+                        refresh_token,
+                        expires_in
+                    )
+                
+                # Log in the user
+                session.auth = type('obj', (object,), {'user': user})()
+                _clear_oauth_session(provider)
+                
+                # Audit log
+                oauth_logger.info(f"OAuth login successful: user_id={user.id}, provider={provider}, email={user.email}")
+                
+                return redirect(url('index'))
+            
+            else:
+                # New OAuth account
+                # Check if email matches existing user
+                existing_user = None
+                if email and email_verified:
+                    existing_user = User.where(lambda u: u.email == email).first()
+                
+                if existing_user:
+                    # Auto-link for verified email
+                    from auth.linking import link_oauth_account
+                    link_oauth_account(existing_user, provider, provider_user_id, user_info)
+                    
+                    oauth_account = OAuthAccount.get_by_user_and_provider(existing_user.id, provider)
+                    if oauth_account:
+                        OAuthToken.create_for_oauth_account(
+                            oauth_account.id,
+                            access_token,
+                            refresh_token,
+                            expires_in
+                        )
+                    
+                    # Log in the user
+                    session.auth = type('obj', (object,), {'user': existing_user})()
+                    session.flash = f"Connected {provider.title()} to your existing account!"
+                    _clear_oauth_session(provider)
+                    
+                    # Audit log
+                    oauth_logger.info(f"OAuth auto-link successful: user_id={existing_user.id}, provider={provider}, email={email}")
+                    
+                    return redirect(url('index'))
+                
+                else:
+                    # Create new user account
+                    if not email:
+                        session.flash = f"Could not retrieve email from {provider}. Please use email/password signup."
+                        _clear_oauth_session(provider)
+                        return redirect(url('auth.register'))
+                    
+                    # Generate username from email
+                    username = email.split('@')[0]
+                    base_username = username
+                    counter = 1
+                    while User.where(lambda u: u.username == username).first():
+                        username = f"{base_username}{counter}"
+                        counter += 1
+                    
+                    # Create user (OAuth users don't need password)
+                    user = User.create(
+                        email=email,
+                        username=username,
+                        first_name=user_info.get('given_name', ''),
+                        last_name=user_info.get('family_name', '')
+                    )
+                    
+                    # Link OAuth account
+                    from auth.linking import link_oauth_account
+                    link_oauth_account(user, provider, provider_user_id, user_info)
+                    
+                    oauth_account = OAuthAccount.get_by_user_and_provider(user.id, provider)
+                    if oauth_account:
+                        OAuthToken.create_for_oauth_account(
+                            oauth_account.id,
+                            access_token,
+                            refresh_token,
+                            expires_in
+                        )
+                    
+                # Log in the new user
+                session.auth = type('obj', (object,), {'user': user})()
+                session.flash = f"Welcome! Account created with {provider.title()}."
+                _clear_oauth_session(provider)
+                
+                # Audit log
+                oauth_logger.info(f"OAuth new user created: user_id={user.id}, provider={provider}, email={email}")
+                
+                return redirect(url('index'))
+    
+    except Exception as e:
+        # Error logging
+        oauth_logger.error(f"OAuth callback error: provider={provider}, error={str(e)}", exc_info=True)
+        print(f"OAuth callback error: {e}")
+        traceback.print_exc()
+        session.flash = f"Authentication failed: {str(e)}"
+        _clear_oauth_session(provider)
+        return redirect(url('auth.login'))
+
+
+@oauth_routes.route('/<str:provider>/link')
+async def oauth_link(provider):
+    """
+    Initiate OAuth flow to link provider to existing account.
+    """
+    from emmett import session, redirect, url
+    
+    # Ensure user is logged in
+    if not session.auth or not session.auth.user:
+        session.flash = "Please log in first"
+        return redirect(url('auth.login'))
+    
+    # Set linking mode
+    session['oauth_link_mode'] = True
+    
+    # Redirect to OAuth login flow
+    return redirect(url('oauth.oauth_login', provider))
+
+
+@oauth_routes.route('/<str:provider>/unlink', methods=['post'])
+async def oauth_unlink(provider):
+    """
+    Unlink an OAuth provider from user account.
+    """
+    from emmett import session, redirect, url
+    
+    # Ensure user is logged in
+    if not session.auth or not session.auth.user:
+        abort(401)
+    
+    user = session.auth.user
+    
+    try:
+        from auth.linking import unlink_oauth_account
+        unlink_oauth_account(user, provider)
+        session.flash = f"Disconnected {provider.title()} account"
+        
+        # Audit log
+        oauth_logger.info(f"OAuth unlink successful: user_id={user.id}, provider={provider}")
+    except ValueError as e:
+        oauth_logger.warning(f"OAuth unlink failed: user_id={user.id}, provider={provider}, error={str(e)}")
+        session.flash = str(e)
+    except Exception as e:
+        oauth_logger.error(f"OAuth unlink error: user_id={user.id}, provider={provider}, error={str(e)}", exc_info=True)
+        print(f"Error unlinking OAuth: {e}")
+        session.flash = "Error disconnecting account"
+    
+    return redirect(url('account_settings'))
+
+
+def _clear_oauth_session(provider):
+    """Clear OAuth session data for a provider."""
+    from emmett import session
+    
+    keys_to_remove = [
+        f'oauth_{provider}_code_verifier',
+        f'oauth_{provider}_state',
+        f'oauth_{provider}_link_mode'
+    ]
+    
+    for key in keys_to_remove:
+        if key in session:
+            del session[key]
+    
+    if 'oauth_link_mode' in session:
+        del session['oauth_link_mode']
+
+
+#: Account settings route
+@app.route('/account/settings', methods=['get', 'post'])
+@requires(lambda: session.auth, url('auth.login'))
+async def account_settings():
+    """Account settings page with OAuth management."""
+    from emmett import session
+    
+    user = session.auth.user
+    auth_methods = user.get_auth_methods()
+    enabled_providers = oauth_manager.list_enabled_providers()
+    
+    # Get linked OAuth accounts with details
+    oauth_accounts = []
+    for provider in enabled_providers:
+        oauth_account = user.get_oauth_account(provider)
+        can_unlink, reason = user.can_unlink_oauth(provider)
+        
+        oauth_accounts.append({
+            'provider': provider,
+            'is_linked': oauth_account is not None,
+            'can_unlink': can_unlink,
+            'unlink_reason': reason,
+            'email': oauth_account.email if oauth_account else None,
+            'last_login': oauth_account.last_login_at if oauth_account else None
+        })
+    
+    return {
+        'user': user,
+        'auth_methods': auth_methods,
+        'oauth_accounts': oauth_accounts
+    }
 
 
 #: Prometheus metrics endpoint
@@ -565,10 +942,10 @@ if PROMETHEUS_ENABLED and PROMETHEUS_AVAILABLE:
     print(f"✓ Metrics tracked automatically for all requests via pipeline")
 
 
-#: REST API configuration
-# Setup REST APIs for all models
-from models import setup_all_apis
-api_modules = setup_all_apis(app)
+#: Setup model routes and REST APIs
+# Routes and APIs are now organized in their respective model packages
+from models import setup_all
+api_modules = setup_all(app)
 
 
 #: OpenAPI / Swagger Documentation

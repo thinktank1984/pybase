@@ -1,10 +1,6 @@
 # -*- coding: utf-8 -*-
-"""
-Comment model package.
-"""
+"""Comment model package."""
 
-from .model import Comment
-from . import views
-from . import api
+from .model import Comment, setup
 
-__all__ = ['Comment', 'views', 'api']
+__all__ = ['Comment', 'setup']

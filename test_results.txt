@@ -1,0 +1,651 @@
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;34m🧪 Bloggy Test Runner (Docker)[0m
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+
+[0;36m📋 Test Mode: ALL (App + UI + Chrome)[0m
+[0;36m📊 Coverage: Disabled[0m
+
+[1;33m🔬 Running Application Tests...[0m
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;36m📝 Command: cd /app/runtime && pytest tests.py[0m
+
+time="2025-10-13T10:54:05+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+============================= test session starts ==============================
+platform linux -- Python 3.12.12, pytest-8.4.2, pluggy-1.6.0
+rootdir: /app/runtime
+plugins: cov-7.0.0, asyncio-1.2.0, anyio-4.11.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 83 items
+
+tests.py ...F..........................................................F [ 75%]
+F..F.F..........F...                                                     [100%]
+
+=================================== FAILURES ===================================
+______________________________ test_admin_access _______________________________
+
+logged_client = <EmmettTestClient <emmett.app.App object at 0xffff7fcd85f0>>
+
+    def test_admin_access(logged_client):
+        r = logged_client.get('/new')
+>       assert r.context.response.status == 200
+E       assert 303 == 200
+E        +  where 303 = <emmett.testing.ClientContextResponse object at 0xffff7f6c70b0>.status
+E        +    where <emmett.testing.ClientContextResponse object at 0xffff7f6c70b0> = <emmett.testing.ClientContext object at 0xffff7f6df1a0>.response
+E        +      where <emmett.testing.ClientContext object at 0xffff7f6df1a0> = <emmett_core.protocols.rsgi.test_client.client.ClientResponse object at 0xffff7f6df650>.context
+
+tests.py:200: AssertionError
+_________________________ test_new_post_page_as_admin __________________________
+
+logged_client = <EmmettTestClient <emmett.app.App object at 0xffff7fcd85f0>>
+
+    def test_new_post_page_as_admin(logged_client):
+        """Test GET /new as admin returns form"""
+        r = logged_client.get('/new')
+>       assert r.status == 200
+E       assert 303 == 200
+E        +  where 303 = <emmett_core.protocols.rsgi.test_client.client.ClientResponse object at 0xffff7ed3e420>.status
+
+tests.py:1290: AssertionError
+__________________________ test_create_post_via_form ___________________________
+
+logged_client = <EmmettTestClient <emmett.app.App object at 0xffff7fcd85f0>>
+
+    def test_create_post_via_form(logged_client):
+        """Test POST /new with valid data creates post"""
+        with logged_client.get('/new').context as ctx:
+            r = logged_client.post('/new', data={
+                'title': 'Form Test Post',
+                'text': 'Created via form',
+                '_csrf_token': list(ctx.session._csrf)[-1]
+            }, follow_redirects=False)
+    
+            # Should redirect to post
+            assert r.status == 303
+    
+            # Verify post was created
+            with db.connection():
+                post = Post.where(lambda p: p.title == 'Form Test Post').select().first()
+>               assert post is not None
+E               assert None is not None
+
+tests.py:1310: AssertionError
+________________ test_comment_form_shown_to_authenticated_user _________________
+
+logged_client = <EmmettTestClient <emmett.app.App object at 0xffff7fcd85f0>>
+create_test_post = <function create_test_post.<locals>._create_post at 0xffff7f706de0>
+
+    def test_comment_form_shown_to_authenticated_user(logged_client, create_test_post):
+        """Test /post/<id> shows comment form for authenticated users"""
+        post_id = create_test_post()
+    
+        r = logged_client.get(f'/post/{post_id}')
+>       assert r.status == 200
+E       assert 500 == 200
+E        +  where 500 = <emmett_core.protocols.rsgi.test_client.client.ClientResponse object at 0xffff7ed8e720>.status
+
+tests.py:1347: AssertionError
+----------------------------- Captured stderr call -----------------------------
+[2025-10-12 21:54:08,128] ERROR in client: Application exception:
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/site-packages/emmett_core/protocols/rsgi/test_client/client.py", line 58, in dynamic_handler
+    http = await self.router.dispatch(request, response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett_core/routing/router.py", line 240, in dispatch
+    return await match.dispatch(reqargs, response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett_core/routing/dispatchers.py", line 59, in dispatch
+    rv = self.response_builder(await self.f(**reqargs), response)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett_core/routing/response.py", line 63, in __call__
+    response.status, self.process(output, response), headers=response.headers, cookies=response.cookies
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett/routing/response.py", line 65, in process
+    return self.route.app.templater.render(self.route.template, output)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/renoir/apis.py", line 172, in render
+    return self._render(source, file_path, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/renoir/apis.py", line 166, in _render
+    make_traceback(exc_info)
+  File "/usr/local/lib/python3.12/site-packages/renoir/debug.py", line 114, in make_traceback
+    reraise(exc_type, exc_value, tb)
+  File "/usr/local/lib/python3.12/site-packages/renoir/_internal.py", line 15, in reraise
+    raise value.with_traceback(tb)
+  File "/app/runtime/templates/one.html", line 24, in template
+    {{if current.session.auth and current.session.auth.user and post.can_edit(current.session.auth.user):}}
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett/orm/objects.py", line 1174, in __getattr__
+    return self.__getitem__(name)
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett/orm/objects.py", line 1211, in __getitem__
+    return object.__getattribute__(self, name)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'PostRow' object has no attribute 'can_edit'
+------------------------------ Captured log call -------------------------------
+ERROR    app:client.py:68 Application exception:
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/site-packages/emmett_core/protocols/rsgi/test_client/client.py", line 58, in dynamic_handler
+    http = await self.router.dispatch(request, response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett_core/routing/router.py", line 240, in dispatch
+    return await match.dispatch(reqargs, response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett_core/routing/dispatchers.py", line 59, in dispatch
+    rv = self.response_builder(await self.f(**reqargs), response)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett_core/routing/response.py", line 63, in __call__
+    response.status, self.process(output, response), headers=response.headers, cookies=response.cookies
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett/routing/response.py", line 65, in process
+    return self.route.app.templater.render(self.route.template, output)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/renoir/apis.py", line 172, in render
+    return self._render(source, file_path, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/renoir/apis.py", line 166, in _render
+    make_traceback(exc_info)
+  File "/usr/local/lib/python3.12/site-packages/renoir/debug.py", line 114, in make_traceback
+    reraise(exc_type, exc_value, tb)
+  File "/usr/local/lib/python3.12/site-packages/renoir/_internal.py", line 15, in reraise
+    raise value.with_traceback(tb)
+  File "/app/runtime/templates/one.html", line 24, in template
+    {{if current.session.auth and current.session.auth.user and post.can_edit(current.session.auth.user):}}
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett/orm/objects.py", line 1174, in __getattr__
+    return self.__getitem__(name)
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett/orm/objects.py", line 1211, in __getitem__
+    return object.__getattribute__(self, name)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'PostRow' object has no attribute 'can_edit'
+_________________________ test_create_comment_via_form _________________________
+
+logged_client = <EmmettTestClient <emmett.app.App object at 0xffff7fcd85f0>>
+create_test_post = <function create_test_post.<locals>._create_post at 0xffff7f688ae0>
+
+    def test_create_comment_via_form(logged_client, create_test_post):
+        """Test submitting comment form creates comment"""
+        post_id = create_test_post()
+    
+        with logged_client.get(f'/post/{post_id}').context as ctx:
+            r = logged_client.post(f'/post/{post_id}', data={
+                'text': 'Form comment test',
+                '_csrf_token': list(ctx.session._csrf)[-1]
+            }, follow_redirects=False)
+    
+            # Should redirect back to post
+>           assert r.status == 303
+E           assert 500 == 303
+E            +  where 500 = <emmett_core.protocols.rsgi.test_client.client.ClientResponse object at 0xffff7edb3f50>.status
+
+tests.py:1373: AssertionError
+----------------------------- Captured stderr call -----------------------------
+[2025-10-12 21:54:08,165] ERROR in client: Application exception:
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/site-packages/emmett_core/protocols/rsgi/test_client/client.py", line 58, in dynamic_handler
+    http = await self.router.dispatch(request, response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett_core/routing/router.py", line 240, in dispatch
+    return await match.dispatch(reqargs, response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett_core/routing/dispatchers.py", line 59, in dispatch
+    rv = self.response_builder(await self.f(**reqargs), response)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett_core/routing/response.py", line 63, in __call__
+    response.status, self.process(output, response), headers=response.headers, cookies=response.cookies
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett/routing/response.py", line 65, in process
+    return self.route.app.templater.render(self.route.template, output)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/renoir/apis.py", line 172, in render
+    return self._render(source, file_path, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/renoir/apis.py", line 166, in _render
+    make_traceback(exc_info)
+  File "/usr/local/lib/python3.12/site-packages/renoir/debug.py", line 114, in make_traceback
+    reraise(exc_type, exc_value, tb)
+  File "/usr/local/lib/python3.12/site-packages/renoir/_internal.py", line 15, in reraise
+    raise value.with_traceback(tb)
+  File "/app/runtime/templates/one.html", line 24, in template
+    {{if current.session.auth and current.session.auth.user and post.can_edit(current.session.auth.user):}}
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett/orm/objects.py", line 1174, in __getattr__
+    return self.__getitem__(name)
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett/orm/objects.py", line 1211, in __getitem__
+    return object.__getattribute__(self, name)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'PostRow' object has no attribute 'can_edit'
+[2025-10-12 21:54:08,170] ERROR in client: Application exception:
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/site-packages/emmett_core/protocols/rsgi/test_client/client.py", line 58, in dynamic_handler
+    http = await self.router.dispatch(request, response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett_core/routing/router.py", line 240, in dispatch
+    return await match.dispatch(reqargs, response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett_core/routing/dispatchers.py", line 59, in dispatch
+    rv = self.response_builder(await self.f(**reqargs), response)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett_core/routing/response.py", line 63, in __call__
+    response.status, self.process(output, response), headers=response.headers, cookies=response.cookies
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett/routing/response.py", line 65, in process
+    return self.route.app.templater.render(self.route.template, output)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/renoir/apis.py", line 172, in render
+    return self._render(source, file_path, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/renoir/apis.py", line 166, in _render
+    make_traceback(exc_info)
+  File "/usr/local/lib/python3.12/site-packages/renoir/debug.py", line 114, in make_traceback
+    reraise(exc_type, exc_value, tb)
+  File "/usr/local/lib/python3.12/site-packages/renoir/_internal.py", line 15, in reraise
+    raise value.with_traceback(tb)
+  File "/app/runtime/templates/one.html", line 24, in template
+    {{if current.session.auth and current.session.auth.user and post.can_edit(current.session.auth.user):}}
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett/orm/objects.py", line 1174, in __getattr__
+    return self.__getitem__(name)
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett/orm/objects.py", line 1211, in __getitem__
+    return object.__getattribute__(self, name)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'PostRow' object has no attribute 'can_edit'
+------------------------------ Captured log call -------------------------------
+ERROR    app:client.py:68 Application exception:
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/site-packages/emmett_core/protocols/rsgi/test_client/client.py", line 58, in dynamic_handler
+    http = await self.router.dispatch(request, response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett_core/routing/router.py", line 240, in dispatch
+    return await match.dispatch(reqargs, response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett_core/routing/dispatchers.py", line 59, in dispatch
+    rv = self.response_builder(await self.f(**reqargs), response)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett_core/routing/response.py", line 63, in __call__
+    response.status, self.process(output, response), headers=response.headers, cookies=response.cookies
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett/routing/response.py", line 65, in process
+    return self.route.app.templater.render(self.route.template, output)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/renoir/apis.py", line 172, in render
+    return self._render(source, file_path, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/renoir/apis.py", line 166, in _render
+    make_traceback(exc_info)
+  File "/usr/local/lib/python3.12/site-packages/renoir/debug.py", line 114, in make_traceback
+    reraise(exc_type, exc_value, tb)
+  File "/usr/local/lib/python3.12/site-packages/renoir/_internal.py", line 15, in reraise
+    raise value.with_traceback(tb)
+  File "/app/runtime/templates/one.html", line 24, in template
+    {{if current.session.auth and current.session.auth.user and post.can_edit(current.session.auth.user):}}
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett/orm/objects.py", line 1174, in __getattr__
+    return self.__getitem__(name)
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett/orm/objects.py", line 1211, in __getitem__
+    return object.__getattribute__(self, name)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'PostRow' object has no attribute 'can_edit'
+ERROR    app:client.py:68 Application exception:
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/site-packages/emmett_core/protocols/rsgi/test_client/client.py", line 58, in dynamic_handler
+    http = await self.router.dispatch(request, response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett_core/routing/router.py", line 240, in dispatch
+    return await match.dispatch(reqargs, response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett_core/routing/dispatchers.py", line 59, in dispatch
+    rv = self.response_builder(await self.f(**reqargs), response)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett_core/routing/response.py", line 63, in __call__
+    response.status, self.process(output, response), headers=response.headers, cookies=response.cookies
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett/routing/response.py", line 65, in process
+    return self.route.app.templater.render(self.route.template, output)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/renoir/apis.py", line 172, in render
+    return self._render(source, file_path, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/renoir/apis.py", line 166, in _render
+    make_traceback(exc_info)
+  File "/usr/local/lib/python3.12/site-packages/renoir/debug.py", line 114, in make_traceback
+    reraise(exc_type, exc_value, tb)
+  File "/usr/local/lib/python3.12/site-packages/renoir/_internal.py", line 15, in reraise
+    raise value.with_traceback(tb)
+  File "/app/runtime/templates/one.html", line 24, in template
+    {{if current.session.auth and current.session.auth.user and post.can_edit(current.session.auth.user):}}
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett/orm/objects.py", line 1174, in __getattr__
+    return self.__getitem__(name)
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett/orm/objects.py", line 1211, in __getitem__
+    return object.__getattribute__(self, name)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'PostRow' object has no attribute 'can_edit'
+_______________________ test_special_characters_in_post ________________________
+
+logged_client = <EmmettTestClient <emmett.app.App object at 0xffff7fcd85f0>>
+
+    def test_special_characters_in_post(logged_client):
+        """Test post with special characters (HTML, quotes, Unicode)"""
+        special_text = '<script>alert("XSS")</script> "Quotes" Unicode: 你好'
+    
+        with db.connection():
+            # Get admin user
+            admin = User.get(1)
+            post = Post.create(
+                title='Special chars',
+                text=special_text,
+                user=admin.id
+            )
+            post_id = post.id
+    
+        # Retrieve via web
+        r = logged_client.get(f'/post/{post_id}')
+>       assert r.status == 200
+E       assert 500 == 200
+E        +  where 500 = <emmett_core.protocols.rsgi.test_client.client.ClientResponse object at 0xffff7ed89ca0>.status
+
+tests.py:1560: AssertionError
+----------------------------- Captured stderr call -----------------------------
+[2025-10-12 21:54:08,472] ERROR in client: Application exception:
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/site-packages/emmett_core/protocols/rsgi/test_client/client.py", line 58, in dynamic_handler
+    http = await self.router.dispatch(request, response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett_core/routing/router.py", line 240, in dispatch
+    return await match.dispatch(reqargs, response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett_core/routing/dispatchers.py", line 59, in dispatch
+    rv = self.response_builder(await self.f(**reqargs), response)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett_core/routing/response.py", line 63, in __call__
+    response.status, self.process(output, response), headers=response.headers, cookies=response.cookies
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett/routing/response.py", line 65, in process
+    return self.route.app.templater.render(self.route.template, output)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/renoir/apis.py", line 172, in render
+    return self._render(source, file_path, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/renoir/apis.py", line 166, in _render
+    make_traceback(exc_info)
+  File "/usr/local/lib/python3.12/site-packages/renoir/debug.py", line 114, in make_traceback
+    reraise(exc_type, exc_value, tb)
+  File "/usr/local/lib/python3.12/site-packages/renoir/_internal.py", line 15, in reraise
+    raise value.with_traceback(tb)
+  File "/app/runtime/templates/one.html", line 24, in template
+    {{if current.session.auth and current.session.auth.user and post.can_edit(current.session.auth.user):}}
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett/orm/objects.py", line 1174, in __getattr__
+    return self.__getitem__(name)
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett/orm/objects.py", line 1211, in __getitem__
+    return object.__getattribute__(self, name)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'PostRow' object has no attribute 'can_edit'
+------------------------------ Captured log call -------------------------------
+ERROR    app:client.py:68 Application exception:
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/site-packages/emmett_core/protocols/rsgi/test_client/client.py", line 58, in dynamic_handler
+    http = await self.router.dispatch(request, response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett_core/routing/router.py", line 240, in dispatch
+    return await match.dispatch(reqargs, response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett_core/routing/dispatchers.py", line 59, in dispatch
+    rv = self.response_builder(await self.f(**reqargs), response)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett_core/routing/response.py", line 63, in __call__
+    response.status, self.process(output, response), headers=response.headers, cookies=response.cookies
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett/routing/response.py", line 65, in process
+    return self.route.app.templater.render(self.route.template, output)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/renoir/apis.py", line 172, in render
+    return self._render(source, file_path, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/renoir/apis.py", line 166, in _render
+    make_traceback(exc_info)
+  File "/usr/local/lib/python3.12/site-packages/renoir/debug.py", line 114, in make_traceback
+    reraise(exc_type, exc_value, tb)
+  File "/usr/local/lib/python3.12/site-packages/renoir/_internal.py", line 15, in reraise
+    raise value.with_traceback(tb)
+  File "/app/runtime/templates/one.html", line 24, in template
+    {{if current.session.auth and current.session.auth.user and post.can_edit(current.session.auth.user):}}
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett/orm/objects.py", line 1174, in __getattr__
+    return self.__getitem__(name)
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/emmett/orm/objects.py", line 1211, in __getitem__
+    return object.__getattribute__(self, name)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'PostRow' object has no attribute 'can_edit'
+=============================== warnings summary ===============================
+tests.py: 134 warnings
+  /usr/local/lib/python3.12/site-packages/emmett/ctx.py:31: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    return pendulum.instance(datetime.utcnow())
+
+tests.py::test_empty_db
+  /usr/local/lib/python3.12/site-packages/emmett_core/protocols/rsgi/test_client/client.py:304: DeprecationWarning: There is no current event loop
+    loop = asyncio.get_event_loop()
+
+tests.py: 198 warnings
+  /usr/local/lib/python3.12/site-packages/emmett_core/protocols/rsgi/wrappers.py:69: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    self._now = datetime.utcnow()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests.py::test_admin_access - assert 303 == 200
+FAILED tests.py::test_new_post_page_as_admin - assert 303 == 200
+FAILED tests.py::test_create_post_via_form - assert None is not None
+FAILED tests.py::test_comment_form_shown_to_authenticated_user - assert 500 =...
+FAILED tests.py::test_create_comment_via_form - assert 500 == 303
+FAILED tests.py::test_special_characters_in_post - assert 500 == 200
+================== 6 failed, 77 passed, 333 warnings in 3.26s ==================
+[0;31m❌ Application tests failed[0m
+
+[1;33m🎨 Running UI Tests...[0m
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;36m📝 Command: cd /app/runtime && pytest ui_tests.py[0m
+
+time="2025-10-13T10:54:08+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+============================= test session starts ==============================
+platform linux -- Python 3.12.12, pytest-8.4.2, pluggy-1.6.0
+rootdir: /app/runtime
+plugins: cov-7.0.0, asyncio-1.2.0, anyio-4.11.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 25 items
+
+ui_tests.py ....................sssss                                    [100%]
+
+======================== 20 passed, 5 skipped in 0.02s =========================
+[0;32m✅ UI tests passed![0m
+
+[1;33m🌐 Running Chrome DevTools Tests...[0m
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;36mℹ️  Chrome MCP integration not enabled[0m
+[0;36m   Set HAS_CHROME_MCP=true to enable real Chrome testing[0m
+[0;36m   Prerequisites:[0m
+[0;36m   • Chrome browser running on host[0m
+[0;36m   • App running on http://localhost:8081[0m
+[0;36m   • MCP Chrome DevTools available[0m
+
+[1;33m⚠️  Running mock Chrome tests instead...[0m
+time="2025-10-13T10:54:09+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+
+================================================================================
+🧪 BLOGGY UI TESTS - TAILWIND CSS + CHROME DEVTOOLS
+================================================================================
+
+📋 These tests demonstrate the comprehensive UI test suite
+   that would run using Chrome DevTools MCP integration.
+
+[1m============================= test session starts ==============================[0m
+platform linux -- Python 3.12.12, pytest-8.4.2, pluggy-1.6.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+rootdir: /app/runtime
+plugins: cov-7.0.0, asyncio-1.2.0, anyio-4.11.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+[1mcollecting ... [0mcollected 20 items
+
+test_ui_chrome.py::TestBloggyUIWithChrome::test_01_homepage_loads_successfully 
+🏠 TEST 1: Loading Homepage...
+   ✅ Would navigate to: http://localhost:8081
+   ✅ Would take page snapshot
+   ✅ Would verify navigation bar with gradient
+   ✅ Would check for main content container
+[32mPASSED[0m
+test_ui_chrome.py::TestBloggyUIWithChrome::test_02_navigation_bar_elements 
+🧭 TEST 2: Navigation Bar Elements...
+   ✅ Would verify logo SVG is visible
+   ✅ Would check navigation gradient background
+   ✅ Would test login button styling
+   ✅ Would verify responsive flex layout
+[32mPASSED[0m
+test_ui_chrome.py::TestBloggyUIWithChrome::test_03_posts_grid_responsive 
+📱 TEST 3: Responsive Posts Grid...
+   ✅ Would resize to mobile (375px)
+   ✅ Would verify single column grid
+   ✅ Would resize to tablet (768px)
+   ✅ Would verify 2-column grid
+   ✅ Would resize to desktop (1920px)
+   ✅ Would verify 3-column grid
+[32mPASSED[0m
+test_ui_chrome.py::TestBloggyUIWithChrome::test_04_post_card_hover_effects 
+🎴 TEST 4: Post Card Hover Effects...
+   ✅ Would hover over post card
+   ✅ Would take screenshot before hover
+   ✅ Would take screenshot during hover
+   ✅ Would verify shadow transition
+[32mPASSED[0m
+test_ui_chrome.py::TestBloggyUIWithChrome::test_05_create_post_button_interaction 
+➕ TEST 5: Create Post Button...
+   ✅ Would find Create Post button
+   ✅ Would verify gradient styling
+   ✅ Would test hover effect
+   ✅ Would click and verify navigation
+[32mPASSED[0m
+test_ui_chrome.py::TestBloggyUIWithChrome::test_06_create_post_page_styling 
+📝 TEST 6: Create Post Page Styling...
+   ✅ Would navigate to /new_post
+   ✅ Would verify back button
+   ✅ Would check gradient header
+   ✅ Would verify form styling
+[32mPASSED[0m
+test_ui_chrome.py::TestBloggyUIWithChrome::test_07_post_detail_page_layout 
+📖 TEST 7: Post Detail Page Layout...
+   ✅ Would navigate to post detail
+   ✅ Would verify gradient post header
+   ✅ Would check comments section
+   ✅ Would verify comment form styling
+[32mPASSED[0m
+test_ui_chrome.py::TestBloggyUIWithChrome::test_08_auth_page_centered_layout 
+🔐 TEST 8: Auth Page Layout...
+   ✅ Would navigate to /auth/login
+   ✅ Would verify centered layout
+   ✅ Would check icon circle
+   ✅ Would verify form container
+[32mPASSED[0m
+test_ui_chrome.py::TestBloggyUIWithChrome::test_09_empty_states_display 
+🗂️ TEST 9: Empty States...
+   ✅ Would check for no posts state
+   ✅ Would verify SVG icon visible
+   ✅ Would check dashed border styling
+   ✅ Would verify message text
+[32mPASSED[0m
+test_ui_chrome.py::TestBloggyUIWithChrome::test_10_footer_styling 
+🦶 TEST 10: Footer Styling...
+   ✅ Would locate footer element
+   ✅ Would verify dark background
+   ✅ Would check text content
+   ✅ Would verify spacing
+[32mPASSED[0m
+test_ui_chrome.py::TestBloggyUIWithChrome::test_11_screenshot_all_pages 
+📸 TEST 11: Taking Screenshots...
+   ✅ Would screenshot: homepage (/)
+   ✅ Would screenshot: create_post (/new_post)
+   ✅ Would screenshot: auth_page (/auth/login)
+[32mPASSED[0m
+test_ui_chrome.py::TestBloggyUIWithChrome::test_12_css_file_size_check 
+⚡ TEST 12: CSS File Size...
+   ✅ Tailwind CSS size: 30.80 KB
+   ✅ File size is good: 30.80 KB
+[32mPASSED[0m
+test_ui_chrome.py::TestBloggyUIWithChrome::test_13_color_contrast_accessibility 
+♿ TEST 13: Color Contrast...
+   ✅ Would check nav text contrast
+   ✅ Would verify heading contrast
+   ✅ Would test link contrast
+   ✅ Would ensure WCAG AA compliance
+[32mPASSED[0m
+test_ui_chrome.py::TestBloggyUIWithChrome::test_14_svg_icons_rendering 
+🖼️ TEST 14: SVG Icons...
+   ✅ Would verify navigation logo SVG
+   ✅ Would check button icons
+   ✅ Would verify arrow icons
+   ✅ Would test empty state icons
+[32mPASSED[0m
+test_ui_chrome.py::TestBloggyUIWithChrome::test_15_gradient_rendering 
+🌈 TEST 15: Gradient Backgrounds...
+   ✅ Would verify navigation gradient
+   ✅ Would check post header gradient
+   ✅ Would test button gradients
+   ✅ Would verify smooth transitions
+[32mPASSED[0m
+test_ui_chrome.py::TestBloggyUIWithChrome::test_16_performance_metrics 
+⚡ TEST 16: Performance Metrics...
+   ✅ Would start performance trace
+   ✅ Would measure page load time
+   ✅ Would check LCP score
+   ✅ Would verify CLS < 0.1
+[32mPASSED[0m
+test_ui_chrome.py::TestBloggyUIWithChrome::test_17_network_requests 
+🌐 TEST 17: Network Requests...
+   ✅ Would monitor network requests
+   ✅ Would verify no 404 errors
+   ✅ Would check CSS loads
+   ✅ Would verify caching
+[32mPASSED[0m
+test_ui_chrome.py::TestBloggyUIWithChrome::test_18_console_errors 
+🐛 TEST 18: Console Errors...
+   ✅ Would monitor console messages
+   ✅ Would check for errors
+   ✅ Would verify no warnings
+   ✅ Would ensure clean console
+[32mPASSED[0m
+test_ui_chrome.py::TestBloggyUIWithChrome::test_19_cross_browser_compatibility 
+🔄 TEST 19: Cross-Browser Compatibility...
+   ✅ Would test iPhone SE (375x667)
+   ✅ Would test iPad (768x1024)
+   ✅ Would test Desktop (1920x1080)
+   ✅ Would test 4K (3840x2160)
+[32mPASSED[0m
+test_ui_chrome.py::TestBloggyUIWithChrome::test_20_full_user_flow 
+🎯 TEST 20: Full User Flow...
+    1. ✅ Would: Navigate to homepage
+    2. ✅ Would: Click login button
+    3. ✅ Would: Fill auth form
+    4. ✅ Would: Submit form
+    5. ✅ Would: Click create post
+    6. ✅ Would: Fill post form
+    7. ✅ Would: Submit post
+    8. ✅ Would: View post detail
+    9. ✅ Would: Add comment
+   10. ✅ Would: Return home
+   11. ✅ Would: Logout
+[32mPASSED[0m
+
+[32m============================== [32m[1m20 passed[0m[32m in 0.02s[0m[32m ==============================[0m
+
+================================================================================
+✨ UI Test Suite Complete!
+================================================================================
+[0;32m✅ Mock Chrome tests passed (no real browser)[0m
+
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;31m❌ Some tests failed[0m
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m

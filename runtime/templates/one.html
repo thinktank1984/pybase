@@ -14,10 +14,26 @@
     <!-- Post Content -->
     <article class="bg-white rounded-lg shadow-md overflow-hidden mb-8">
         <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6">
-            <h1 class="text-4xl font-bold text-white mb-2">{{=post.title}}</h1>
-            {{if post.date:}}
-            <p class="text-blue-100 text-sm">Published on {{=post.date}}</p>
-            {{pass}}
+            <div class="flex justify-between items-start">
+                <div class="flex-1">
+                    <h1 class="text-4xl font-bold text-white mb-2">{{=post.title}}</h1>
+                    {{if post.date:}}
+                    <p class="text-blue-100 text-sm">Published on {{=post.date}}</p>
+                    {{pass}}
+                </div>
+                {{if current.session.auth and current.session.auth.user and (post.user == current.session.auth.user.id or auth.has_membership('admin')):}}
+                <div class="flex space-x-2 ml-4">
+                    <button class="px-3 py-1 bg-white bg-opacity-20 hover:bg-opacity-30 text-white rounded text-sm transition-colors">
+                        Edit
+                    </button>
+                    {{if post.user == current.session.auth.user.id or auth.has_membership('admin'):}}
+                    <button class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-sm transition-colors">
+                        Delete
+                    </button>
+                    {{pass}}
+                </div>
+                {{pass}}
+            </div>
         </div>
         <div class="px-8 py-6">
             <div class="prose prose-lg max-w-none text-gray-700 leading-relaxed">

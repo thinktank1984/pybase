@@ -173,67 +173,28 @@ The system SHALL support customization of OAuth button appearance.
 
 ## MODIFIED Requirements
 
-### Requirement: Authentication Template Integration
-The system SHALL integrate OAuth login options seamlessly into existing authentication templates with consistent styling and clear user guidance.
+### Requirement: Integration with Existing App
+The system SHALL integrate seamlessly with existing Emmett applications without requiring major refactoring, including integration of OAuth authentication options.
 
-#### Scenario: Combined login page
-- **WHEN** user views login page
-- **THEN** OAuth buttons appear above password form
-- **AND** visual separator clearly divides the two methods
-- **AND** page explains users can use either method
-- **AND** styling is consistent across all auth elements
+#### Scenario: Co-exist with manual routes
+- **WHEN** auto UI is enabled for a model
+- **THEN** existing manual routes SHALL continue to work
+- **AND** the auto UI routes SHALL not conflict with existing routes
 
-#### Scenario: Combined signup page
-- **WHEN** user views signup page
-- **THEN** OAuth buttons appear prominently at top
-- **AND** traditional signup form follows below separator
-- **AND** Terms of Service apply to both methods
-- **AND** account benefits are explained equally
+#### Scenario: Share authentication
+- **WHEN** the app uses Emmett's Auth module
+- **THEN** auto UI SHALL use the same authentication system
+- **AND** auto UI SHALL respect the same session management
+- **AND** auto UI SHALL support both password and OAuth authentication
 
-#### Scenario: Mobile authentication flow
-- **WHEN** user authenticates on mobile device
-- **THEN** OAuth buttons remain easily tappable
-- **AND** forms adapt to mobile screen size
-- **AND** keyboard doesn't obscure action buttons
-- **AND** back navigation works correctly
+#### Scenario: Use existing templates
+- **WHEN** the app has a base layout template
+- **THEN** auto UI templates SHALL extend the app's layout
+- **AND** auto UI SHALL inherit the app's styling and navigation
 
-### Requirement: User Profile Display
-The system SHALL display OAuth connection status and profile data in user profiles with privacy controls.
-
-#### Scenario: Profile shows auth methods
-- **WHEN** viewing user profile or account settings
-- **THEN** section shows all authentication methods
-- **AND** indicates which OAuth providers are connected
-- **AND** shows last login method used
-- **AND** provides quick access to manage connections
-
-#### Scenario: Privacy controls for OAuth data
-- **WHEN** user has OAuth accounts linked
-- **THEN** they can control visibility of OAuth profile data
-- **AND** can choose whether to display provider avatars
-- **AND** can opt out of profile synchronization
-
-### Requirement: Error and Success Messages
-The system SHALL display clear, actionable messages for OAuth operations with appropriate styling.
-
-#### Scenario: OAuth success messages
-- **WHEN** OAuth operation succeeds
-- **THEN** success message uses green/success styling
-- **AND** message is clear and congratulatory
-- **AND** message auto-dismisses after 5 seconds
-- **AND** provides next action suggestion
-
-#### Scenario: OAuth error messages
-- **WHEN** OAuth operation fails
-- **THEN** error message uses red/error styling
-- **AND** message explains what went wrong in user-friendly terms
-- **AND** message suggests corrective actions
-- **AND** provides support link if needed
-
-#### Scenario: OAuth warning messages
-- **WHEN** OAuth operation requires user attention
-- **THEN** warning message uses yellow/warning styling
-- **AND** clearly explains the situation
-- **AND** provides options to proceed or cancel
-- **AND** doesn't auto-dismiss until user acts
+#### Scenario: OAuth authentication integration
+- **WHEN** OAuth authentication is enabled
+- **THEN** auto UI login pages SHALL include OAuth provider buttons
+- **AND** auto UI SHALL handle OAuth callback flows
+- **AND** auto UI SHALL support account linking workflows
 

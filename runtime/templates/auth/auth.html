@@ -25,6 +25,10 @@
 
     <!-- Form Container -->
     <div class="bg-gradient-to-b from-blue-50 to-white rounded-xl shadow-md p-6 md:p-8 border border-gray-200">
+        <!-- OAuth Buttons -->
+        {{include 'auth/_oauth_buttons.html'}}
+        
+        <!-- Traditional Login/Signup Form -->
         {{=form}}
     </div>
 

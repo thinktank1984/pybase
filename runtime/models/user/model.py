@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-User model definition and authentication utilities.
+User model with authentication utilities and API.
 """
 
 from emmett.orm import has_many
@@ -9,34 +9,389 @@ from emmett import current, session
 
 
 class User(AuthUser):
-    """
-    User model extending Emmett's AuthUser.
+    """User model extending Emmett's AuthUser with role-based permissions."""
     
-    This will create "auth_user" table and related groups/permissions tables.
-    """
-    # will create "auth_user" table and groups/permissions ones
-    has_many('posts', 'comments')
+    has_many('posts', 'comments', 'user_roles', 'oauth_accounts')
     
     rest_rw = {
-        'id': (True, False),  # Visible in output, not writable in input
-        'email': (True, False),  # Visible in output, not writable
+        'id': (True, False),
+        'email': (True, False),
         'first_name': (True, False),
         'last_name': (True, False)
     }
+    
+    def get_roles(self):
+        """
+        Get all roles assigned to this user.
+        
+        Returns:
+            list: List of Role instances
+        """
+        try:
+            from ..user_role import UserRole
+            return UserRole.get_user_roles(self.id)
+        except Exception as e:
+            print(f"Error getting roles for user {self.id}: {e}")
+            return []
+    
+    def has_role(self, role_name):
+        """
+        Check if user has a specific role.
+        
+        Args:
+            role_name (str): Role name (e.g., 'admin', 'moderator')
+            
+        Returns:
+            bool: True if user has the role
+        """
+        try:
+            roles = self.get_roles()
+            return any(role.name.lower() == role_name.lower() for role in roles)
+        except:
+            return False
+    
+    def has_any_role(self, *role_names):
+        """
+        Check if user has any of the specified roles.
+        
+        Args:
+            *role_names: Variable number of role names
+            
+        Returns:
+            bool: True if user has at least one of the roles
+        """
+        try:
+            user_roles = {role.name.lower() for role in self.get_roles()}
+            return any(role_name.lower() in user_roles for role_name in role_names)
+        except:
+            return False
+    
+    def has_all_roles(self, *role_names):
+        """
+        Check if user has all of the specified roles.
+        
+        Args:
+            *role_names: Variable number of role names
+            
+        Returns:
+            bool: True if user has all of the roles
+        """
+        try:
+            user_roles = {role.name.lower() for role in self.get_roles()}
+            return all(role_name.lower() in user_roles for role_name in role_names)
+        except:
+            return False
+    
+    def get_permissions(self, use_cache=True):
+        """
+        Get all permissions granted to this user through their roles.
+        
+        Args:
+            use_cache (bool): Whether to use session cache
+            
+        Returns:
+            set: Set of permission names
+        """
+        # Check cache first
+        if use_cache and hasattr(session, 'user_permissions') and session.user_permissions:
+            if session.get('user_permissions_id') == self.id:
+                return session.user_permissions
+        
+        try:
+            permissions = set()
+            roles = self.get_roles()
+            
+            for role in roles:
+                role_permissions = role.get_permissions()
+                for perm in role_permissions:
+                    permissions.add(perm.name)
+            
+            # Cache in session
+            if use_cache:
+                session.user_permissions = permissions
+                session.user_permissions_id = self.id
+            
+            return permissions
+        except Exception as e:
+            print(f"Error getting permissions for user {self.id}: {e}")
+            return set()
+    
+    def has_permission(self, permission_name):
+        """
+        Check if user has a specific permission.
+        
+        Args:
+            permission_name (str): Permission name (e.g., 'post.create')
+            
+        Returns:
+            bool: True if user has the permission
+        """
+        # Admin role has all permissions
+        if self.has_role('admin'):
+            return True
+        
+        try:
+            permissions = self.get_permissions()
+            return permission_name in permissions
+        except:
+            return False
+    
+    def has_any_permission(self, *permission_names):
+        """
+        Check if user has any of the specified permissions.
+        
+        Args:
+            *permission_names: Variable number of permission names
+            
+        Returns:
+            bool: True if user has at least one permission
+        """
+        # Admin role has all permissions
+        if self.has_role('admin'):
+            return True
+        
+        try:
+            permissions = self.get_permissions()
+            return any(perm in permissions for perm in permission_names)
+        except:
+            return False
+    
+    def can_access_resource(self, resource, action, instance=None, scope='any'):
+        """
+        Check if user can access a resource with a specific action.
+        Supports ownership-based permissions.
+        
+        Args:
+            resource (str): Resource name (e.g., 'post')
+            action (str): Action name (e.g., 'edit', 'delete')
+            instance: Optional resource instance to check ownership
+            scope (str): 'own', 'any', or 'both'
+            
+        Returns:
+            bool: True if user can access the resource
+        """
+        # Admin role has all permissions
+        if self.has_role('admin'):
+            return True
+        
+        try:
+            permissions = self.get_permissions()
+            
+            # Check for 'any' scope permission
+            any_perm = f"{resource}.{action}.any"
+            if any_perm in permissions:
+                return True
+            
+            # Check for 'own' scope permission with ownership
+            own_perm = f"{resource}.{action}.own"
+            if own_perm in permissions:
+                if instance is None:
+                    # No instance provided, grant access
+                    return True
+                
+                # Check ownership
+                owner_field = getattr(instance, 'user', None) or getattr(instance, 'owner', None)
+                if owner_field:
+                    owner_id = owner_field.id if hasattr(owner_field, 'id') else owner_field
+                    return owner_id == self.id
+            
+            # Check for permission without scope
+            base_perm = f"{resource}.{action}"
+            return base_perm in permissions
+            
+        except Exception as e:
+            print(f"Error checking resource access: {e}")
+            return False
+    
+    def add_role(self, role):
+        """
+        Add a role to this user.
+        
+        Args:
+            role: Role instance or role ID
+            
+        Returns:
+            bool: True if added successfully
+        """
+        try:
+            from ..user_role import UserRole
+            role_id = role.id if hasattr(role, 'id') else role
+            
+            result = UserRole.assign_role(self.id, role_id)
+            
+            # Invalidate permission cache
+            self.refresh_permissions()
+            
+            return result is not None
+        except Exception as e:
+            print(f"Error adding role to user: {e}")
+            return False
+    
+    def remove_role(self, role):
+        """
+        Remove a role from this user.
+        
+        Args:
+            role: Role instance or role ID
+            
+        Returns:
+            bool: True if removed successfully
+        """
+        try:
+            from ..user_role import UserRole
+            role_id = role.id if hasattr(role, 'id') else role
+            
+            result = UserRole.remove_role(self.id, role_id)
+            
+            # Invalidate permission cache
+            self.refresh_permissions()
+            
+            return result
+        except Exception as e:
+            print(f"Error removing role from user: {e}")
+            return False
+    
+    def refresh_permissions(self):
+        """
+        Refresh the cached permissions for this user.
+        """
+        try:
+            if hasattr(session, 'user_permissions'):
+                del session.user_permissions
+            if hasattr(session, 'user_permissions_id'):
+                del session.user_permissions_id
+            
+            # Reload permissions
+            self.get_permissions(use_cache=True)
+        except:
+            pass
+    
+    # ========================================================================
+    # OAuth Methods
+    # ========================================================================
+    
+    def get_oauth_accounts(self):
+        """
+        Get all OAuth accounts linked to this user.
+        
+        Returns:
+            list: List of OAuthAccount instances
+        """
+        try:
+            from ..oauth_account import OAuthAccount
+            return list(OAuthAccount.get_by_user(self.id))
+        except Exception as e:
+            print(f"Error getting OAuth accounts: {e}")
+            return []
+    
+    def has_oauth_account(self, provider):
+        """
+        Check if user has a specific OAuth provider linked.
+        
+        Args:
+            provider (str): Provider name (google, github, etc.)
+            
+        Returns:
+            bool: True if provider is linked
+        """
+        try:
+            from ..oauth_account import OAuthAccount
+            account = OAuthAccount.get_by_user_and_provider(self.id, provider)
+            return account is not None
+        except:
+            return False
+    
+    def get_oauth_account(self, provider):
+        """
+        Get a specific OAuth account for this user.
+        
+        Args:
+            provider (str): Provider name
+            
+        Returns:
+            OAuthAccount instance or None
+        """
+        try:
+            from ..oauth_account import OAuthAccount
+            return OAuthAccount.get_by_user_and_provider(self.id, provider)
+        except:
+            return None
+    
+    def link_oauth_account(self, provider, provider_user_id, user_info):
+        """
+        Link an OAuth provider to this user.
+        
+        Args:
+            provider: Provider name
+            provider_user_id: User ID from provider
+            user_info: User info from provider
+            
+        Returns:
+            bool: True if linked successfully
+        """
+        try:
+            from ...auth.linking import link_oauth_account as link_fn
+            return link_fn(self, provider, provider_user_id, user_info)
+        except Exception as e:
+            print(f"Error linking OAuth account: {e}")
+            return False
+    
+    def unlink_oauth_account(self, provider):
+        """
+        Unlink an OAuth provider from this user.
+        
+        Args:
+            provider: Provider name
+            
+        Returns:
+            bool: True if unlinked successfully
+        """
+        try:
+            from ...auth.linking import unlink_oauth_account as unlink_fn
+            return unlink_fn(self, provider)
+        except Exception as e:
+            print(f"Error unlinking OAuth account: {e}")
+            return False
+    
+    def can_unlink_oauth(self, provider):
+        """
+        Check if user can unlink an OAuth provider.
+        
+        Args:
+            provider: Provider name
+            
+        Returns:
+            tuple: (can_unlink, reason_if_not)
+        """
+        try:
+            from ...auth.linking import can_unlink_oauth_account
+            return can_unlink_oauth_account(self, provider)
+        except:
+            return False, "Error checking authentication methods"
+    
+    def get_auth_methods(self):
+        """
+        Get all authentication methods available to this user.
+        
+        Returns:
+            dict: Dictionary with has_password, oauth_providers, can_unlink
+        """
+        try:
+            from ...auth.linking import get_user_auth_methods
+            return get_user_auth_methods(self)
+        except:
+            return {
+                'has_password': bool(self.password),
+                'oauth_providers': [],
+                'can_unlink': {}
+            }
 
 
 def get_current_user():
-    """
-    Get currently authenticated user.
-    
-    Returns:
-        User object or None if not authenticated
-    """
+    """Get currently authenticated user."""
     try:
-        # Try to get from current context first (works in request context)
         if hasattr(current, 'session') and hasattr(current.session, 'auth') and current.session.auth:
             return current.session.auth.user
-        # Fallback to session (works in non-request context)
         elif hasattr(session, 'auth') and session.auth:
             return session.auth.user
     except:
@@ -45,38 +400,21 @@ def get_current_user():
 
 
 def is_authenticated():
-    """
-    Check if user is authenticated.
-    
-    Returns:
-        True if user is authenticated, False otherwise
-    """
+    """Check if user is authenticated."""
     return get_current_user() is not None
 
 
 def is_admin():
-    """
-    Check if current user has admin role.
-    
-    Returns:
-        True if user is admin, False otherwise
-    """
-    from emmett import session, current
-    
+    """Check if current user has admin role."""
     if not session.auth:
         return False
     
     user = session.auth.user
-    
     if not user:
         return False
     
     try:
-        # Get database instance from current context
         db = current.app.ext.db
-        
-        # Query the database for admin group membership
-        # Try both possible field names (depends on Emmett version)
         try:
             membership = db(
                 (db.auth_memberships.user == user.id) &
@@ -84,7 +422,6 @@ def is_admin():
                 (db.auth_groups.role == 'admin')
             ).select().first()
         except AttributeError:
-            # Fallback to auth_user if user field doesn't exist
             membership = db(
                 (db.auth_memberships.auth_user == user.id) &
                 (db.auth_memberships.auth_group == db.auth_groups.id) &
@@ -96,3 +433,14 @@ def is_admin():
         print(f"is_admin error: {e}")
         return False
 
+
+def setup(app):
+    """Setup REST API for User model (read-only)."""
+    users_api = app.rest_module(
+        __name__, 
+        'users_api', 
+        User, 
+        url_prefix='api/users',
+        disabled_methods=['create', 'update', 'delete']
+    )
+    return users_api

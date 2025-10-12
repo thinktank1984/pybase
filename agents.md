@@ -23,6 +23,29 @@ This file provides guidance to AI agents (Claude Code, Gemini, etc.) when workin
 
 ---
 
+## 🚨 CRITICAL POLICY: NO MOCKING ALLOWED 🚨
+
+**⚠️ USING MOCKS, STUBS, OR TEST DOUBLES IS ILLEGAL IN THIS REPOSITORY ⚠️**
+
+This is a **ZERO-TOLERANCE POLICY**:
+- ❌ **FORBIDDEN**: `unittest.mock`, `Mock()`, `MagicMock()`, `patch()`
+- ❌ **FORBIDDEN**: `pytest-mock`, `mocker` fixture
+- ❌ **FORBIDDEN**: Any mocking, stubbing, or test double libraries
+- ❌ **FORBIDDEN**: Fake in-memory databases or fake HTTP responses
+- ❌ **FORBIDDEN**: Simulated external services or APIs
+
+**✅ ONLY REAL INTEGRATION TESTS ARE ALLOWED:**
+- ✅ Real database operations with actual SQL
+- ✅ Real HTTP requests through test client
+- ✅ Real browser interactions with Chrome DevTools MCP
+- ✅ Real external service calls (or skip tests if unavailable)
+
+**If you write a test with mocks, the test is INVALID and must be rewritten.**
+
+See "Integration Testing Philosophy" section below for complete details.
+
+---
+
 ## ⚡ Quick Summary
 
 **This is an Emmett Framework application **
@@ -36,7 +59,9 @@ This file provides guidance to AI agents (Claude Code, Gemini, etc.) when workin
 - ✅ **DO**: Test real UI with Chrome DevTools MCP (not Selenium)
 - ✅ **DO**: Build Tailwind CSS before running (`npm run build:css` in runtime/)
 - ⚠️ **PREFERRED**: Always use Docker commands over local development scripts
+- 🚫 **ILLEGAL**: Using mocks, stubs, or test doubles in tests is FORBIDDEN
 - ❌ **NEVER**: Mock database calls, HTTP requests, or external services in tests
+- ❌ **NEVER**: Use unittest.mock, pytest-mock, or any mocking libraries
 
 ---
 
@@ -352,20 +377,23 @@ cd runtime
 uv run pytest tests.py -k test_name
 ```
 
-## Integration Testing Philosophy
+## Integration Testing Philosophy - NO MOCKING POLICY
 
-**⚠️ CRITICAL: This project uses REAL integration tests, not mocked unit tests.**
+**🚨 CRITICAL REPOSITORY POLICY: MOCKING IS ILLEGAL 🚨**
+
+**This project uses REAL integration tests ONLY. Mocked unit tests are FORBIDDEN.**
 
 ### Core Principles
 
-1. **NO MOCKING - EVER**
-   - ❌ **NEVER** mock database calls
-   - ❌ **NEVER** mock HTTP requests
-   - ❌ **NEVER** mock external services
-   - ❌ **NEVER** use test doubles, stubs, or mocks
-   - ✅ **ALWAYS** test against real database
-   - ✅ **ALWAYS** test complete request/response cycle
-   - ✅ **ALWAYS** verify actual database state changes
+1. **NO MOCKING - EVER - THIS IS NON-NEGOTIABLE**
+   - ❌ **ILLEGAL** to mock database calls
+   - ❌ **ILLEGAL** to mock HTTP requests
+   - ❌ **ILLEGAL** to mock external services
+   - ❌ **ILLEGAL** to use test doubles, stubs, or mocks
+   - ❌ **ILLEGAL** to use `unittest.mock`, `pytest-mock`, or any mocking library
+   - ✅ **REQUIRED** to test against real database
+   - ✅ **REQUIRED** to test complete request/response cycle
+   - ✅ **REQUIRED** to verify actual database state changes
 
 2. **REAL DATABASE CHANGES**
    - Tests must create, update, and delete real database records
@@ -593,7 +621,9 @@ docker compose -f docker/docker-compose.yaml exec runtime pytest ui_tests.py
 docker compose -f docker/docker-compose.yaml exec runtime pytest tests.py -k test_api_posts_create
 ```
 
-### Why No Mocking?
+### Why Mocking Is Illegal In This Repository
+
+**This is repository policy, not a suggestion. Mocking is FORBIDDEN because:**
 
 **Mocking creates false confidence:**
 - ✗ Mocked tests pass but real code fails
@@ -613,17 +643,20 @@ docker compose -f docker/docker-compose.yaml exec runtime pytest tests.py -k tes
 
 **Example of mock hiding bug:**
 ```python
-# ❌ Mocked test passes but hides bug
+# ❌ Mocked test passes but hides bug - THIS IS ILLEGAL IN THIS REPO
 def test_create_post_mocked(mock_db):
     mock_db.create.return_value = Mock(id=1)  # ❌ Always succeeds
     # Test passes but doesn't catch that Post.create() has a bug
+    # THIS TEST WOULD BE REJECTED IN CODE REVIEW
     
-# ✅ Real test catches bug
+# ✅ Real test catches bug - THIS IS THE ONLY ACCEPTABLE APPROACH
 def test_create_post_integration(client):
     response = client.post('/api/posts', data={'title': '', 'text': 'content'})
     # Real test FAILS because title validation is broken
     # We catch the bug before production!
 ```
+
+**🚨 ENFORCEMENT: Any test using mocks must be rewritten as a real integration test.**
 
 ### When Tests Are Slow
 
@@ -632,9 +665,11 @@ If integration tests become slow:
 - ✅ Use function-scoped fixtures for test-specific data
 - ✅ Parallelize with pytest-xdist if needed
 - ✅ Optimize database operations (bulk creates)
-- ❌ **NEVER** switch to mocking to make tests faster
+- ✅ Use transaction rollbacks for faster cleanup
+- ❌ **ILLEGAL** to switch to mocking to make tests faster
+- ❌ **FORBIDDEN** to use mocks even if tests are slow
 
-**Speed is not a reason to compromise test quality.**
+**Speed is NEVER a reason to use mocks. Mocking is ILLEGAL regardless of test performance.**
 
 ## Key Dependencies
 
@@ -676,6 +711,7 @@ Emmett follows these patterns:
 
 ## Important Notes
 
+- **🚨 NO MOCKING**: Using mocks, stubs, or test doubles is ILLEGAL in this repository - ONLY real integration tests are allowed
 - **🐳 USE DOCKER**: Always use Docker for running and testing - it has all dependencies pre-configured
 - The project uses Python 3.9+ (3.13+ recommended)
 - Emmett uses pyDAL for ORM 

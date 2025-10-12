@@ -1,10 +1,6 @@
 # -*- coding: utf-8 -*-
-"""
-Post model package.
-"""
+"""Post model package."""
 
-from .model import Post
-from . import views
-from . import api
+from .model import Post, setup
 
-__all__ = ['Post', 'views', 'api']
+__all__ = ['Post', 'setup']
