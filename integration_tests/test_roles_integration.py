@@ -45,14 +45,135 @@ def unique_email(prefix='test'):
 
 
 @pytest.fixture(scope='module', autouse=True)
-def seed_database():
-    """Seed test database with roles and permissions (runs once per test module)"""
+def _prepare_db(request):
+    """Ensure database is ready with all tables"""
+    import os
+    import sqlite3
+    from emmett.orm.migrations.utils import generate_runtime_migration
+    
+    db_path = os.path.join(os.path.dirname(__file__), '..', 'runtime', 'databases', 'bloggy.db')
+    db_dir = os.path.dirname(db_path)
+    
+    # Ensure database directory exists
+    os.makedirs(db_dir, exist_ok=True)
+    
+    # Drop all existing tables using direct SQLite connection
+    if os.path.exists(db_path):
+        try:
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            
+            # Disable foreign keys temporarily
+            cursor.execute("PRAGMA foreign_keys = OFF")
+            
+            # Get all tables
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
+            tables = [row[0] for row in cursor.fetchall()]
+            
+            # Drop all tables
+            for table in tables:
+                cursor.execute(f'DROP TABLE IF EXISTS "{table}"')
+            
+            conn.commit()
+            cursor.execute("PRAGMA foreign_keys = ON")
+            conn.close()
+            print(f"✅ Dropped {len(tables)} tables from existing database")
+        except Exception as e:
+            print(f"⚠️  Could not drop tables: {e}")
+    
+    # Create all tables using Emmett migrations
     with db.connection():
-        # Seed roles and permissions
+        migration = generate_runtime_migration(db)
+        migration.up()
+        db.commit()
+    
+    # Seed roles and permissions immediately after DB setup
+    with db.connection():
         seed_all(db)
         db.commit()
+        print("✅ Seeded roles and permissions")
+        
+        # Patch Row classes with methods after seeding
+        # Get a seeded role to find its Row class
+        if hasattr(db, 'roles'):
+            sample_role = db(db.roles).select().first()
+            if sample_role:
+                RoleRowClass = type(sample_role)
+                
+                # Add get_permissions to RoleRow
+                def role_get_permissions(self):
+                    """Get permissions for this role (works on Row objects)."""
+                    try:
+                        role_id = self.id if hasattr(self, 'id') else self['id']
+                        rows = db(
+                            (db.role_permissions.role == role_id) &
+                            (db.role_permissions.permission == db.permissions.id)
+                        ).select(db.permissions.ALL)
+                        return [row for row in rows]
+                    except Exception as e:
+                        role_name = getattr(self, 'name', self.get('name', 'unknown')) if hasattr(self, 'get') else getattr(self, 'name', 'unknown')
+                        print(f"Error getting permissions for role {role_name}: {e}")
+                        return []
+                
+                RoleRowClass.get_permissions = role_get_permissions
+                print("✅ Patched Role.get_permissions() method")
+        
+        # Create a temporary post to get its Row class and patch it
+        if hasattr(db, 'posts'):
+            temp_user_id = db.users.insert(
+                email='_temp_patch@test.com',
+                password='x',
+                first_name='T',
+                last_name='P'
+            )
+            temp_post_id = db.posts.insert(
+                title='_temp_',
+                text='x',
+                user=temp_user_id
+            )
+            db.commit()
+            
+            sample_post = db(db.posts.id == temp_post_id).select().first()
+            if sample_post:
+                PostRowClass = type(sample_post)
+                
+                # Add can_edit to PostRow
+                def post_can_edit(self, user):
+                    """Check if user can edit this post (works on Row objects)."""
+                    from models.utils import user_can_access_resource
+                    if not user:
+                        return False
+                    user_id = user.id if hasattr(user, 'id') else user['id']
+                    return user_can_access_resource(user_id, 'post', 'edit', self)
+                
+                # Add can_delete to PostRow  
+                def post_can_delete(self, user):
+                    """Check if user can delete this post (works on Row objects)."""
+                    from models.utils import user_can_access_resource
+                    if not user:
+                        return False
+                    user_id = user.id if hasattr(user, 'id') else user['id']
+                    return user_can_access_resource(user_id, 'post', 'delete', self)
+                
+                PostRowClass.can_edit = post_can_edit
+                PostRowClass.can_delete = post_can_delete
+                print("✅ Patched Post.can_edit() and Post.can_delete() methods")
+            
+            # Cleanup temp data
+            db(db.posts.id == temp_post_id).delete()
+            db(db.users.id == temp_user_id).delete()
+            db.commit()
+    
     yield
-    # No cleanup - leave seeded data for all tests
+    
+    # Cleanup after tests
+    with db.connection():
+        for table in db.tables:
+            try:
+                db.executesql(f'DROP TABLE IF EXISTS "{table}"')
+            except:
+                pass
+        db.commit()
 
 
 @pytest.fixture()

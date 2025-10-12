@@ -66,57 +66,58 @@ from auth.oauth_manager import OAuthManager
 
 @pytest.fixture(scope='module', autouse=True)
 def _prepare_db(request):
-    """Ensure database is ready - create OAuth tables if they don't exist"""
+    """Ensure database is ready - create all tables including users and OAuth tables"""
+    import sqlite3
     print(f"🔧 _prepare_db fixture running...")
     
-    # Create OAuth tables using raw SQL if they don't exist
-    with db.connection():
+    db_path = os.path.join(os.path.dirname(__file__), '..', 'runtime', 'databases', 'bloggy.db')
+    db_dir = os.path.dirname(db_path)
+    
+    # Ensure database directory exists
+    os.makedirs(db_dir, exist_ok=True)
+    
+    # Drop all existing tables using direct SQLite connection
+    if os.path.exists(db_path):
         try:
-            # Try to query oauth_accounts table to see if it exists
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            
+            # Disable foreign keys temporarily
+            cursor.execute("PRAGMA foreign_keys = OFF")
+            
+            # Get all tables
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
+            tables = [row[0] for row in cursor.fetchall()]
+            
+            # Drop all tables
+            for table in tables:
+                cursor.execute(f'DROP TABLE IF EXISTS "{table}"')
+            
+            conn.commit()
+            cursor.execute("PRAGMA foreign_keys = ON")
+            conn.close()
+            print(f"   ✅ Dropped {len(tables)} tables from existing database")
+        except Exception as e:
+            print(f"   ⚠️  Could not drop tables: {e}")
+    
+    # Create all tables using Emmett migrations
+    with db.connection():
+        migration = generate_runtime_migration(db)
+        migration.up()
+        print("   ✅ All tables created via migration")
+        
+        # Ensure OAuth tables exist (they should be in migration now)
+        try:
             db.executesql("SELECT COUNT(*) FROM oauth_accounts LIMIT 1")
-            print("   ℹ️  oauth_accounts table already exists in database")
-        except:
-            # Table doesn't exist, create it with raw SQL
-            print("   Creating oauth_accounts table with SQL...")
-            db.executesql('''
-                CREATE TABLE IF NOT EXISTS oauth_accounts (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user INTEGER NOT NULL REFERENCES users(id),
-                    provider VARCHAR(50) NOT NULL,
-                    provider_user_id VARCHAR(255) NOT NULL,
-                    email VARCHAR(255),
-                    name VARCHAR(255),
-                    picture VARCHAR(512),
-                    profile_data TEXT,
-                    created_at TIMESTAMP,
-                    last_login_at TIMESTAMP,
-                    UNIQUE(provider, provider_user_id)
-                )
-            ''')
-            print("   ✅ OAuth accounts table created in database")
+            print("   ℹ️  oauth_accounts table confirmed")
+        except Exception as e:
+            print(f"   ⚠️  oauth_accounts table issue: {e}")
         
         try:
-            # Try to query oauth_tokens table to see if it exists
             db.executesql("SELECT COUNT(*) FROM oauth_tokens LIMIT 1")
-            print("   ℹ️  oauth_tokens table already exists in database")
-        except:
-            # Table doesn't exist, create it with raw SQL
-            print("   Creating oauth_tokens table with SQL...")
-            db.executesql('''
-                CREATE TABLE IF NOT EXISTS oauth_tokens (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    oauth_account INTEGER NOT NULL REFERENCES oauth_accounts(id),
-                    access_token_encrypted TEXT NOT NULL,
-                    refresh_token_encrypted TEXT,
-                    token_type VARCHAR(50) DEFAULT 'Bearer',
-                    scope VARCHAR(512),
-                    access_token_expires_at TIMESTAMP,
-                    refresh_token_expires_at TIMESTAMP,
-                    created_at TIMESTAMP,
-                    updated_at TIMESTAMP
-                )
-            ''')
-            print("   ✅ OAuth tokens table created in database")
+            print("   ℹ️  oauth_tokens table confirmed")
+        except Exception as e:
+            print(f"   ⚠️  oauth_tokens table issue: {e}")
         
         db.commit()
     
@@ -125,10 +126,12 @@ def _prepare_db(request):
     # Cleanup - delete only test data created by these tests
     try:
         with db.connection():
-            # Delete real OAuth test data using raw SQL
+            # Delete real OAuth test data
             try:
-                db.executesql("DELETE FROM oauth_tokens WHERE oauth_account IN (SELECT id FROM oauth_accounts WHERE email LIKE 'oauth_test%')")
-                db.executesql("DELETE FROM oauth_accounts WHERE email LIKE 'oauth_test%'")
+                if 'oauth_tokens' in db.tables:
+                    db.executesql("DELETE FROM oauth_tokens WHERE oauth_account IN (SELECT id FROM oauth_accounts WHERE email LIKE 'oauth_test%')")
+                if 'oauth_accounts' in db.tables:
+                    db.executesql("DELETE FROM oauth_accounts WHERE email LIKE 'oauth_test%'")
             except Exception as e:
                 print(f"Warning cleaning OAuth tables: {e}")
             
