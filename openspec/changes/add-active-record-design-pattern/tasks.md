@@ -227,7 +227,136 @@ python validate_models.py Comment
 
 ---
 
-## Phase 4: Auto-UI Integration (2 hours)
+## Phase 4: Auto-Generation Infrastructure (5 hours)
+
+### Task 4.1: Create REST API Auto-Generator
+**File**: `runtime/auto_api_generator.py` (new)  
+**Estimated Time**: 2 hours  
+**Priority**: High
+
+**Subtasks**:
+- [ ] Create `AutoAPIGenerator` class
+- [ ] Implement CRUD endpoint generation (GET, POST, PUT, DELETE)
+- [ ] Add query parameter handling (pagination, filtering, sorting)
+- [ ] Add request validation using model validators
+- [ ] Add response serialization
+- [ ] Add error handling
+- [ ] Register routes with Emmett automatically
+- [ ] Test all generated endpoints
+
+**Acceptance Criteria**:
+```python
+# Should auto-generate API
+@app.on_start
+async def generate_apis():
+    generator = AutoAPIGenerator(app)
+    generator.generate_for_model(Post)
+
+# Generated routes should work
+response = client.get('/api/posts')
+assert response.status == 200
+assert 'items' in response.json
+```
+
+**Test Command**:
+```bash
+pytest test_auto_api_generator.py -v
+```
+
+---
+
+### Task 4.2: Update OpenAPI Generator for Active Record
+**File**: `runtime/openapi_generator.py`  
+**Estimated Time**: 1 hour  
+**Priority**: High
+
+**Subtasks**:
+- [ ] Use ActiveRecord introspection API
+- [ ] Generate schemas from model attributes
+- [ ] Include validation constraints in schema
+- [ ] Generate endpoint documentation from routes
+- [ ] Add authentication requirements to docs
+- [ ] Test Swagger UI renders correctly
+
+**Acceptance Criteria**:
+- ✅ Swagger JSON includes all model schemas
+- ✅ Validation rules appear in schemas
+- ✅ Authentication requirements documented
+- ✅ Swagger UI functional
+
+**Test Command**:
+```bash
+curl http://localhost:8000/swagger.json | jq '.definitions.Post'
+```
+
+---
+
+### Task 4.3: Create Page Auto-Generator
+**File**: `runtime/auto_page_generator.py` (new)  
+**Estimated Time**: 1.5 hours  
+**Priority**: Medium
+
+**Subtasks**:
+- [ ] Create `AutoPageGenerator` class
+- [ ] Generate list page with pagination
+- [ ] Generate detail page
+- [ ] Generate create form page
+- [ ] Generate edit form page
+- [ ] Apply Tailwind CSS styling
+- [ ] Add permission checks to routes
+- [ ] Test all generated pages
+
+**Acceptance Criteria**:
+```python
+# Should auto-generate pages
+generator = AutoPageGenerator(app)
+generator.generate_for_model(Post)
+
+# Generated pages should work
+response = client.get('/posts')
+assert response.status == 200
+assert '<table' in response.text  # List view
+```
+
+**Test Command**:
+```bash
+pytest test_auto_page_generator.py -v
+```
+
+---
+
+### Task 4.4: Create Permission Auto-Generator
+**File**: `runtime/auto_permission_generator.py` (new)  
+**Estimated Time**: 30 minutes  
+**Priority**: High
+
+**Subtasks**:
+- [ ] Create `AutoPermissionGenerator` class
+- [ ] Generate ownership checks
+- [ ] Generate authentication checks
+- [ ] Generate role-based checks
+- [ ] Integrate with route decorators
+- [ ] Test permission enforcement
+
+**Acceptance Criteria**:
+```python
+# Should enforce auto-generated permissions
+response = client.post('/api/posts', json={'title': 'Test'})
+assert response.status == 401  # Not authenticated
+
+# Should check ownership
+response = authenticated_client.put('/api/posts/999')
+assert response.status == 403  # Not owner
+```
+
+**Test Command**:
+```bash
+pytest test_auto_permission_generator.py -v
+```
+
+---
+
+## Phase 5: Auto-UI Integration (2 hours)
 
 ### Task 4.1: Update Auto-UI Generator
 **File**: `runtime/auto_ui_generator.py`  
@@ -285,9 +414,71 @@ python -m app
 
 ---
 
-## Phase 5: Documentation & Testing (1 hour)
+## Phase 6: Integration & Configuration (1 hour)
 
-### Task 5.1: Write Pattern Documentation
+### Task 6.1: Add Model Meta Configuration
+**File**: `runtime/app.py`  
+**Estimated Time**: 30 minutes  
+**Priority**: Medium
+
+**Subtasks**:
+- [ ] Add `Meta` class support to ActiveRecord
+- [ ] Parse configuration options
+- [ ] Apply to auto-generators
+- [ ] Document all options
+- [ ] Add validation for config values
+
+**Acceptance Criteria**:
+```python
+class Post(Model, ActiveRecord):
+    class Meta:
+        auto_generate_api = True
+        api_prefix = '/api/v1'
+        require_auth_for_write = True
+
+# Config should be respected
+assert Post.Meta.api_prefix == '/api/v1'
+```
+
+**Test Command**:
+```bash
+pytest test_active_record.py::test_meta_configuration -v
+```
+
+---
+
+### Task 6.2: Wire Up Auto-Generation on Startup
+**File**: `runtime/app.py`  
+**Estimated Time**: 30 minutes  
+**Priority**: High
+
+**Subtasks**:
+- [ ] Add `@app.on_start` hook for auto-generation
+- [ ] Discover all Active Record models
+- [ ] Run API generator for each model
+- [ ] Run page generator for each model
+- [ ] Run permission generator for each model
+- [ ] Log generated routes
+- [ ] Test complete flow
+
+**Acceptance Criteria**:
+```python
+# Should auto-generate on app start
+# All routes should be available immediately
+response = client.get('/api/posts')
+assert response.status == 200
+```
+
+**Test Command**:
+```bash
+python -m app  # Start app and verify routes
+```
+
+---
+
+## Phase 7: Documentation & Testing (1 hour)
+
+### Task 7.1: Write Pattern Documentation
 **File**: `documentation/active_record_pattern.md` (new)  
 **Estimated Time**: 30 minutes  
 **Priority**: High
@@ -308,7 +499,7 @@ python -m app
 
 ---
 
-### Task 5.2: Add Comprehensive Tests
+### Task 7.2: Add Comprehensive Tests
 **File**: `runtime/test_active_record.py` (new)  
 **Estimated Time**: 30 minutes  
 **Priority**: High
@@ -372,9 +563,11 @@ ls documentation/active_record_pattern.md
 | Phase 1 | 3h | Base class & decorators | Introspection API works |
 | Phase 2 | 2h | Pattern validation | Anti-patterns detected |
 | Phase 3 | 4h | Refactored models | All tests pass |
-| Phase 4 | 2h | Auto-UI integration | UI generation works |
-| Phase 5 | 1h | Documentation & tests | 100% coverage |
-| **Total** | **12h** | **Active Record Pattern** | **Clean architecture** |
+| Phase 4 | 5h | Auto-generation infrastructure | APIs/pages/permissions auto-generated |
+| Phase 5 | 2h | Auto-UI integration | UI generation works |
+| Phase 6 | 1h | Integration & config | Wired up on startup |
+| Phase 7 | 1h | Documentation & tests | 100% coverage |
+| **Total** | **18h** | **Active Record Pattern** | **Full auto-generation** |
 
 ---
 
@@ -468,6 +661,20 @@ Tests passing: X/Y"
 ---
 
 **Task List Status**: Ready for review  
-**Total Estimated Time**: 12 hours  
+**Total Estimated Time**: 18 hours (4-5 days part-time)  
 **Next Step**: Get team approval, then begin Phase 1
+
+---
+
+## Feature Summary
+
+This implementation provides:
+- ✅ Clean Active Record design pattern
+- ✅ Automatic REST API generation (CRUD endpoints)
+- ✅ Automatic OpenAPI/Swagger documentation
+- ✅ Automatic CRUD page generation
+- ✅ Automatic permission enforcement
+- ✅ Zero-boilerplate model-driven development
+- ✅ Pattern validation and anti-pattern detection
+- ✅ Comprehensive testing and documentation
 

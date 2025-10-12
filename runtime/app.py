@@ -16,6 +16,9 @@ sys.path.insert(0, os.path.dirname(__file__))
 from openapi_generator import OpenAPIGenerator
 from auto_ui_generator import auto_ui
 
+# Import models
+from models import User, Post, Comment, is_admin, get_current_user, is_authenticated
+
 # Import Sentry extension for error tracking
 try:
     from emmett_sentry import Sentry
@@ -348,6 +351,14 @@ def get_current_user():
     Returns:
         User object or None if not authenticated
     """
+    try:
+        # Try to get from current context first (works in request context)
+        if hasattr(current, 'session') and hasattr(current.session, 'auth') and current.session.auth:
+            return current.session.auth.user
+    except:
+        pass
+    
+    # Fall back to explicit session retrieval
     sess = get_current_session()
     if sess and hasattr(sess, 'auth') and sess.auth:
         return sess.auth.user
@@ -364,115 +375,7 @@ def is_authenticated():
     return get_current_user() is not None
 
 
-def is_admin():
-    """
-    Check if current user has admin role.
-    
-    Returns:
-        True if user is admin, False otherwise
-    """
-    user = get_current_user()
-    if not user:
-        return False
-    try:
-        groups = user.groups()
-        return 'admin' in groups
-    except:
-        return False
-
-
-#: define models
-class User(AuthUser):
-    # will create "auth_user" table and groups/permissions ones
-    has_many('posts', 'comments')
-
-
-class Post(Model):
-    belongs_to('user')
-    has_many('comments')
-
-    title = Field()
-    text = Field.text()
-    date = Field.datetime()
-
-    default_values = {
-        'user': lambda: get_current_user().id if get_current_user() else None,
-        'date': now
-    }
-    validation = {
-        'title': {'presence': True},
-        'text': {'presence': True},
-        'user': {'allow': 'empty'}  # Allow empty for REST API (will be set by callback)
-    }
-    fields_rw = {
-        'user': False,  # Hidden in forms
-        'date': False
-    }
-    rest_rw = {
-        'user': (False, True),  # Hidden in output, writable in input for REST API
-        'date': (True, False)    # Visible in output, not writable in input
-    }
-    
-    # Auto UI configuration
-    auto_ui_config = {
-        'display_name': 'Blog Post',
-        'display_name_plural': 'Blog Posts',
-        'list_columns': ['id', 'title', 'user', 'date'],
-        'search_fields': ['title', 'text'],
-        'sort_default': '-date',
-        'permissions': {
-            'list': lambda: True,  # Anyone can view list
-            'create': lambda: session.auth is not None,  # Must be logged in to create
-            'read': lambda: True,  # Anyone can view details
-            'update': lambda: session.auth is not None,  # Must be logged in to update
-            'delete': lambda: session.auth is not None,  # Must be logged in to delete
-        },
-        'field_config': {
-            'title': {
-                'display_name': 'Post Title',
-                'help_text': 'Enter a descriptive title for your blog post'
-            },
-            'text': {
-                'display_name': 'Content',
-                'help_text': 'Write your blog post content here'
-            },
-            'user': {
-                'display_name': 'Author',
-                'readonly': True
-            },
-            'date': {
-                'display_name': 'Published Date',
-                'readonly': True
-            }
-        }
-    }
-
-
-class Comment(Model):
-    belongs_to('user', 'post')
-
-    text = Field.text()
-    date = Field.datetime()
-
-    default_values = {
-        'user': lambda: get_current_user().id if get_current_user() else None,
-        'date': now
-    }
-    validation = {
-        'text': {'presence': True},
-        'user': {'allow': 'empty'},  # Allow empty for REST API (will be set by callback)
-        'post': {'presence': True}
-    }
-    fields_rw = {
-        'user': False,  # Hidden in forms
-        'post': False,
-        'date': False
-    }
-    rest_rw = {
-        'user': (False, True),  # Hidden in output, writable in input for REST API
-        'post': (True, True),    # Visible and writable for REST API
-        'date': (True, False)    # Visible in output, not writable in input
-    }
+# is_admin function moved to models/user/model.py
 
 
 #: init db, mailer and auth
@@ -590,7 +493,7 @@ def setup_admin():
         else:
             group_id = db.auth_groups.insert(role="admin", description="Administrators")
         
-        # add user to admins group
+        # add user to admins group (field name is 'user', not 'auth_user')
         db.auth_memberships.insert(user=user.id, auth_group=group_id)
         db.commit()
         print("Admin user created: doc@emmettbrown.com")
@@ -617,37 +520,10 @@ else:
     ]
 
 
-#: exposing functions
-@app.route("/")
-async def index():
-    posts = Post.all().select(orderby=~Post.date)
-    return dict(posts=posts)
-
-
-@app.route("/post/<int:pid>", methods=['get', 'post'])
-async def one(pid):
-    def _validate_comment(form):
-        # manually set post id in comment form
-        form.params.post = pid
-    # get post and return 404 if doesn't exist
-    post = get_or_404(Post, pid)
-    # get comments
-    comments = post.comments(orderby=~Comment.date)
-    # and create a form for commenting if the user is logged in
-    if is_authenticated():
-        form = await Comment.form(onvalidation=_validate_comment)
-        if form.accepted:
-            redirect(url('one', pid))
-    return locals()
-
-
-@app.route("/new", methods=['get', 'post'])
-@requires(is_admin, url('index'))
-async def new_post():
-    form = await Post.form()
-    if form.accepted:
-        redirect(url('one', form.params.id))
-    return dict(form=form)
+#: setup model routes
+# Routes are now organized in their respective model packages
+from models import setup_all_routes
+setup_all_routes(app)
 
 
 auth_routes = auth.module(__name__)
@@ -690,46 +566,9 @@ if PROMETHEUS_ENABLED and PROMETHEUS_AVAILABLE:
 
 
 #: REST API configuration
-# REST endpoints for Posts
-posts_api = app.rest_module(
-    __name__, 
-    'posts_api', 
-    Post, 
-    url_prefix='api/posts'
-)
-
-# REST endpoints for Comments
-comments_api = app.rest_module(
-    __name__, 
-    'comments_api', 
-    Comment, 
-    url_prefix='api/comments'
-)
-
-# REST endpoints for Users (read-only)
-users_api = app.rest_module(
-    __name__, 
-    'users_api', 
-    User, 
-    url_prefix='api/users',
-    disabled_methods=['create', 'update', 'delete']
-)
-
-# REST API callbacks for authentication and authorization
-@posts_api.before_create
-def set_post_user(attrs):
-    """Automatically set user from session if authenticated"""
-    user = get_current_user()
-    if user and 'user' not in attrs:
-        attrs['user'] = user.id
-
-
-@comments_api.before_create
-def set_comment_user(attrs):
-    """Automatically set user from session if authenticated"""
-    user = get_current_user()
-    if user and 'user' not in attrs:
-        attrs['user'] = user.id
+# Setup REST APIs for all models
+from models import setup_all_apis
+api_modules = setup_all_apis(app)
 
 
 #: OpenAPI / Swagger Documentation

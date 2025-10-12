@@ -31,22 +31,19 @@ def client():
 
 @pytest.fixture(scope='module', autouse=True)
 def _prepare_db(request):
-    # Setup test database - drop and recreate all tables
+    # Setup test database - ensure clean state
+    import os
+    db_path = os.path.join(os.path.dirname(__file__), 'databases', 'bloggy.db')
+    
+    # Remove existing database file to ensure clean state
+    if os.path.exists(db_path):
+        try:
+            os.remove(db_path)
+        except:
+            pass
+    
+    # Now create fresh schema
     with db.connection():
-        # Get all table names from the database
-        tables = db.tables
-        
-        # Drop all tables manually to ensure clean state
-        for table in tables:
-            try:
-                db.executesql(f'DROP TABLE IF EXISTS "{table}"')
-            except:
-                pass
-        
-        # Commit the drops
-        db.commit()
-        
-        # Now create fresh schema
         migration = generate_runtime_migration(db)
         migration.up()
         setup_admin()
@@ -147,7 +144,8 @@ def create_test_post():
         for post_id in created_posts:
             post = Post.get(post_id)
             if post:
-                post.comments().delete()
+                # Delete related comments first
+                Comment.where(lambda c: c.post == post_id).delete()
                 post.delete_record()
 
 
@@ -355,7 +353,7 @@ def test_api_comments_create(logged_client, create_test_post):
     
     r = logged_client.post('/api/comments', data={
         'text': 'API Comment',
-        'post': post_id
+        'post': str(post_id)  # Convert to string for form data
     })
     assert r.status == 201
     
@@ -372,7 +370,7 @@ def test_api_comments_create_missing_text(logged_client, create_test_post):
     post_id = create_test_post()
     
     r = logged_client.post('/api/comments', data={
-        'post': post_id
+        'post': str(post_id)  # Convert to string for form data
     })
     assert r.status == 422
 
@@ -381,7 +379,7 @@ def test_api_comments_create_invalid_post(logged_client):
     """Test POST /api/comments with invalid post_id returns error"""
     r = logged_client.post('/api/comments', data={
         'text': 'Comment',
-        'post': 99999
+        'post': '99999'  # String for form data
     })
     assert r.status in [404, 422]
 
@@ -392,7 +390,7 @@ def test_api_comments_user_auto_set(logged_client, create_test_post):
     
     r = logged_client.post('/api/comments', data={
         'text': 'Auto user comment',
-        'post': post_id
+        'post': str(post_id)  # Convert to string for form data
     })
     assert r.status == 201
     
@@ -567,17 +565,29 @@ def test_login_nonexistent_email(client):
         assert r.status in [200, 303]
 
 
-def test_logout(logged_client):
+def test_logout(client):
     """Test logout destroys session"""
-    # First verify we're logged in
-    r = logged_client.get('/')
+    # Create a fresh logged-in client for this test (don't use shared logged_client)
+    # Get login page for CSRF token
+    with client.get('/auth/login').context as ctx:
+        csrf_token = list(ctx.session._csrf)[-1]
+    
+    # Perform login
+    client.post('/auth/login', data={
+        'email': 'doc@emmettbrown.com',
+        'password': 'fluxcapacitor',
+        '_csrf_token': csrf_token
+    }, follow_redirects=True)
+    
+    # Verify we're logged in
+    r = client.get('/')
     assert r.context.session.auth.user is not None
     
     # Logout
-    logged_client.get('/auth/logout')
+    client.get('/auth/logout')
     
     # Verify session auth is cleared (user is None or session.auth doesn't exist)
-    r = logged_client.get('/')
+    r = client.get('/')
     # After logout, auth should be None or not exist, or user should be None
     assert (not hasattr(r.context.session, 'auth') or 
             r.context.session.auth is None or
@@ -1417,7 +1427,7 @@ def test_admin_group_membership(logged_client):
     """Test admin user is member of admin group"""
     with db.connection():
         user = User.get(1)
-        # Check if user is in admin group
+        # Check if user is in admin group (auth_memberships uses 'user' field)
         membership = db(
             (db.auth_memberships.user == 1) &
             (db.auth_groups.role == 'admin') &
@@ -1440,7 +1450,7 @@ def test_user_has_many_posts(logged_client):
     # Verify relationship
     with db.connection():
         user = User.get(1)
-        user_posts = user.posts().select()
+        user_posts = user.posts()
         assert any(p.id == post_id for p in user_posts)
         
     # Cleanup
@@ -1470,7 +1480,7 @@ def test_post_has_many_comments(logged_client, create_test_post):
         
     with db.connection():
         post = Post.get(post_id)
-        comments = post.comments().select()
+        comments = post.comments()
         assert any(c.id == comment_id for c in comments)
         
     with db.connection():
@@ -1486,6 +1496,10 @@ def test_comment_belongs_to_post(logged_client, create_test_post):
     with db.connection():
         comment = Comment.create(text='Test', post=post_id, user=1)
         comment_id = comment.id
+        
+    # Reload comment to access all fields
+    with db.connection():
+        comment = Comment.get(comment_id)
         assert comment.post == post_id
         
     with db.connection():

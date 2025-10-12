@@ -298,10 +298,85 @@ run_chrome_tests() {
     echo -e "${YELLOW}🌐 Running Chrome DevTools Tests...${NC}"
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     
-    if $DOCKER_COMPOSE exec runtime bash -c "cd /app/runtime && python test_ui_chrome.py"; then
+    # Check if Chrome is available
+    if [ -z "$HAS_CHROME_MCP" ]; then
+        echo -e "${CYAN}ℹ️  Chrome MCP integration not enabled${NC}"
+        echo -e "${CYAN}   Set HAS_CHROME_MCP=true to enable real Chrome testing${NC}"
+        echo -e "${CYAN}   Prerequisites:${NC}"
+        echo -e "${CYAN}   • Chrome browser running on host${NC}"
+        echo -e "${CYAN}   • App running on http://localhost:8081${NC}"
+        echo -e "${CYAN}   • MCP Chrome DevTools available${NC}"
+        echo ""
+        echo -e "${YELLOW}⚠️  Running mock Chrome tests instead...${NC}"
+        
+        # Run old mock tests (always pass)
+        if $DOCKER_COMPOSE exec runtime bash -c "cd /app/runtime && python test_ui_chrome.py"; then
+            echo -e "${GREEN}✅ Mock Chrome tests passed (no real browser)${NC}"
+            return 0
+        else
+            echo -e "${RED}❌ Mock Chrome tests failed${NC}"
+            return 1
+        fi
+    fi
+    
+    # Real Chrome tests (run on HOST, not in Docker)
+    echo -e "${CYAN}🌐 Running REAL Chrome integration tests...${NC}"
+    echo -e "${CYAN}   This will actually open Chrome and test the UI${NC}"
+    echo ""
+    
+    # Check if app is running
+    echo -e "${CYAN}📡 Checking if app is accessible...${NC}"
+    if ! curl -s http://localhost:8081 > /dev/null 2>&1; then
+        echo -e "${RED}❌ App not accessible at http://localhost:8081${NC}"
+        echo -e "${YELLOW}   Start the app first:${NC}"
+        echo -e "${YELLOW}   cd runtime && emmett develop${NC}"
+        return 1
+    fi
+    echo -e "${GREEN}✅ App is running${NC}"
+    echo ""
+    
+    # Run Chrome tests on HOST (not in Docker)
+    cd "$PROJECT_ROOT/runtime"
+    
+    TEST_CMD="pytest test_ui_chrome_real.py"
+    
+    # Add verbosity
+    if [ "$VERBOSE" = "vv" ]; then
+        TEST_CMD="$TEST_CMD -vv"
+    elif [ "$VERBOSE" = true ]; then
+        TEST_CMD="$TEST_CMD -v"
+    fi
+    
+    # Add stop on failure
+    if [ "$STOP_ON_FAILURE" = true ]; then
+        TEST_CMD="$TEST_CMD -x"
+    fi
+    
+    # Add test pattern
+    if [ -n "$TEST_PATTERN" ]; then
+        TEST_CMD="$TEST_CMD -k \"$TEST_PATTERN\""
+        echo -e "${CYAN}🔍 Running tests matching: $TEST_PATTERN${NC}"
+    fi
+    
+    # Always add -s for Chrome tests (to see output)
+    TEST_CMD="$TEST_CMD -s"
+    
+    # Add extra pytest args
+    if [ -n "$PYTEST_EXTRA_ARGS" ]; then
+        TEST_CMD="$TEST_CMD $PYTEST_EXTRA_ARGS"
+    fi
+    
+    echo -e "${CYAN}📝 Command: $TEST_CMD${NC}"
+    echo -e "${CYAN}📁 Working directory: runtime/${NC}"
+    echo ""
+    
+    if eval "$TEST_CMD"; then
+        echo ""
         echo -e "${GREEN}✅ Chrome tests passed!${NC}"
+        echo -e "${GREEN}📸 Screenshots saved to: runtime/screenshots/${NC}"
         return 0
     else
+        echo ""
         echo -e "${RED}❌ Chrome tests failed${NC}"
         return 1
     fi

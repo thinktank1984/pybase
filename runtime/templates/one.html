@@ -15,8 +15,8 @@
     <article class="bg-white rounded-lg shadow-md overflow-hidden mb-8">
         <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6">
             <h1 class="text-4xl font-bold text-white mb-2">{{=post.title}}</h1>
-            {{if post.created_at:}}
-            <p class="text-blue-100 text-sm">Published on {{=post.created_at}}</p>
+            {{if post.date:}}
+            <p class="text-blue-100 text-sm">Published on {{=post.date}}</p>
             {{pass}}
         </div>
         <div class="px-8 py-6">
