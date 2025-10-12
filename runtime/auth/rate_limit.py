@@ -5,7 +5,7 @@ Uses in-memory storage (suitable for single-server deployments).
 """
 
 from functools import wraps
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from collections import defaultdict
 from threading import Lock
 
@@ -32,7 +32,7 @@ class RateLimiter:
         Returns:
             Tuple of (is_limited, retry_after_seconds)
         """
-        now = datetime.now()
+        now = datetime.now(timezone.utc)
         cutoff = now - timedelta(seconds=window_seconds)
         
         with self.lock:

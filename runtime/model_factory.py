@@ -24,7 +24,7 @@ Usage:
 
 import random
 import string
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Type
 from emmett.orm import Model
 
@@ -199,17 +199,17 @@ class Generators:
     @staticmethod
     def datetime_now() -> datetime:
         """Get current datetime."""
-        return datetime.now()
+        return datetime.now(timezone.utc)
     
     @staticmethod
     def datetime_past(days: int = 30) -> datetime:
         """Get datetime in the past."""
-        return datetime.now() - timedelta(days=random.randint(1, days))
+        return datetime.now(timezone.utc) - timedelta(days=random.randint(1, days))
     
     @staticmethod
     def datetime_future(days: int = 30) -> datetime:
         """Get datetime in the future."""
-        return datetime.now() + timedelta(days=random.randint(1, days))
+        return datetime.now(timezone.utc) + timedelta(days=random.randint(1, days))
 
 
 # Factory registry

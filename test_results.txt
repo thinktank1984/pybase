@@ -8,30 +8,18 @@
 [0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
 [0;36m📝 Command: cd /app/runtime && pytest tests.py --cov=. --cov-report=html --cov-report=term[0m
 
-============================= test session starts ==============================
+time="2025-10-13T11:08:16+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+[1m============================= test session starts ==============================[0m
 platform linux -- Python 3.12.12, pytest-8.4.2, pluggy-1.6.0
 rootdir: /app/runtime
+configfile: pytest.ini
 plugins: cov-7.0.0, asyncio-1.2.0, anyio-4.11.0
-asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
 collected 83 items
 
-tests.py ............................................................... [ 75%]
-....................                                                     [100%]
+tests.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m [ 75%]
+[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                                                     [100%][0m
 
-=============================== warnings summary ===============================
-tests.py: 134 warnings
-  /usr/local/lib/python3.12/site-packages/emmett/ctx.py:31: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
-    return pendulum.instance(datetime.utcnow())
-
-tests.py::test_empty_db
-  /usr/local/lib/python3.12/site-packages/emmett_core/protocols/rsgi/test_client/client.py:304: DeprecationWarning: There is no current event loop
-    loop = asyncio.get_event_loop()
-
-tests.py: 198 warnings
-  /usr/local/lib/python3.12/site-packages/emmett_core/protocols/rsgi/wrappers.py:69: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
-    self._now = datetime.utcnow()
-
--- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
 ================================ tests coverage ================================
 _______________ coverage: platform linux, python 3.12.12-final-0 _______________
 
@@ -91,7 +79,7 @@ validate_models.py                   227    227     0%
 ------------------------------------------------------
 TOTAL                               4994   3290    34%
 Coverage HTML written to dir htmlcov
-======================= 83 passed, 333 warnings in 8.00s =======================
+[32m============================== [32m[1m83 passed[0m[32m in 8.07s[0m[32m ==============================[0m
 [0;32m✅ Application tests passed![0m
 
 [1;33m🌐 Running Chrome DevTools Tests...[0m

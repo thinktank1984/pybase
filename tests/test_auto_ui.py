@@ -2,6 +2,25 @@
 """
 Tests for Auto UI Generation
 
+🚨 CRITICAL POLICY: NO MOCKING ALLOWED 🚨
+
+⚠️ USING MOCKS, STUBS, OR TEST DOUBLES IS ILLEGAL IN THIS REPOSITORY ⚠️
+
+This is a ZERO-TOLERANCE POLICY:
+- ❌ FORBIDDEN: unittest.mock, Mock(), MagicMock(), patch()
+- ❌ FORBIDDEN: pytest-mock, mocker fixture
+- ❌ FORBIDDEN: Any mocking, stubbing, or test double libraries
+- ❌ FORBIDDEN: Fake in-memory databases or fake HTTP responses
+- ❌ FORBIDDEN: Simulated external services or APIs
+
+✅ ONLY REAL INTEGRATION TESTS ARE ALLOWED:
+- ✅ Real database operations with actual SQL
+- ✅ Real HTTP requests through test client
+- ✅ Real browser interactions with Chrome DevTools MCP
+- ✅ Real external service calls (or skip tests if unavailable)
+
+If you write a test with mocks, the test is INVALID and must be rewritten.
+
 Tests the auto UI generator functionality including:
 - UI mapping loading
 - Route generation
@@ -13,9 +32,14 @@ Tests the auto UI generator functionality including:
 import pytest
 import os
 import json
+import sys
 from datetime import datetime
 from emmett import App
 from emmett.orm import Database, Model, Field, belongs_to
+
+# Add runtime directory to path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'runtime'))
+
 from auto_ui_generator import AutoUIGenerator, UIMappingLoader, auto_ui
 
 
@@ -48,7 +72,7 @@ class TestUIMappingLoader:
     def test_load_default_mappings(self):
         """Test loading default UI mappings."""
         loader = UIMappingLoader(
-            default_path=os.path.join(os.path.dirname(__file__), 'ui_mapping.json')
+            default_path=os.path.join(os.path.dirname(__file__), '..', 'runtime', 'ui_mapping.json')
         )
         loader.load()
         
@@ -91,7 +115,7 @@ class TestUIMappingLoader:
             json.dump(custom_mapping, f)
         
         loader = UIMappingLoader(
-            default_path=os.path.join(os.path.dirname(__file__), 'ui_mapping.json'),
+            default_path=os.path.join(os.path.dirname(__file__), '..', 'runtime', 'ui_mapping.json'),
             custom_path=str(custom_path)
         )
         loader.load()
@@ -106,7 +130,7 @@ class TestUIMappingLoader:
     def test_get_component_for_type(self):
         """Test getting UI component for field type."""
         loader = UIMappingLoader(
-            default_path=os.path.join(os.path.dirname(__file__), 'ui_mapping.json')
+            default_path=os.path.join(os.path.dirname(__file__), '..', 'runtime', 'ui_mapping.json')
         )
         loader.load()
         
@@ -122,7 +146,7 @@ class TestUIMappingLoader:
     def test_get_formatter_for_type(self):
         """Test getting display formatter for field type."""
         loader = UIMappingLoader(
-            default_path=os.path.join(os.path.dirname(__file__), 'ui_mapping.json')
+            default_path=os.path.join(os.path.dirname(__file__), '..', 'runtime', 'ui_mapping.json')
         )
         loader.load()
         

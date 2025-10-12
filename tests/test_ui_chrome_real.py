@@ -1,6 +1,25 @@
 """
 Real Chrome UI Integration Tests for Bloggy
 
+🚨 CRITICAL POLICY: NO MOCKING ALLOWED 🚨
+
+⚠️ USING MOCKS, STUBS, OR TEST DOUBLES IS ILLEGAL IN THIS REPOSITORY ⚠️
+
+This is a ZERO-TOLERANCE POLICY:
+- ❌ FORBIDDEN: unittest.mock, Mock(), MagicMock(), patch()
+- ❌ FORBIDDEN: pytest-mock, mocker fixture
+- ❌ FORBIDDEN: Any mocking, stubbing, or test double libraries
+- ❌ FORBIDDEN: Fake in-memory databases or fake HTTP responses
+- ❌ FORBIDDEN: Simulated external services or APIs
+
+✅ ONLY REAL INTEGRATION TESTS ARE ALLOWED:
+- ✅ Real database operations with actual SQL
+- ✅ Real HTTP requests through test client
+- ✅ Real browser interactions with Chrome DevTools MCP
+- ✅ Real external service calls (or skip tests if unavailable)
+
+If you write a test with mocks, the test is INVALID and must be rewritten.
+
 This test suite uses actual Chrome browser interaction via MCP Chrome DevTools
 to test the Bloggy application UI and functionality.
 
@@ -14,6 +33,11 @@ Run with: pytest test_ui_chrome_real.py -v -s
 
 import pytest
 import os
+import sys
+
+# Add runtime directory to path for chrome_test_helpers
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'runtime'))
+
 from chrome_test_helpers import get_chrome_helper, test_viewports, VIEWPORTS
 
 

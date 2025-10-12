@@ -2,6 +2,25 @@
 """
 Real Integration Tests for OAuth Social Login - NO MOCKING
 
+🚨 CRITICAL POLICY: NO MOCKING ALLOWED 🚨
+
+⚠️ USING MOCKS, STUBS, OR TEST DOUBLES IS ILLEGAL IN THIS REPOSITORY ⚠️
+
+This is a ZERO-TOLERANCE POLICY:
+- ❌ FORBIDDEN: unittest.mock, Mock(), MagicMock(), patch()
+- ❌ FORBIDDEN: pytest-mock, mocker fixture
+- ❌ FORBIDDEN: Any mocking, stubbing, or test double libraries
+- ❌ FORBIDDEN: Fake in-memory databases or fake HTTP responses
+- ❌ FORBIDDEN: Simulated external services or APIs
+
+✅ ONLY REAL INTEGRATION TESTS ARE ALLOWED:
+- ✅ Real database operations with actual SQL
+- ✅ Real HTTP requests through test client
+- ✅ Real browser interactions with Chrome DevTools MCP
+- ✅ Real external service calls (or skip tests if unavailable)
+
+If you write a test with mocks, the test is INVALID and must be rewritten.
+
 This test suite provides REAL integration tests for OAuth functionality following
 the repository's strict no-mocking policy. All tests use:
 - Real database operations
