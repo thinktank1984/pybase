@@ -41,7 +41,7 @@ except ImportError:
     print("Warning: valkey not installed. Valkey cache backend unavailable.")
 
 
-app = App(__name__, template_folder='templates')
+app = App(__name__, template_folder='templates', static_folder='static')
 app.config.url_default_namespace = 'app'
 
 #: mailer configuration
@@ -455,12 +455,14 @@ app.track_metrics = track_metrics
 
 #: exposing functions
 @app.route("/")
+@app.track_metrics() if PROMETHEUS_ENABLED and PROMETHEUS_AVAILABLE else lambda f: f
 async def index():
     posts = Post.all().select(orderby=~Post.date)
     return dict(posts=posts)
 
 
 @app.route("/post/<int:pid>")
+@app.track_metrics('/post/:id') if PROMETHEUS_ENABLED and PROMETHEUS_AVAILABLE else lambda f: f
 async def one(pid):
     def _validate_comment(form):
         # manually set post id in comment form
@@ -480,6 +482,7 @@ async def one(pid):
 
 
 @app.route("/new")
+@app.track_metrics() if PROMETHEUS_ENABLED and PROMETHEUS_AVAILABLE else lambda f: f
 @requires(lambda: session.auth, '/')
 async def new_post():
     form = await Post.form()
@@ -566,6 +569,7 @@ openapi_gen.register_rest_module('users_api', User, 'api/users',
 
 
 @app.route('/api/openapi.json')
+@app.track_metrics() if PROMETHEUS_ENABLED and PROMETHEUS_AVAILABLE else lambda f: f
 @service.json
 async def openapi_spec():
     """Serve OpenAPI 3.0 specification as JSON"""
@@ -573,6 +577,7 @@ async def openapi_spec():
 
 
 @app.route('/api/docs')
+@app.track_metrics() if PROMETHEUS_ENABLED and PROMETHEUS_AVAILABLE else lambda f: f
 async def swagger_ui():
     """Serve Swagger UI for interactive API documentation"""
     html = """<!DOCTYPE html>
