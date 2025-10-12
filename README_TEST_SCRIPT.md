@@ -12,7 +12,7 @@
 
 ## What It Does
 
-The script runs 5 test suites in sequence:
+The script runs **all 11 test suites** in sequence:
 
 1. **tests.py** - Main integration tests (83 tests)
    - Database operations

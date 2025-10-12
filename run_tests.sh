@@ -23,6 +23,7 @@ SHOW_DURATIONS=false
 PYTEST_EXTRA_ARGS=""
 CLEAN_SCREENSHOTS=true  # Clean screenshots by default
 HEADED_MODE=false  # Run Chrome in visible/headed mode
+SEPARATE_MODE=false  # Run tests separately with output files
 
 # Show help
 show_help() {
@@ -32,6 +33,7 @@ show_help() {
     echo "  --all              Run all tests (app + Chrome) [DEFAULT]"
     echo "  --app              Run only application tests"
     echo "  --chrome           Run only Chrome DevTools tests"
+    echo "  --separate         Run tests separately and save to individual output files"
     echo "  -k PATTERN         Run tests matching PATTERN (e.g., -k test_api)"
     echo ""
     echo "Output Options:"
@@ -58,6 +60,7 @@ show_help() {
     echo "Examples:"
     echo "  ./run_tests.sh                          # Run all tests (app + Chrome)"
     echo "  ./run_tests.sh --app                    # Run only app tests"
+    echo "  ./run_tests.sh --separate               # Run all 11 tests separately with output files"
     echo "  ./run_tests.sh -v --app                 # Run app tests with verbose output"
     echo "  ./run_tests.sh -k test_api              # Run only tests matching 'test_api'"
     echo "  ./run_tests.sh -k prometheus --app      # Run Prometheus tests only"
@@ -127,6 +130,10 @@ while [[ $# -gt 0 ]]; do
             TEST_MODE="chrome"
             shift
             ;;
+        --separate)
+            SEPARATE_MODE=true
+            shift
+            ;;
         --keep-screenshots)
             CLEAN_SCREENSHOTS=false
             shift
@@ -147,7 +154,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${BLUE}🧪 Bloggy Test Runner${NC}"
+echo -e "${BLUE}🧪 Bloggy Test Runner (11 Test Suites)${NC}"
 if [ "$TEST_MODE" = "chrome" ] && [ "$HEADED_MODE" = true ]; then
     echo -e "${BLUE}🐳 App tests in Docker | 💻 Chrome --headed on HOST${NC}"
 else
@@ -155,6 +162,25 @@ else
 fi
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
+
+# Check if separate mode is requested - if so, delegate to run_tests_separate.sh
+if [ "$SEPARATE_MODE" = true ]; then
+    echo -e "${CYAN}🔄 Delegating to run_tests_separate.sh...${NC}"
+    echo ""
+    
+    if [ ! -f "run_tests_separate.sh" ]; then
+        echo -e "${RED}❌ run_tests_separate.sh not found${NC}"
+        echo "Please ensure run_tests_separate.sh exists in the project root"
+        exit 1
+    fi
+    
+    # Make sure it's executable
+    chmod +x run_tests_separate.sh
+    
+    # Run the separate test script
+    ./run_tests_separate.sh
+    exit $?
+fi
 
 # Check if runtime directory exists
 if [ ! -d "runtime" ]; then
@@ -240,11 +266,13 @@ clean_screenshots() {
     echo ""
 }
 
-# Function to run app tests
+# Function to run app tests (all 11 test suites)
 run_app_tests() {
-    echo -e "${YELLOW}🔬 Running Application Tests...${NC}"
+    echo -e "${YELLOW}🔬 Running Application Tests (11 Test Suites)...${NC}"
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo -e "${CYAN}🐳 Running in Docker container: runtime${NC}"
+    echo -e "${CYAN}📋 Test Suites: tests.py, oauth, roles, auto_ui, chrome, auth_comprehensive,${NC}"
+    echo -e "${CYAN}                model_utils, roles_rest_api, roles (basic), oauth_real_user, base_model${NC}"
     echo ""
     
     # Clean screenshots if requested (some app tests generate screenshots too)
@@ -252,7 +280,22 @@ run_app_tests() {
         clean_screenshots
     fi
     
-    TEST_CMD="cd /app && pytest integration_tests/"
+    # Run all 11 test files explicitly
+    TEST_FILES=(
+        "integration_tests/tests.py"
+        "integration_tests/test_oauth_real.py"
+        "integration_tests/test_roles_integration.py"
+        "integration_tests/test_auto_ui.py"
+        "integration_tests/test_ui_chrome_real.py"
+        "integration_tests/test_auth_comprehensive.py"
+        "integration_tests/test_model_utils.py"
+        "integration_tests/test_roles_rest_api.py"
+        "integration_tests/test_roles.py"
+        "integration_tests/test_oauth_real_user.py"
+        "integration_tests/test_base_model.py"
+    )
+    
+    TEST_CMD="cd /app && pytest ${TEST_FILES[*]}"
     
     # Add verbosity
     if [ "$VERBOSE" = "vv" ]; then
