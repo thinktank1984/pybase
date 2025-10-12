@@ -1,0 +1,11 @@
+{{# Table cell component for relationship fields #}}
+<td class="whitespace-nowrap px-3 py-4 text-sm text-gray-900">
+  {{if related_url:}}
+  <a href="{{=related_url}}" class="text-indigo-600 hover:text-indigo-900">
+    {{=formatted_value}}
+  </a>
+  {{else:}}
+  {{=formatted_value or '-'}}
+  {{pass}}
+</td>
+

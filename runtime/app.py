@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from emmett import App, session, now, url, redirect, abort, response
+from emmett import App, session, now, url, redirect, abort, response, current
 from emmett.orm import Database, Model, Field, belongs_to, has_many
 from emmett.tools import requires, service
 from emmett.tools.auth import Auth, AuthUser
@@ -14,6 +14,7 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(__file__))
 from openapi_generator import OpenAPIGenerator
+from auto_ui_generator import auto_ui
 
 # Import Sentry extension for error tracking
 try:
@@ -81,6 +82,8 @@ PROMETHEUS_ENABLED = os.environ.get('PROMETHEUS_ENABLED', 'true').lower() == 'tr
 
 # Initialize Prometheus metrics
 if PROMETHEUS_ENABLED and PROMETHEUS_AVAILABLE:
+    from emmett.pipeline import Pipe
+    
     # Define custom metrics
     http_requests_total = Counter(
         'emmett_http_requests_total',
@@ -106,8 +109,34 @@ if PROMETHEUS_ENABLED and PROMETHEUS_AVAILABLE:
         ['method', 'endpoint', 'status']
     )
     
-    print(f"✓ Prometheus metrics enabled at /metrics (custom integration)")
+    class PrometheusMetricsPipe(Pipe):
+        """Pipeline component to track HTTP metrics"""
+        
+        async def open(self):
+            import time
+            self.start_time = time.time()
+        
+        async def close(self):
+            import time
+            from emmett import request, response
+            
+            # Calculate duration
+            duration = time.time() - self.start_time
+            
+            # Get endpoint path from request
+            endpoint = request.path
+            method = request.method
+            status = str(response.status)
+            
+            # Record metrics
+            http_requests_total.labels(method=method, endpoint=endpoint, status=status).inc()
+            http_request_duration_seconds.labels(method=method, endpoint=endpoint).observe(duration)
+    
+    prometheus_pipe = PrometheusMetricsPipe()
+    
+    print(f"✓ Prometheus metrics enabled at /metrics (pipeline-based)")
 else:
+    prometheus_pipe = None
     if not PROMETHEUS_ENABLED:
         print("✗ Prometheus metrics disabled via PROMETHEUS_ENABLED=false")
     elif not PROMETHEUS_AVAILABLE:
@@ -329,6 +358,40 @@ class Post(Model):
         'user': (False, True),  # Hidden in output, writable in input for REST API
         'date': (True, False)    # Visible in output, not writable in input
     }
+    
+    # Auto UI configuration
+    auto_ui_config = {
+        'display_name': 'Blog Post',
+        'display_name_plural': 'Blog Posts',
+        'list_columns': ['id', 'title', 'user', 'date'],
+        'search_fields': ['title', 'text'],
+        'sort_default': '-date',
+        'permissions': {
+            'list': lambda: True,  # Anyone can view list
+            'create': lambda: session.auth is not None,  # Must be logged in to create
+            'read': lambda: True,  # Anyone can view details
+            'update': lambda: session.auth is not None,  # Must be logged in to update
+            'delete': lambda: session.auth is not None,  # Must be logged in to delete
+        },
+        'field_config': {
+            'title': {
+                'display_name': 'Post Title',
+                'help_text': 'Enter a descriptive title for your blog post'
+            },
+            'text': {
+                'display_name': 'Content',
+                'help_text': 'Write your blog post content here'
+            },
+            'user': {
+                'display_name': 'Author',
+                'readonly': True
+            },
+            'date': {
+                'display_name': 'Published Date',
+                'readonly': True
+            }
+        }
+    }
 
 
 class Comment(Model):
@@ -368,6 +431,12 @@ db.define_models(Post, Comment)
 app.use_extension(REST)
 rest_ext = app.ext.REST
 
+#: init Auto UI for models
+# Enable auto-generated CRUD interface for Post model
+auto_ui(app, Post, '/admin/posts')
+# Enable auto-generated CRUD interface for Comment model
+auto_ui(app, Comment, '/admin/comments')
+
 
 #: setup helping function
 def setup_admin():
@@ -405,11 +474,145 @@ def setup():
 
 
 #: pipeline
-app.pipeline = [
-    SessionManager.cookies('GreatScott'),
-    db.pipe,
-    auth.pipe
-]
+if PROMETHEUS_ENABLED and PROMETHEUS_AVAILABLE:
+    app.pipeline = [
+        SessionManager.cookies('GreatScott'),
+        prometheus_pipe,
+        db.pipe,
+        auth.pipe
+    ]
+else:
+    app.pipeline = [
+        SessionManager.cookies('GreatScott'),
+        db.pipe,
+        auth.pipe
+    ]
+
+
+#: helper functions for context and database access
+def get_current_session():
+    """
+    Get current session, safe for all contexts.
+    
+    Returns:
+        Session object or None if outside request context
+    """
+    try:
+        return current.session
+    except (AttributeError, RuntimeError):
+        return None
+
+
+def get_current_user():
+    """
+    Get currently authenticated user.
+    
+    Returns:
+        User object or None if not authenticated
+    """
+    sess = get_current_session()
+    if sess and hasattr(sess, 'auth') and sess.auth:
+        return sess.auth.user
+    return None
+
+
+def is_authenticated():
+    """
+    Check if user is authenticated.
+    
+    Returns:
+        True if user is authenticated, False otherwise
+    """
+    return get_current_user() is not None
+
+
+def is_admin():
+    """
+    Check if current user has admin role.
+    
+    Returns:
+        True if user is admin, False otherwise
+    """
+    user = get_current_user()
+    if not user:
+        return False
+    try:
+        groups = user.groups()
+        return 'admin' in groups
+    except:
+        return False
+
+
+def get_or_404(model, record_id):
+    """
+    Get model instance by ID or abort with 404.
+    
+    Args:
+        model: Emmett Model class
+        record_id: Primary key value
+        
+    Returns:
+        Model instance
+        
+    Raises:
+        404 if not found
+    """
+    with db.connection():
+        record = model.get(record_id)
+        if not record:
+            abort(404, f"{model.__name__} not found")
+        return record
+
+
+def safe_first(query, default=None):
+    """
+    Safely get first result from query.
+    
+    Args:
+        query: Emmett query object or Set
+        default: Value to return if no results
+        
+    Returns:
+        First result or default value
+    """
+    try:
+        with db.connection():
+            # Check if query has select method (Set object)
+            if hasattr(query, 'select'):
+                result = query.select().first()
+            else:
+                result = query.first()
+            return result if result else default
+    except Exception as e:
+        print(f"Query error: {e}")
+        return default
+
+
+def get_or_create(model, **kwargs):
+    """
+    Get existing record or create new one.
+    
+    Args:
+        model: Emmett Model class
+        **kwargs: Fields to match/create
+        
+    Returns:
+        (instance, created) tuple
+    """
+    with db.connection():
+        # Try to find existing
+        query = model.where(lambda m: all(
+            getattr(m, k) == v for k, v in kwargs.items()
+        ))
+        existing = safe_first(query)
+        
+        if existing:
+            return (existing, False)
+        
+        # Create new
+        instance = model.create(**kwargs)
+        db.commit()
+        return (instance, True)
 
 
 #: exposing functions
@@ -419,27 +622,25 @@ async def index():
     return dict(posts=posts)
 
 
-@app.route("/post/<int:pid>")
+@app.route("/post/<int:pid>", methods=['get', 'post'])
 async def one(pid):
     def _validate_comment(form):
         # manually set post id in comment form
         form.params.post = pid
     # get post and return 404 if doesn't exist
-    post = Post.get(pid)
-    if not post:
-        abort(404)
+    post = get_or_404(Post, pid)
     # get comments
     comments = post.comments(orderby=~Comment.date)
     # and create a form for commenting if the user is logged in
-    if session.auth:
+    if is_authenticated():
         form = await Comment.form(onvalidation=_validate_comment)
         if form.accepted:
             redirect(url('one', pid))
     return locals()
 
 
-@app.route("/new")
-@requires(lambda: session.auth, '/')
+@app.route("/new", methods=['get', 'post'])
+@requires(is_admin, url('index'))
 async def new_post():
     form = await Post.form()
     if form.accepted:
@@ -452,13 +653,38 @@ auth_routes = auth.module(__name__)
 
 #: Prometheus metrics endpoint
 if PROMETHEUS_ENABLED and PROMETHEUS_AVAILABLE:
+    # Provide a simple no-op decorator for compatibility
+    def track_metrics(endpoint_path=None):
+        """
+        Decorator for compatibility - metrics are now tracked automatically via pipeline.
+        """
+        def decorator(f):
+            return f
+        return decorator
+    
+    app.track_metrics = track_metrics
+    
     @app.route('/metrics')
     async def metrics():
         """Expose Prometheus metrics in standard format"""
         response.headers['Content-Type'] = CONTENT_TYPE_LATEST
         return generate_latest().decode('utf-8')
     
-    print(f"✓ Prometheus metrics helper available: @app.track_metrics()")
+    # Test endpoints for Prometheus integration
+    @app.route('/api')
+    @service.json
+    async def api_root():
+        """REST API root endpoint"""
+        return {'message': 'Bloggy REST API', 'version': '1.0.0'}
+    
+    @app.route('/test-metrics')
+    @service.json
+    async def test_metrics_endpoint():
+        """Test endpoint to verify metrics tracking works"""
+        return {'automatic': True, 'metrics': 'tracked'}
+    
+    print(f"✓ Prometheus metrics enabled at /metrics (pipeline integration)")
+    print(f"✓ Metrics tracked automatically for all requests via pipeline")
 
 
 #: REST API configuration
@@ -487,18 +713,21 @@ users_api = app.rest_module(
     disabled_methods=['create', 'update', 'delete']
 )
 
-# Use callbacks to automatically set user from session
+# REST API callbacks for authentication and authorization
 @posts_api.before_create
 def set_post_user(attrs):
     """Automatically set user from session if authenticated"""
-    if session.auth and 'user' not in attrs:
-        attrs['user'] = session.auth.user.id
+    user = get_current_user()
+    if user and 'user' not in attrs:
+        attrs['user'] = user.id
+
 
 @comments_api.before_create
 def set_comment_user(attrs):
     """Automatically set user from session if authenticated"""
-    if session.auth and 'user' not in attrs:
-        attrs['user'] = session.auth.user.id
+    user = get_current_user()
+    if user and 'user' not in attrs:
+        attrs['user'] = user.id
 
 
 #: OpenAPI / Swagger Documentation

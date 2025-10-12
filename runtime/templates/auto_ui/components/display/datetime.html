@@ -1,0 +1,14 @@
+{{# Display component for datetime fields #}}
+<div class="display-field">
+  <dt class="text-sm font-medium text-gray-500">{{=label}}</dt>
+  <dd class="mt-1 text-sm text-gray-900">
+    {{if value:}}
+    <time datetime="{{=value.isoformat() if hasattr(value, 'isoformat') else value}}">
+      {{=formatted_value}}
+    </time>
+    {{else:}}
+    -
+    {{pass}}
+  </dd>
+</div>
+

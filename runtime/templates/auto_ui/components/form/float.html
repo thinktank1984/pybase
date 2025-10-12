@@ -1,0 +1,27 @@
+{{# Form component for float/decimal fields #}}
+<div class="form-field">
+  <label for="{{=field_name}}" class="block text-sm font-medium text-gray-700">
+    {{=label}}
+    {{if required:}}
+    <span class="text-red-500">*</span>
+    {{pass}}
+  </label>
+  <input type="number"
+         step="{{=step or '0.01'}}"
+         id="{{=field_name}}"
+         name="{{=field_name}}"
+         value="{{=value or ''}}"
+         {{if readonly:}}readonly{{pass}}
+         {{if required:}}required{{pass}}
+         {{if min_value is not None:}}min="{{=min_value}}"{{pass}}
+         {{if max_value is not None:}}max="{{=max_value}}"{{pass}}
+         class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm {{if readonly:}}bg-gray-100{{pass}}"
+         {{if help_text:}}aria-describedby="{{=field_name}}_help"{{pass}}>
+  {{if help_text:}}
+  <p id="{{=field_name}}_help" class="mt-2 text-sm text-gray-500">{{=help_text}}</p>
+  {{pass}}
+  {{if error:}}
+  <p class="mt-2 text-sm text-red-600">{{=error}}</p>
+  {{pass}}
+</div>
+

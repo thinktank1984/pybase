@@ -1,0 +1,189 @@
+{{extend 'auto_ui/layout.html'}}
+
+<div class="px-4 sm:px-6 lg:px-8 py-8">
+  <div class="sm:flex sm:items-center">
+    <div class="sm:flex-auto">
+      <h1 class="text-3xl font-semibold text-gray-900">{{=model_name_plural}}</h1>
+      <p class="mt-2 text-sm text-gray-700">
+        A list of all {{=model_name_plural.lower()}} in the system.
+      </p>
+    </div>
+    <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+      {{if can_create:}}
+      <a href="{{=url(model_name_lower + '_new')}}" 
+         class="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto">
+        Add {{=model_name}}
+      </a>
+      {{pass}}
+    </div>
+  </div>
+
+  {{if search_fields:}}
+  <div class="mt-4">
+    <form method="get" action="{{=url(model_name_lower + '_list')}}" class="flex gap-2">
+      <input type="text" 
+             name="q" 
+             value="{{=search_query}}"
+             placeholder="Search..."
+             class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+      <button type="submit" 
+              class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+        Search
+      </button>
+      {{if search_query:}}
+      <a href="{{=url(model_name_lower + '_list')}}"
+         class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+        Clear
+      </a>
+      {{pass}}
+    </form>
+  </div>
+  {{pass}}
+
+  <div class="mt-8 flex flex-col">
+    <div class="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
+      <div class="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
+        <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+          <table class="min-w-full divide-y divide-gray-300">
+            <thead class="bg-gray-50">
+              <tr>
+                {{for column in columns:}}
+                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                  {{=column.replace('_', ' ').title()}}
+                </th>
+                {{pass}}
+                <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                  <span class="sr-only">Actions</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 bg-white">
+              {{if not records:}}
+              <tr>
+                <td colspan="{{=len(columns) + 1}}" class="px-3 py-4 text-sm text-gray-500 text-center">
+                  No {{=model_name_plural.lower()}} found.
+                </td>
+              </tr>
+              {{else:}}
+              {{for record in records:}}
+              <tr>
+                {{for column in columns:}}
+                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                  {{=format_field(column, getattr(record, column))}}
+                </td>
+                {{pass}}
+                <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                  {{if can_read:}}
+                  <a href="{{=url(model_name_lower + '_detail', record.id)}}" 
+                     class="text-indigo-600 hover:text-indigo-900 mr-4">
+                    View
+                  </a>
+                  {{pass}}
+                  {{if can_update:}}
+                  <a href="{{=url(model_name_lower + '_edit', record.id)}}" 
+                     class="text-indigo-600 hover:text-indigo-900 mr-4">
+                    Edit
+                  </a>
+                  {{pass}}
+                  {{if can_delete:}}
+                  <a href="{{=url(model_name_lower + '_delete_confirm', record.id)}}" 
+                     class="text-red-600 hover:text-red-900">
+                    Delete
+                  </a>
+                  {{pass}}
+                </td>
+              </tr>
+              {{pass}}
+              {{pass}}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {{if total_pages > 1:}}
+  <div class="mt-6 flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
+    <div class="flex flex-1 justify-between sm:hidden">
+      {{if has_prev:}}
+      <a href="{{=url(model_name_lower + '_list', vars=dict(page=page-1, q=search_query, sort=sort_field))}}"
+         class="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+        Previous
+      </a>
+      {{else:}}
+      <span class="relative inline-flex items-center rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-400">
+        Previous
+      </span>
+      {{pass}}
+      {{if has_next:}}
+      <a href="{{=url(model_name_lower + '_list', vars=dict(page=page+1, q=search_query, sort=sort_field))}}"
+         class="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+        Next
+      </a>
+      {{else:}}
+      <span class="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-400">
+        Next
+      </span>
+      {{pass}}
+    </div>
+    <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+      <div>
+        <p class="text-sm text-gray-700">
+          Showing
+          <span class="font-medium">{{=(page-1)*per_page + 1}}</span>
+          to
+          <span class="font-medium">{{=min(page*per_page, total_count)}}</span>
+          of
+          <span class="font-medium">{{=total_count}}</span>
+          results
+        </p>
+      </div>
+      <div>
+        <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+          {{if has_prev:}}
+          <a href="{{=url(model_name_lower + '_list', vars=dict(page=page-1, q=search_query, sort=sort_field))}}"
+             class="relative inline-flex items-center rounded-l-md border border-gray-300 bg-white px-2 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50">
+            <span class="sr-only">Previous</span>
+            ←
+          </a>
+          {{else:}}
+          <span class="relative inline-flex items-center rounded-l-md border border-gray-300 bg-gray-100 px-2 py-2 text-sm font-medium text-gray-400">
+            ←
+          </span>
+          {{pass}}
+          
+          {{for p in range(1, total_pages + 1):}}
+            {{if p == page:}}
+            <span class="relative z-10 inline-flex items-center border border-indigo-500 bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-600">
+              {{=p}}
+            </span>
+            {{elif abs(p - page) <= 2 or p == 1 or p == total_pages:}}
+            <a href="{{=url(model_name_lower + '_list', vars=dict(page=p, q=search_query, sort=sort_field))}}"
+               class="relative inline-flex items-center border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50">
+              {{=p}}
+            </a>
+            {{elif abs(p - page) == 3:}}
+            <span class="relative inline-flex items-center border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700">
+              ...
+            </span>
+            {{pass}}
+          {{pass}}
+          
+          {{if has_next:}}
+          <a href="{{=url(model_name_lower + '_list', vars=dict(page=page+1, q=search_query, sort=sort_field))}}"
+             class="relative inline-flex items-center rounded-r-md border border-gray-300 bg-white px-2 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50">
+            <span class="sr-only">Next</span>
+            →
+          </a>
+          {{else:}}
+          <span class="relative inline-flex items-center rounded-r-md border border-gray-300 bg-gray-100 px-2 py-2 text-sm font-medium text-gray-400">
+            →
+          </span>
+          {{pass}}
+        </nav>
+      </div>
+    </div>
+  </div>
+  {{pass}}
+</div>
+

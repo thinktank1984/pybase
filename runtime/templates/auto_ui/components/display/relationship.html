@@ -1,0 +1,14 @@
+{{# Display component for relationship fields (belongs_to) #}}
+<div class="display-field">
+  <dt class="text-sm font-medium text-gray-500">{{=label}}</dt>
+  <dd class="mt-1 text-sm text-gray-900">
+    {{if related_url:}}
+    <a href="{{=related_url}}" class="text-indigo-600 hover:text-indigo-900 hover:underline">
+      {{=formatted_value}}
+    </a>
+    {{else:}}
+    {{=formatted_value or '-'}}
+    {{pass}}
+  </dd>
+</div>
+

@@ -1,0 +1,11 @@
+{{# Table cell component for datetime fields #}}
+<td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+  {{if value:}}
+  <time datetime="{{=value.isoformat() if hasattr(value, 'isoformat') else value}}">
+    {{=formatted_value}}
+  </time>
+  {{else:}}
+  -
+  {{pass}}
+</td>
+

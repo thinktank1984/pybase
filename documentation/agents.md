@@ -165,6 +165,17 @@ runtime/                 # Main application directory
 ├── static/            # Static files (CSS, JS, images)
 └── tests.py           # Application tests
 
+documentation/         # Project documentation
+├── agents.md          # This file - AI agent instructions
+├── README_UI_TESTING.md          # UI testing guide
+├── README_TAILWIND_BUILD.md      # Tailwind CSS build guide
+├── README_CHROME_TESTING.md      # Chrome DevTools testing guide
+├── CHROME_TEST_RESULTS.md        # Chrome test results
+├── TAILWIND_IMPLEMENTATION_SUMMARY.md  # Tailwind implementation details
+├── bugsink-setup.md              # Error tracking setup
+├── whitepaper.md                 # Project architecture whitepaper
+└── credentials.yaml              # Service credentials
+
 docker/                # Docker configuration
 ├── docker-compose.yaml
 └── Dockerfile
@@ -528,7 +539,7 @@ When testing UI, use these MCP tools:
 - `list_network_requests()` - Get real network activity
 - `list_console_messages()` - Get real console logs
 
-See `runtime/README_UI_TESTING.md` for complete UI testing guide.
+See `documentation/README_UI_TESTING.md` for complete UI testing guide.
 
 ### Test Database Isolation
 
@@ -717,10 +728,25 @@ See `runtime/README.md` for detailed documentation on the example application.
 
 ## Reference vs Implementation
 
-- **Emmett Documentation** (`/emmett_documentation/`): Reference material
+- **Emmett Documentation** (`/emmett_documentation/`): Reference material for Emmett framework
+- **Project Documentation** (`/documentation/`): Project-specific documentation, guides, and setup instructions
 - **Runtime Application** (`/runtime/`): Working implementation
 - **Setup Scripts** (`/setup/`): Environment setup helpers
 - **Docker Config** (`/docker/`): Container deployment
+
+## Documentation Structure
+
+All project documentation is organized in `/documentation/`:
+
+- **agents.md** - This file - AI agent instructions (also referenced in OpenSpec)
+- **README_UI_TESTING.md** - Complete guide for UI testing with Chrome DevTools MCP
+- **README_TAILWIND_BUILD.md** - Tailwind CSS setup and build process
+- **README_CHROME_TESTING.md** - Chrome DevTools integration testing patterns
+- **CHROME_TEST_RESULTS.md** - Test results and validation reports
+- **TAILWIND_IMPLEMENTATION_SUMMARY.md** - Detailed implementation notes
+- **bugsink-setup.md** - Error tracking configuration
+- **whitepaper.md** - Project architecture and design principles
+- **credentials.yaml** - Service credentials and configuration
 
 ## Learn More
 
@@ -729,3 +755,4 @@ See `runtime/README.md` for detailed documentation on the example application.
 - Local Emmett docs: `/emmett_documentation/`
 - Tutorial: `/emmett_documentation/docs/tutorial.md`
 - ORM Guide: `/emmett_documentation/docs/orm/`
+- Project docs: `/documentation/`

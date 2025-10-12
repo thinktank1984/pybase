@@ -197,7 +197,7 @@ run_app_tests() {
     echo -e "${YELLOW}🔬 Running Application Tests...${NC}"
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     
-    TEST_CMD="pytest runtime/tests.py"
+    TEST_CMD="cd /app/runtime && pytest tests.py"
     
     # Add verbosity
     if [ "$VERBOSE" = "vv" ]; then
@@ -224,7 +224,7 @@ run_app_tests() {
     
     # Add coverage
     if [ "$COVERAGE" = true ]; then
-        TEST_CMD="$TEST_CMD --cov=runtime --cov-report=html --cov-report=term"
+        TEST_CMD="$TEST_CMD --cov=. --cov-report=html --cov-report=term"
     fi
     
     # Add extra pytest args
@@ -250,7 +250,7 @@ run_ui_tests() {
     echo -e "${YELLOW}🎨 Running UI Tests...${NC}"
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     
-    TEST_CMD="pytest runtime/ui_tests.py"
+    TEST_CMD="cd /app/runtime && pytest ui_tests.py"
     
     # Add verbosity
     if [ "$VERBOSE" = "vv" ]; then
@@ -298,7 +298,7 @@ run_chrome_tests() {
     echo -e "${YELLOW}🌐 Running Chrome DevTools Tests...${NC}"
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     
-    if $DOCKER_COMPOSE exec runtime python runtime/test_ui_chrome.py; then
+    if $DOCKER_COMPOSE exec runtime bash -c "cd /app/runtime && python test_ui_chrome.py"; then
         echo -e "${GREEN}✅ Chrome tests passed!${NC}"
         return 0
     else
