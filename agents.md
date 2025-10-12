@@ -8,10 +8,12 @@ This file provides guidance to AI agents (Claude Code, Gemini, etc.) when workin
 
 **This is an Emmett Framework application **
 
+- ✅ **DO**: Use Docker for running and testing the application
 - ✅ **DO**: Work with Emmett patterns (app.py, routes, ORM models)
 - ✅ **DO**: Reference Emmett documentation in `/emmett_documentation/`
 - ✅ **DO**: Create application code in `runtime/` directory
 - ✅ **DO**: Use Emmett's pyDAL ORM for database operations
+- ⚠️ **PREFERRED**: Always use Docker commands over local development scripts
 
 ---
 
@@ -153,9 +155,14 @@ setup/                 # Setup scripts
 
 ## Development Commands
 
-### Using Docker (Recommended)
+### Using Docker (Recommended - Use This!)
+
+**⚠️ IMPORTANT: Always use Docker for running and testing. The Docker environment has all dependencies pre-configured including Gemini CLI, Python packages, and system libraries.**
 
 ```bash
+# Rebuild container (after Dockerfile changes)
+docker compose -f docker/docker-compose.yaml build runtime
+
 # Start the application
 docker compose -f docker/docker-compose.yaml up runtime
 
@@ -171,11 +178,17 @@ docker compose -f docker/docker-compose.yaml down
 # Run commands in container
 docker compose -f docker/docker-compose.yaml exec runtime emmett migrations up
 docker compose -f docker/docker-compose.yaml exec runtime pytest tests.py
+
+# Run tests in Docker
+docker compose -f docker/docker-compose.yaml exec runtime pytest tests.py -v
+
+# Access Gemini CLI in container
+docker compose -f docker/docker-compose.yaml exec runtime gemini --version
 ```
 
 Application will be available at: **http://localhost:8081/**
 
-### Local Development
+### Local Development (Fallback Only)
 
 ```bash
 # Run the application
@@ -267,8 +280,31 @@ async def new_post():
 
 ## Testing
 
+**⚠️ IMPORTANT: Always use Docker for testing to ensure consistent environment.**
+
+### Docker Testing (Recommended)
+
 ```bash
-# Run all tests
+# Run all tests in Docker
+docker compose -f docker/docker-compose.yaml exec runtime pytest tests.py
+
+# Run with verbose output
+docker compose -f docker/docker-compose.yaml exec runtime pytest tests.py -v
+
+# Run with coverage
+docker compose -f docker/docker-compose.yaml exec runtime pytest tests.py --cov=runtime --cov-report=term-missing
+
+# Run specific test
+docker compose -f docker/docker-compose.yaml exec runtime pytest tests.py -k test_name
+
+# Run tests with detailed output
+docker compose -f docker/docker-compose.yaml exec runtime pytest tests.py -vv
+```
+
+### Local Testing (Fallback Only)
+
+```bash
+# Run all tests locally
 ./run_tests.sh
 
 # Run with verbose output
@@ -320,12 +356,18 @@ Emmett follows these patterns:
 
 ## Important Notes
 
+- **🐳 USE DOCKER**: Always use Docker for running and testing - it has all dependencies pre-configured
 - The project uses Python 3.9+ (3.13+ recommended)
 - Emmett uses pyDAL for ORM 
 - Migrations are managed via `emmett migrations` command
 - Templates use Renoir syntax (similar to Django templates but with differences)
 - Authentication uses Emmett's built-in `Auth` module
 - WebSocket support is built-in
+- Docker environment includes:
+  - Gemini CLI for AI assistance
+  - All Python dependencies from requirements.txt
+  - System libraries (gcc, g++, Node.js)
+  - Consistent environment across all development machines
 
 
 ## Example Application

@@ -167,11 +167,80 @@ auth_routes = auth.module(__name__)
 
 
 #: REST API configuration
+# Create custom REST module for Posts with proper user handling
+from emmett_rest import RESTModule
+
+class PostsRESTModule(RESTModule):
+    """Custom REST module for Posts that handles user assignment"""
+    
+    async def create(self):
+        """Override create to automatically set user from session"""
+        from emmett import request, response
+        attrs = await self.parse_params()
+        
+        # Validate user-provided fields only (without user field)
+        errors = self.model.validate(attrs)
+        if errors.errors:
+            response.status = 422
+            return self.error_422(errors.errors, to_dict=False)
+        
+        # Add user from session after validation
+        if session.auth:
+            attrs['user'] = session.auth.user.id
+        else:
+            attrs['user'] = None
+        
+        for callback in self._before_create_callbacks:
+            callback(attrs)
+        
+        # Use direct insert to bypass fields_rw restrictions
+        record_id = db.posts.insert(**attrs)
+        r = Post.get(record_id)
+        
+        for callback in self._after_create_callbacks:
+            callback(r)
+        
+        response.status = 201
+        return self.serialize_one(r)
+
+class CommentsRESTModule(RESTModule):
+    """Custom REST module for Comments that handles user assignment"""
+    
+    async def create(self):
+        """Override create to automatically set user from session"""
+        from emmett import request, response
+        attrs = await self.parse_params()
+        
+        # Validate user-provided fields only (without user field)
+        errors = self.model.validate(attrs)
+        if errors.errors:
+            response.status = 422
+            return self.error_422(errors.errors, to_dict=False)
+        
+        # Add user from session after validation
+        if session.auth:
+            attrs['user'] = session.auth.user.id
+        else:
+            attrs['user'] = None
+        
+        for callback in self._before_create_callbacks:
+            callback(attrs)
+        
+        # Use direct insert to bypass fields_rw restrictions
+        record_id = db.comments.insert(**attrs)
+        r = Comment.get(record_id)
+        
+        for callback in self._after_create_callbacks:
+            callback(r)
+        
+        response.status = 201
+        return self.serialize_one(r)
+
 # REST endpoints for Posts
 # Endpoints:
 # - GET /api/posts - List all posts
 # - GET /api/posts/:id - Get single post
-# - POST /api/posts - Create post
+# - POST /api/posts - Create post (user auto-set from session)
 # - PUT /api/posts/:id - Update post
 # - PATCH /api/posts/:id - Partial update post
 # - DELETE /api/posts/:id - Delete post
@@ -179,14 +248,15 @@ posts_api = app.rest_module(
     __name__, 
     'posts_api', 
     Post, 
-    url_prefix='api/posts'
+    url_prefix='api/posts',
+    module_class=PostsRESTModule
 )
 
 # REST endpoints for Comments
 # Endpoints:
 # - GET /api/comments - List all comments
 # - GET /api/comments/:id - Get single comment
-# - POST /api/comments - Create comment
+# - POST /api/comments - Create comment (user auto-set from session)
 # - PUT /api/comments/:id - Update comment
 # - PATCH /api/comments/:id - Partial update comment
 # - DELETE /api/comments/:id - Delete comment
@@ -194,7 +264,8 @@ comments_api = app.rest_module(
     __name__, 
     'comments_api', 
     Comment, 
-    url_prefix='api/comments'
+    url_prefix='api/comments',
+    module_class=CommentsRESTModule
 )
 
 # REST endpoints for Users
