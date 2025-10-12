@@ -111,11 +111,11 @@ def seed_roles(db, permissions):
     
     # Define default roles and their permissions
     role_definitions = {
-        'Admin': {
+        'admin': {
             'description': 'Full system access with all permissions',
             'permissions': 'ALL'  # Special marker for all permissions
         },
-        'Moderator': {
+        'moderator': {
             'description': 'Content moderation and management',
             'permissions': [
                 # Can manage all posts and comments
@@ -128,7 +128,7 @@ def seed_roles(db, permissions):
                 'permission.read',
             ]
         },
-        'Author': {
+        'author': {
             'description': 'Content creation and management of own content',
             'permissions': [
                 # Can manage own posts and comments
@@ -138,7 +138,7 @@ def seed_roles(db, permissions):
                 'user.read', 'user.edit.own',
             ]
         },
-        'Viewer': {
+        'viewer': {
             'description': 'Read-only access to public content',
             'permissions': [
                 # Can only read content
@@ -212,7 +212,7 @@ def seed_roles(db, permissions):
 
 def assign_admin_role_to_user(db, user_id, roles):
     """
-    Assign the Admin role to a user (typically the setup admin).
+    Assign the admin role to a user (typically the setup admin).
     
     Args:
         db: Database instance
@@ -222,11 +222,11 @@ def assign_admin_role_to_user(db, user_id, roles):
     Returns:
         bool: True if successful
     """
-    if 'Admin' not in roles:
-        print("⚠️  Admin role not found")
+    if 'admin' not in roles:
+        print("⚠️  admin role not found")
         return False
     
-    admin_role_id = roles['Admin']
+    admin_role_id = roles['admin']
     
     # Check if user already has admin role
     existing = db(
@@ -235,7 +235,7 @@ def assign_admin_role_to_user(db, user_id, roles):
     ).select().first()
     
     if existing:
-        print(f"✓ User {user_id} already has Admin role")
+        print(f"✓ User {user_id} already has admin role")
         return True
     
     # Assign admin role
@@ -245,7 +245,7 @@ def assign_admin_role_to_user(db, user_id, roles):
     )
     db.commit()
     
-    print(f"✨ Assigned Admin role to user {user_id}")
+    print(f"✨ Assigned admin role to user {user_id}")
     return True
 
 
@@ -255,7 +255,7 @@ def seed_all(db, admin_user_id=None):
     
     Args:
         db: Database instance
-        admin_user_id (int): Optional user ID to assign Admin role
+        admin_user_id (int): Optional user ID to assign admin role
         
     Returns:
         tuple: (permissions dict, roles dict)

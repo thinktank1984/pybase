@@ -27,9 +27,8 @@ show_help() {
     echo "Usage: ./run_tests.sh [OPTIONS]"
     echo ""
     echo "Test Selection:"
-    echo "  --all              Run all tests (app + UI + Chrome) [DEFAULT]"
+    echo "  --all              Run all tests (app + Chrome) [DEFAULT]"
     echo "  --app              Run only application tests"
-    echo "  --ui               Run only UI tests"
     echo "  --chrome           Run only Chrome DevTools tests"
     echo "  -k PATTERN         Run tests matching PATTERN (e.g., -k test_api)"
     echo ""
@@ -49,7 +48,7 @@ show_help() {
     echo "  -h, --help         Show this help message"
     echo ""
     echo "Examples:"
-    echo "  ./run_tests.sh                          # Run all tests (default)"
+    echo "  ./run_tests.sh                          # Run all tests (app + Chrome)"
     echo "  ./run_tests.sh --app                    # Run only app tests"
     echo "  ./run_tests.sh -v --app                 # Run app tests with verbose output"
     echo "  ./run_tests.sh -k test_api              # Run only tests matching 'test_api'"
@@ -58,6 +57,7 @@ show_help() {
     echo "  ./run_tests.sh --durations=5 --app      # Show 5 slowest tests"
     echo "  ./run_tests.sh --no-coverage --app      # Run without coverage"
     echo "  ./run_tests.sh -vv -x -k test_login     # Very verbose, stop on fail, specific test"
+    echo "  HAS_CHROME_MCP=true ./run_tests.sh --chrome  # Run real Chrome UI tests"
     echo ""
     exit 0
 }
@@ -113,10 +113,6 @@ while [[ $# -gt 0 ]]; do
             TEST_MODE="app"
             shift
             ;;
-        --ui)
-            TEST_MODE="ui"
-            shift
-            ;;
         --chrome)
             TEST_MODE="chrome"
             shift
@@ -158,13 +154,10 @@ TEST_FAILED=0
 # Display test mode
 case $TEST_MODE in
     all)
-        echo -e "${CYAN}📋 Test Mode: ALL (App + UI + Chrome)${NC}"
+        echo -e "${CYAN}📋 Test Mode: ALL (App + Chrome)${NC}"
         ;;
     app)
         echo -e "${CYAN}📋 Test Mode: Application Tests Only${NC}"
-        ;;
-    ui)
-        echo -e "${CYAN}📋 Test Mode: UI Tests Only${NC}"
         ;;
     chrome)
         echo -e "${CYAN}📋 Test Mode: Chrome DevTools Tests Only${NC}"
@@ -244,53 +237,8 @@ run_app_tests() {
     fi
 }
 
-# Function to run UI tests
-run_ui_tests() {
-    echo ""
-    echo -e "${YELLOW}🎨 Running UI Tests...${NC}"
-    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    
-    TEST_CMD="cd /app/runtime && pytest ui_tests.py"
-    
-    # Add verbosity
-    if [ "$VERBOSE" = "vv" ]; then
-        TEST_CMD="$TEST_CMD -vv"
-    elif [ "$VERBOSE" = true ]; then
-        TEST_CMD="$TEST_CMD -v"
-    fi
-    
-    # Add stop on failure
-    if [ "$STOP_ON_FAILURE" = true ]; then
-        TEST_CMD="$TEST_CMD -x"
-    fi
-    
-    # Add test pattern
-    if [ -n "$TEST_PATTERN" ]; then
-        TEST_CMD="$TEST_CMD -k \"$TEST_PATTERN\""
-        echo -e "${CYAN}🔍 Running tests matching: $TEST_PATTERN${NC}"
-    fi
-    
-    # Add duration reporting
-    if [ "$SHOW_DURATIONS" != "false" ]; then
-        TEST_CMD="$TEST_CMD --durations=$SHOW_DURATIONS"
-    fi
-    
-    # Add extra pytest args
-    if [ -n "$PYTEST_EXTRA_ARGS" ]; then
-        TEST_CMD="$TEST_CMD $PYTEST_EXTRA_ARGS"
-    fi
-    
-    echo -e "${CYAN}📝 Command: $TEST_CMD${NC}"
-    echo ""
-    
-    if $DOCKER_COMPOSE exec runtime bash -c "$TEST_CMD"; then
-        echo -e "${GREEN}✅ UI tests passed!${NC}"
-        return 0
-    else
-        echo -e "${RED}❌ UI tests failed${NC}"
-        return 1
-    fi
-}
+# UI tests removed - they were mock tests that violated the no-mocking policy
+# Use --chrome option to run real Chrome DevTools integration tests instead
 
 # Function to run Chrome tests
 run_chrome_tests() {
@@ -301,22 +249,18 @@ run_chrome_tests() {
     # Check if Chrome is available
     if [ -z "$HAS_CHROME_MCP" ]; then
         echo -e "${CYAN}ℹ️  Chrome MCP integration not enabled${NC}"
-        echo -e "${CYAN}   Set HAS_CHROME_MCP=true to enable real Chrome testing${NC}"
-        echo -e "${CYAN}   Prerequisites:${NC}"
-        echo -e "${CYAN}   • Chrome browser running on host${NC}"
-        echo -e "${CYAN}   • App running on http://localhost:8081${NC}"
-        echo -e "${CYAN}   • MCP Chrome DevTools available${NC}"
+        echo -e "${YELLOW}⚠️  Skipping Chrome tests (NO MOCKING ALLOWED per repository policy)${NC}"
         echo ""
-        echo -e "${YELLOW}⚠️  Running mock Chrome tests instead...${NC}"
-        
-        # Run old mock tests (always pass)
-        if $DOCKER_COMPOSE exec runtime bash -c "cd /app/runtime && python test_ui_chrome.py"; then
-            echo -e "${GREEN}✅ Mock Chrome tests passed (no real browser)${NC}"
-            return 0
-        else
-            echo -e "${RED}❌ Mock Chrome tests failed${NC}"
-            return 1
-        fi
+        echo -e "${CYAN}   To enable REAL Chrome testing:${NC}"
+        echo -e "${CYAN}   1. Export environment variable: export HAS_CHROME_MCP=true${NC}"
+        echo -e "${CYAN}   2. Ensure Chrome browser is running on host${NC}"
+        echo -e "${CYAN}   3. Ensure app is running at http://localhost:8081${NC}"
+        echo -e "${CYAN}   4. Ensure MCP Chrome DevTools is available${NC}"
+        echo ""
+        echo -e "${CYAN}   Then run: HAS_CHROME_MCP=true ./run_tests.sh --chrome${NC}"
+        echo ""
+        echo -e "${GREEN}✅ Chrome tests skipped (prerequisites not met)${NC}"
+        return 0
     fi
     
     # Real Chrome tests (run on HOST, not in Docker)
@@ -386,17 +330,17 @@ run_chrome_tests() {
 case $TEST_MODE in
     all)
         run_app_tests || TEST_FAILED=1
-        run_ui_tests || TEST_FAILED=1
         run_chrome_tests || TEST_FAILED=1
         ;;
     app)
         run_app_tests || TEST_FAILED=1
         ;;
-    ui)
-        run_ui_tests || TEST_FAILED=1
-        ;;
     chrome)
         run_chrome_tests || TEST_FAILED=1
+        ;;
+    *)
+        echo -e "${RED}Invalid test mode: $TEST_MODE${NC}"
+        exit 1
         ;;
 esac
 

@@ -614,11 +614,11 @@ docker compose -f docker/docker-compose.yaml exec runtime pytest tests.py
 # Run with coverage (measure real code execution)
 docker compose -f docker/docker-compose.yaml exec runtime pytest tests.py --cov=app --cov-report=term-missing
 
-# Run UI tests (real browser)
-docker compose -f docker/docker-compose.yaml exec runtime pytest ui_tests.py
-
 # Run specific integration test
 docker compose -f docker/docker-compose.yaml exec runtime pytest tests.py -k test_api_posts_create
+
+# Run real Chrome UI tests (requires HAS_CHROME_MCP=true)
+HAS_CHROME_MCP=true ./run_tests.sh --chrome
 ```
 
 ### Why Mocking Is Illegal In This Repository

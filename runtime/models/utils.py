@@ -15,16 +15,22 @@ def get_db():
     Returns:
         Database instance
     """
+    # Try importing from app module first (works best in tests)
     try:
-        # Try current context first (works in app runtime)
-        return current.app.ext.db
+        from app import db as app_db
+        if app_db is not None:
+            return app_db
+    except (ImportError, AttributeError):
+        pass
+    
+    # Try current context (works in app runtime)
+    try:
+        if hasattr(current, 'app') and hasattr(current.app, 'ext') and hasattr(current.app.ext, 'db'):
+            return current.app.ext.db
     except (AttributeError, RuntimeError):
-        # Fallback to importing from app module (works in tests)
-        try:
-            from app import db
-            return db
-        except ImportError:
-            raise RuntimeError("Cannot access database. Make sure app.db is initialized.")
+        pass
+    
+    raise RuntimeError("Cannot access database. Make sure app.db is initialized.")
 
 
 def get_or_404(model, record_id):
@@ -86,8 +92,26 @@ def user_has_role(user_id, role_name):
         bool: True if user has the role
     """
     try:
+        # Check new role system first
         roles = user_get_roles(user_id)
-        return any(role.name.lower() == role_name.lower() for role in roles)
+        if any(role.name.lower() == role_name.lower() for role in roles):
+            return True
+        
+        # Fallback to old auth_groups system for backward compatibility
+        try:
+            from app import db
+            with db.connection():
+                membership = db(
+                    (db.auth_memberships.user == user_id) &
+                    (db.auth_memberships.auth_group == db.auth_groups.id) &
+                    (db.auth_groups.role == role_name)
+                ).select().first()
+                if membership:
+                    return True
+        except Exception as fallback_error:
+            pass
+        
+        return False
     except:
         return False
 
@@ -139,10 +163,14 @@ def user_get_permissions(user_id, use_cache=True):
     Returns:
         set: Set of permission names
     """
-    # Check cache first
-    if use_cache and hasattr(session, 'user_permissions') and session.user_permissions:
-        if session.get('user_permissions_id') == user_id:
-            return session.user_permissions
+    # Check cache first (skip if session not available, e.g., in tests)
+    try:
+        if use_cache and hasattr(session, 'user_permissions') and session.user_permissions:
+            if session.get('user_permissions_id') == user_id:
+                return session.user_permissions
+    except (AttributeError, RuntimeError):
+        # Session not available (test context), skip caching
+        pass
     
     try:
         permissions = set()
@@ -153,10 +181,14 @@ def user_get_permissions(user_id, use_cache=True):
             for perm in role_permissions:
                 permissions.add(perm.name)
         
-        # Cache in session
-        if use_cache:
-            session.user_permissions = permissions
-            session.user_permissions_id = user_id
+        # Cache in session (skip if session not available)
+        try:
+            if use_cache:
+                session.user_permissions = permissions
+                session.user_permissions_id = user_id
+        except (AttributeError, RuntimeError):
+            # Session not available (test context), skip caching
+            pass
         
         return permissions
     except Exception as e:
@@ -317,10 +349,14 @@ def user_refresh_permissions(user_id):
         user_id (int): User ID
     """
     try:
-        if hasattr(session, 'user_permissions'):
-            del session.user_permissions
-        if hasattr(session, 'user_permissions_id'):
-            del session.user_permissions_id
+        try:
+            if hasattr(session, 'user_permissions'):
+                del session.user_permissions
+            if hasattr(session, 'user_permissions_id'):
+                del session.user_permissions_id
+        except (AttributeError, RuntimeError):
+            # Session not available (test context)
+            pass
         
         # Reload permissions
         user_get_permissions(user_id, use_cache=True)

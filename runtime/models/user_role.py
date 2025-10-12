@@ -105,17 +105,22 @@ class UserRole(Model):
             list: List of Role instances
         """
         try:
-            from .utils import get_db
-            db = get_db()
+            from app import db
+            from .role import Role
             
-            rows = db(
-                (db.user_roles.user == user_id) &
-                (db.user_roles.role == db.roles.id)
-            ).select(db.roles.ALL)
-            
-            return [row for row in rows]
+            with db.connection():
+                # Query using the join to get role information
+                user_role_records = cls.where(lambda ur: ur.user == user_id).select()
+                roles = []
+                for ur in user_role_records:
+                    role = Role.get(ur.role)
+                    if role:
+                        roles.append(role)
+                return roles
         except Exception as e:
             print(f"Error getting user roles: {e}")
+            import traceback
+            traceback.print_exc()
             return []
     
     @classmethod
