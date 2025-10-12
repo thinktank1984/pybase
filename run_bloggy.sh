@@ -82,6 +82,20 @@ if [ "$USE_DOCKER" = true ]; then
     # DOCKER MODE
     # ============================================================================
     
+    # Build Tailwind CSS before starting services
+    echo -e "${BLUE}Building Tailwind CSS...${NC}"
+    cd runtime
+    if command -v npm &> /dev/null; then
+        npm install --silent 2>&1 | grep -v "npm WARN" || true
+        npm run build:css
+        echo -e "${GREEN}✅ Tailwind CSS built successfully${NC}"
+    else
+        echo -e "${YELLOW}⚠️  npm not found locally, skipping Tailwind build${NC}"
+        echo -e "${YELLOW}   Tailwind CSS will be built inside Docker container${NC}"
+    fi
+    cd "$PROJECT_ROOT"
+    echo ""
+    
     echo "Access the services at:"
     echo "  Runtime App: ${GREEN}http://localhost:8081${NC}"
     echo "  Bugsink:     ${GREEN}http://localhost:8000${NC}"
@@ -116,6 +130,20 @@ else
     # LOCAL MODE
     # ============================================================================
     
+    # Build Tailwind CSS before starting server
+    echo -e "${BLUE}Building Tailwind CSS...${NC}"
+    cd runtime
+    if command -v npm &> /dev/null; then
+        npm install --silent 2>&1 | grep -v "npm WARN" || true
+        npm run build:css
+        echo -e "${GREEN}✅ Tailwind CSS built successfully${NC}"
+    else
+        echo -e "${RED}❌ npm not found! Please install Node.js and npm${NC}"
+        echo "   Visit: https://nodejs.org/"
+        exit 1
+    fi
+    echo ""
+    
     echo -e "${GREEN}✅ Setup complete! Starting development server...${NC}"
     echo ""
     echo "Access the application at: ${GREEN}http://localhost:8000${NC}"
@@ -128,7 +156,6 @@ else
     echo ""
     
     # Start the server
-    cd runtime
     uv run --python ../venv/bin/python emmett develop
 fi
 

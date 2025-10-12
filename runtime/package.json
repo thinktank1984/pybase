@@ -1,5 +1,12 @@
 {
+  "name": "bloggy",
+  "version": "1.0.0",
+  "scripts": {
+    "build:css": "npx @tailwindcss/cli -i ./static/input.css -o ./static/tailwind.css --minify",
+    "watch:css": "npx @tailwindcss/cli -i ./static/input.css -o ./static/tailwind.css --watch"
+  },
   "devDependencies": {
+    "@tailwindcss/cli": "^4.1.14",
     "tailwindcss": "^4.1.14"
   }
 }

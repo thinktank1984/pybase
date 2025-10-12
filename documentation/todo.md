@@ -1,4 +1,4 @@
-add support for emmett-framework/prometheus: Prometheus extension for Emmett framework https://github.com/emmett-framework/prometheus
-
-support css tailwind
-do we need cache support for Valkey (alternative to redis)
+add active record design pattern
+add auto UI/form creation code called ui
+add the 
+/proposal automatically_apply_tailwind 
