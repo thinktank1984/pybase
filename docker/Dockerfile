@@ -17,14 +17,14 @@ RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Gemini CLI globally
-RUN npm install -g @google/gemini-cli
+RUN npm install -g @google/gemini-cli@latest
 
-# Install Python dependencies for Emmett
-RUN pip install --no-cache-dir \
-    emmett>=2.5.0 \
-    granian>=2.5.0 \
-    pytest>=8.0.0 \
-    pytest-cov>=7.0.0
+# Copy requirements file for Python dependencies
+COPY setup/requirements.txt /tmp/requirements.txt
+
+# Install Python dependencies from requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt && \
+    rm /tmp/requirements.txt
 
 # The full repository will be mounted at runtime via volume
 # No need to copy files - they'll be available via volume mount

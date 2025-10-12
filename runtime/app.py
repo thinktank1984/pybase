@@ -6,6 +6,7 @@ from emmett.tools import requires
 from emmett.tools.auth import Auth, AuthUser
 from emmett.tools import Mailer
 from emmett.sessions import SessionManager
+from emmett_rest import REST
 
 
 app = App(__name__, template_folder='templates')
@@ -40,7 +41,7 @@ class Post(Model):
     date = Field.datetime()
 
     default_values = {
-        'user': lambda: session.auth.user.id,
+        'user': lambda: session.auth.user.id if session.auth else None,
         'date': now
     }
     validation = {
@@ -60,7 +61,7 @@ class Comment(Model):
     date = Field.datetime()
 
     default_values = {
-        'user': lambda: session.auth.user.id,
+        'user': lambda: session.auth.user.id if session.auth else None,
         'date': now
     }
     validation = {
@@ -78,6 +79,10 @@ db = Database(app)
 mailer = Mailer(app)
 auth = Auth(app, db, user_model=User)
 db.define_models(Post, Comment)
+
+#: init REST extension
+app.use_extension(REST)
+rest_ext = app.ext.REST
 
 
 #: setup helping function
@@ -159,3 +164,46 @@ async def new_post():
 
 
 auth_routes = auth.module(__name__)
+
+
+#: REST API configuration
+# REST endpoints for Posts
+# Endpoints:
+# - GET /api/posts - List all posts
+# - GET /api/posts/:id - Get single post
+# - POST /api/posts - Create post
+# - PUT /api/posts/:id - Update post
+# - PATCH /api/posts/:id - Partial update post
+# - DELETE /api/posts/:id - Delete post
+posts_api = app.rest_module(
+    __name__, 
+    'posts_api', 
+    Post, 
+    url_prefix='api/posts'
+)
+
+# REST endpoints for Comments
+# Endpoints:
+# - GET /api/comments - List all comments
+# - GET /api/comments/:id - Get single comment
+# - POST /api/comments - Create comment
+# - PUT /api/comments/:id - Update comment
+# - PATCH /api/comments/:id - Partial update comment
+# - DELETE /api/comments/:id - Delete comment
+comments_api = app.rest_module(
+    __name__, 
+    'comments_api', 
+    Comment, 
+    url_prefix='api/comments'
+)
+
+# REST endpoints for Users
+# Endpoints:
+# - GET /api/users - List all users
+# - GET /api/users/:id - Get single user
+users_api = app.rest_module(
+    __name__, 
+    'users_api', 
+    User, 
+    url_prefix='api/users'
+)
