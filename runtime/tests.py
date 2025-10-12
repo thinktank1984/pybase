@@ -257,7 +257,7 @@ def test_api_posts_create_authenticated(logged_client):
     
     # Verify in database by finding the post
     with db.connection():
-        post = Post.where(lambda p: p.title == 'API Test Post').first()
+        post = Post.where(lambda p: p.title == 'API Test Post').select().first()
         assert post is not None
         assert post.text == 'Created via API'
         # Cleanup
@@ -324,7 +324,7 @@ def test_api_posts_user_auto_set(logged_client):
     
     # Verify user was set in database
     with db.connection():
-        post = Post.where(lambda p: p.title == 'Auto User Test').first()
+        post = Post.where(lambda p: p.title == 'Auto User Test').select().first()
         assert post is not None
         assert post.user == 1  # Admin user id
         post.delete_record()
@@ -361,7 +361,7 @@ def test_api_comments_create(logged_client, create_test_post):
     
     # Verify in database by finding the comment
     with db.connection():
-        comment = Comment.where(lambda c: c.text == 'API Comment').first()
+        comment = Comment.where(lambda c: c.text == 'API Comment').select().first()
         assert comment is not None
         assert comment.post == post_id
         comment.delete_record()
@@ -398,7 +398,7 @@ def test_api_comments_user_auto_set(logged_client, create_test_post):
     
     # Verify user was set in database
     with db.connection():
-        comment = Comment.where(lambda c: c.text == 'Auto user comment').first()
+        comment = Comment.where(lambda c: c.text == 'Auto user comment').select().first()
         assert comment is not None
         assert comment.user == 1
         comment.delete_record()
@@ -578,8 +578,10 @@ def test_logout(logged_client):
     
     # Verify session auth is cleared (user is None or session.auth doesn't exist)
     r = logged_client.get('/')
-    # After logout, auth.user should be None or not exist
-    assert not hasattr(r.context.session, 'auth') or r.context.session.auth.user is None
+    # After logout, auth should be None or not exist, or user should be None
+    assert (not hasattr(r.context.session, 'auth') or 
+            r.context.session.auth is None or
+            (hasattr(r.context.session.auth, 'user') and r.context.session.auth.user is None))
 
 
 # Valkey Cache Tests
@@ -1294,7 +1296,7 @@ def test_create_post_via_form(logged_client):
         
         # Verify post was created
         with db.connection():
-            post = Post.where(lambda p: p.title == 'Form Test Post').first()
+            post = Post.where(lambda p: p.title == 'Form Test Post').select().first()
             assert post is not None
             post.delete_record()
 
@@ -1362,7 +1364,7 @@ def test_create_comment_via_form(logged_client, create_test_post):
         
         # Verify comment was created
         with db.connection():
-            comment = Comment.where(lambda c: c.text == 'Form comment test').first()
+            comment = Comment.where(lambda c: c.text == 'Form comment test').select().first()
             assert comment is not None
             assert comment.post == post_id
             comment.delete_record()
@@ -1560,11 +1562,11 @@ def test_special_characters_in_post(logged_client):
 def test_session_persists_across_requests(logged_client):
     """Test session remains active across multiple requests"""
     r1 = logged_client.get('/')
-    assert hasattr(r1.context.session, 'auth')
+    assert hasattr(r1.context.session, 'auth') and r1.context.session.auth is not None
     user1 = r1.context.session.auth.user
     
     r2 = logged_client.get('/')
-    assert hasattr(r2.context.session, 'auth')
+    assert hasattr(r2.context.session, 'auth') and r2.context.session.auth is not None
     user2 = r2.context.session.auth.user
     
     assert user1 is not None
@@ -1575,7 +1577,7 @@ def test_session_persists_across_requests(logged_client):
 def test_session_contains_user_data(logged_client):
     """Test session.auth.user contains correct user data"""
     r = logged_client.get('/')
-    assert hasattr(r.context.session, 'auth')
+    assert hasattr(r.context.session, 'auth') and r.context.session.auth is not None
     user = r.context.session.auth.user
     
     assert user is not None

@@ -327,6 +327,60 @@ class ValkeyCache:
 #     elif not VALKEY_AVAILABLE:
 #         print("✗ Valkey cache unavailable: valkey not installed")
 
+#: helper functions for context access (must be defined before models)
+def get_current_session():
+    """
+    Get current session, safe for all contexts.
+    
+    Returns:
+        Session object or None if outside request context
+    """
+    try:
+        return current.session
+    except (AttributeError, RuntimeError):
+        return None
+
+
+def get_current_user():
+    """
+    Get currently authenticated user.
+    
+    Returns:
+        User object or None if not authenticated
+    """
+    sess = get_current_session()
+    if sess and hasattr(sess, 'auth') and sess.auth:
+        return sess.auth.user
+    return None
+
+
+def is_authenticated():
+    """
+    Check if user is authenticated.
+    
+    Returns:
+        True if user is authenticated, False otherwise
+    """
+    return get_current_user() is not None
+
+
+def is_admin():
+    """
+    Check if current user has admin role.
+    
+    Returns:
+        True if user is admin, False otherwise
+    """
+    user = get_current_user()
+    if not user:
+        return False
+    try:
+        groups = user.groups()
+        return 'admin' in groups
+    except:
+        return False
+
+
 #: define models
 class User(AuthUser):
     # will create "auth_user" table and groups/permissions ones
@@ -342,7 +396,7 @@ class Post(Model):
     date = Field.datetime()
 
     default_values = {
-        'user': lambda: session.auth.user.id if session.auth else None,
+        'user': lambda: get_current_user().id if get_current_user() else None,
         'date': now
     }
     validation = {
@@ -401,7 +455,7 @@ class Comment(Model):
     date = Field.datetime()
 
     default_values = {
-        'user': lambda: session.auth.user.id if session.auth else None,
+        'user': lambda: get_current_user().id if get_current_user() else None,
         'date': now
     }
     validation = {
@@ -427,122 +481,8 @@ mailer = Mailer(app)
 auth = Auth(app, db, user_model=User)
 db.define_models(Post, Comment)
 
-#: init REST extension
-app.use_extension(REST)
-rest_ext = app.ext.REST
 
-#: init Auto UI for models
-# Enable auto-generated CRUD interface for Post model
-auto_ui(app, Post, '/admin/posts')
-# Enable auto-generated CRUD interface for Comment model
-auto_ui(app, Comment, '/admin/comments')
-
-
-#: setup helping function
-def setup_admin():
-    with db.connection():
-        # Check if user already exists
-        existing_user = User.where(lambda u: u.email == "doc@emmettbrown.com").select().first()
-        if existing_user:
-            print("Admin user already exists!")
-            return
-        
-        # create the user
-        user = User.create(
-            email="doc@emmettbrown.com",
-            first_name="Emmett",
-            last_name="Brown",
-            password="fluxcapacitor"
-        )
-        
-        # create an admin group using raw database access
-        existing_group = db(db.auth_groups.role == "admin").select().first()
-        if existing_group:
-            group_id = existing_group.id
-        else:
-            group_id = db.auth_groups.insert(role="admin", description="Administrators")
-        
-        # add user to admins group
-        db.auth_memberships.insert(user=user.id, auth_group=group_id)
-        db.commit()
-        print("Admin user created: doc@emmettbrown.com")
-
-
-@app.command('setup')
-def setup():
-    setup_admin()
-
-
-#: pipeline
-if PROMETHEUS_ENABLED and PROMETHEUS_AVAILABLE:
-    app.pipeline = [
-        SessionManager.cookies('GreatScott'),
-        prometheus_pipe,
-        db.pipe,
-        auth.pipe
-    ]
-else:
-    app.pipeline = [
-        SessionManager.cookies('GreatScott'),
-        db.pipe,
-        auth.pipe
-    ]
-
-
-#: helper functions for context and database access
-def get_current_session():
-    """
-    Get current session, safe for all contexts.
-    
-    Returns:
-        Session object or None if outside request context
-    """
-    try:
-        return current.session
-    except (AttributeError, RuntimeError):
-        return None
-
-
-def get_current_user():
-    """
-    Get currently authenticated user.
-    
-    Returns:
-        User object or None if not authenticated
-    """
-    sess = get_current_session()
-    if sess and hasattr(sess, 'auth') and sess.auth:
-        return sess.auth.user
-    return None
-
-
-def is_authenticated():
-    """
-    Check if user is authenticated.
-    
-    Returns:
-        True if user is authenticated, False otherwise
-    """
-    return get_current_user() is not None
-
-
-def is_admin():
-    """
-    Check if current user has admin role.
-    
-    Returns:
-        True if user is admin, False otherwise
-    """
-    user = get_current_user()
-    if not user:
-        return False
-    try:
-        groups = user.groups()
-        return 'admin' in groups
-    except:
-        return False
-
-
+#: database helper functions (defined after db is initialized)
 def get_or_404(model, record_id):
     """
     Get model instance by ID or abort with 404.
@@ -613,6 +553,68 @@ def get_or_create(model, **kwargs):
         instance = model.create(**kwargs)
         db.commit()
         return (instance, True)
+
+
+#: init REST extension
+app.use_extension(REST)
+rest_ext = app.ext.REST
+
+#: init Auto UI for models
+# Enable auto-generated CRUD interface for Post model
+auto_ui(app, Post, '/admin/posts')
+# Enable auto-generated CRUD interface for Comment model
+auto_ui(app, Comment, '/admin/comments')
+
+
+#: setup helping function
+def setup_admin():
+    with db.connection():
+        # Check if user already exists
+        existing_user = User.where(lambda u: u.email == "doc@emmettbrown.com").select().first()
+        if existing_user:
+            print("Admin user already exists!")
+            return
+        
+        # create the user
+        user = User.create(
+            email="doc@emmettbrown.com",
+            first_name="Emmett",
+            last_name="Brown",
+            password="fluxcapacitor"
+        )
+        
+        # create an admin group using raw database access
+        existing_group = db(db.auth_groups.role == "admin").select().first()
+        if existing_group:
+            group_id = existing_group.id
+        else:
+            group_id = db.auth_groups.insert(role="admin", description="Administrators")
+        
+        # add user to admins group
+        db.auth_memberships.insert(user=user.id, auth_group=group_id)
+        db.commit()
+        print("Admin user created: doc@emmettbrown.com")
+
+
+@app.command('setup')
+def setup():
+    setup_admin()
+
+
+#: pipeline
+if PROMETHEUS_ENABLED and PROMETHEUS_AVAILABLE:
+    app.pipeline = [
+        SessionManager.cookies('GreatScott'),
+        prometheus_pipe,
+        db.pipe,
+        auth.pipe
+    ]
+else:
+    app.pipeline = [
+        SessionManager.cookies('GreatScott'),
+        db.pipe,
+        auth.pipe
+    ]
 
 
 #: exposing functions
