@@ -634,6 +634,7 @@ If integration tests become slow:
 - **coverage**: Test coverage
 - **granian**: ASGI server
 - **Chrome DevTools MCP**: UI testing (via MCP server)
+- **Bugsink**: Error tracking (Sentry-compatible)
 
 ## Environment & Configuration
 
@@ -671,11 +672,15 @@ Emmett follows these patterns:
 - Templates use Renoir syntax (similar to Django templates but with differences)
 - Authentication uses Emmett's built-in `Auth` module
 - WebSocket support is built-in
+- **Error Tracking**: Use Bugsink (http://localhost:8000) - Sentry-compatible API without extension conflicts
 - Docker environment includes:
   - Gemini CLI for AI assistance
   - All Python dependencies from requirements.txt
   - System libraries (gcc, g++, Node.js)
   - Consistent environment across all development machines
+  - Bugsink for error tracking (Sentry-compatible)
+  - Prometheus for metrics collection
+  - Grafana for visualization
 
 
 ## Example Application
@@ -687,8 +692,28 @@ The `runtime/` directory contains "Bloggy", a complete micro-blogging applicatio
 - Form handling and validation
 - Template inheritance
 - Database relationships
+- REST API with OpenAPI/Swagger documentation
+- Prometheus metrics collection
+- Error tracking with Bugsink (Sentry-compatible)
 
 See `runtime/README.md` for detailed documentation on the example application.
+
+### Monitoring and Observability
+
+**Error Tracking (Bugsink):**
+- URL: http://localhost:8000
+- Credentials: admin:admin_password
+- Sentry-compatible API (use Sentry SDK, point to Bugsink DSN)
+- **Note**: Direct Sentry extension disabled due to Emmett template conflicts
+
+**Metrics (Prometheus):**
+- Application metrics: http://localhost:8081/metrics
+- Prometheus UI: http://localhost:9090
+- Grafana dashboards: http://localhost:3000 (admin:admin)
+
+**API Documentation (Swagger):**
+- Interactive docs: http://localhost:8081/api/docs
+- OpenAPI spec: http://localhost:8081/api/openapi.json
 
 ## Reference vs Implementation
 
