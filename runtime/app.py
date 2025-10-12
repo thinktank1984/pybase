@@ -8,37 +8,12 @@ from emmett.tools import Mailer
 from emmett.sessions import SessionManager
 from emmett_rest import REST
 import json
-import os
 
 # Import OpenAPI generator (deferred to avoid import issues)
 import sys
+import os
 sys.path.insert(0, os.path.dirname(__file__))
 from openapi_generator import OpenAPIGenerator
-
-# Import Sentry extension for error tracking
-try:
-    from emmett_sentry import Sentry
-    SENTRY_AVAILABLE = True
-except ImportError:
-    SENTRY_AVAILABLE = False
-    print("Warning: emmett-sentry not installed. Error tracking disabled.")
-
-# Import Prometheus client for metrics
-try:
-    from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
-    PROMETHEUS_AVAILABLE = True
-except ImportError:
-    PROMETHEUS_AVAILABLE = False
-    print("Warning: prometheus-client not installed. Metrics collection disabled.")
-
-# Import Valkey for caching (optional)
-try:
-    from valkey import Valkey
-    import pickle
-    VALKEY_AVAILABLE = True
-except ImportError:
-    VALKEY_AVAILABLE = False
-    print("Warning: valkey not installed. Valkey cache backend unavailable.")
 
 
 app = App(__name__, template_folder='templates')
@@ -54,8 +29,11 @@ app.config.auth.registration_verification = False
 app.config.auth.hmac_key = "november.5.1955"
 
 #: database configuration
+import os
 app.config.db.uri = f"sqlite://{os.path.join(os.path.dirname(__file__), 'databases', 'bloggy.db')}"
 
+<<<<<<< Updated upstream
+=======
 #: sentry/bugsink error tracking configuration
 SENTRY_ENABLED = os.environ.get('SENTRY_ENABLED', 'true').lower() == 'true'
 SENTRY_DSN = os.environ.get('SENTRY_DSN', 'http://public@bugsink:8000/1')
@@ -67,8 +45,9 @@ if SENTRY_ENABLED and SENTRY_AVAILABLE:
     app.config.Sentry.environment = SENTRY_ENVIRONMENT
     app.config.Sentry.traces_sample_rate = SENTRY_TRACES_SAMPLE_RATE
     app.config.Sentry.release = "bloggy@1.0.0"
-    app.use_extension(Sentry)
-    print(f"✓ Error tracking enabled: {SENTRY_DSN} (environment: {SENTRY_ENVIRONMENT})")
+    # Disabled: Sentry extension causes wrapper.html template lookup issue
+    # app.use_extension(Sentry)
+    print(f"⚠️  Sentry configured but not loaded (template conflict): {SENTRY_DSN}")
 else:
     if not SENTRY_ENABLED:
         print("✗ Error tracking disabled via SENTRY_ENABLED=false")
@@ -297,6 +276,7 @@ class ValkeyCache:
 #     elif not VALKEY_AVAILABLE:
 #         print("✗ Valkey cache unavailable: valkey not installed")
 
+>>>>>>> Stashed changes
 
 #: define models
 class User(AuthUser):
@@ -411,58 +391,15 @@ app.pipeline = [
     auth.pipe
 ]
 
-#: prometheus metrics decorator (defined early so routes can use it)
-def track_metrics(endpoint_name=None):
-    """
-    Decorator to automatically track Prometheus metrics for a route.
-    Usage: @app.track_metrics() or @app.track_metrics('/custom-name')
-    """
-    def decorator(func):
-        async def wrapper(*args, **kwargs):
-            # Only track if Prometheus is available
-            if not (PROMETHEUS_ENABLED and PROMETHEUS_AVAILABLE):
-                return await func(*args, **kwargs)
-                
-            import time
-            from emmett import request, response
-            
-            start_time = time.time()
-            
-            try:
-                result = await func(*args, **kwargs)
-                duration = time.time() - start_time
-                method = request.method
-                endpoint = endpoint_name or request.path
-                status = str(response.status).split()[0] if response.status else '200'
-                
-                http_requests_total.labels(method=method, endpoint=endpoint, status=status).inc()
-                http_request_duration_seconds.labels(method=method, endpoint=endpoint).observe(duration)
-                
-                return result
-            except Exception as e:
-                duration = time.time() - start_time
-                method = request.method
-                endpoint = endpoint_name or request.path
-                
-                http_requests_total.labels(method=method, endpoint=endpoint, status='500').inc()
-                http_request_duration_seconds.labels(method=method, endpoint=endpoint).observe(duration)
-                raise
-        return wrapper
-    return decorator
-
-app.track_metrics = track_metrics
-
 
 #: exposing functions
 @app.route("/")
-@app.track_metrics() if PROMETHEUS_ENABLED and PROMETHEUS_AVAILABLE else lambda f: f
 async def index():
     posts = Post.all().select(orderby=~Post.date)
     return dict(posts=posts)
 
 
 @app.route("/post/<int:pid>")
-@app.track_metrics('/post/:id') if PROMETHEUS_ENABLED and PROMETHEUS_AVAILABLE else lambda f: f
 async def one(pid):
     def _validate_comment(form):
         # manually set post id in comment form
@@ -482,7 +419,6 @@ async def one(pid):
 
 
 @app.route("/new")
-@app.track_metrics() if PROMETHEUS_ENABLED and PROMETHEUS_AVAILABLE else lambda f: f
 @requires(lambda: session.auth, '/')
 async def new_post():
     form = await Post.form()
@@ -569,7 +505,6 @@ openapi_gen.register_rest_module('users_api', User, 'api/users',
 
 
 @app.route('/api/openapi.json')
-@app.track_metrics() if PROMETHEUS_ENABLED and PROMETHEUS_AVAILABLE else lambda f: f
 @service.json
 async def openapi_spec():
     """Serve OpenAPI 3.0 specification as JSON"""
@@ -577,7 +512,6 @@ async def openapi_spec():
 
 
 @app.route('/api/docs')
-@app.track_metrics() if PROMETHEUS_ENABLED and PROMETHEUS_AVAILABLE else lambda f: f
 async def swagger_ui():
     """Serve Swagger UI for interactive API documentation"""
     html = """<!DOCTYPE html>
@@ -630,7 +564,6 @@ async def swagger_ui():
 
 
 @app.route('/api')
-@app.track_metrics()
 @service.json
 async def api_root():
     """API root with links to documentation"""
@@ -647,39 +580,3 @@ async def api_root():
             'users': '/api/users'
         }
     }
-
-
-@app.route('/test-error')
-async def test_error():
-    """Test endpoint for error tracking - raises an intentional exception"""
-    # This endpoint is useful for verifying that error tracking is working
-    # Access this endpoint to trigger an error that should appear in Bugsink
-    raise Exception("This is a test error for Bugsink error tracking verification")
-
-
-@app.route('/test-metrics')
-@app.track_metrics()
-@service.json
-async def test_metrics():
-    """Test endpoint for automatic metric tracking"""
-    return dict(message='Metrics tracked automatically via decorator', automatic=True)
-
-
-@app.route('/test-error-division')
-async def test_error_division():
-    """Test endpoint for error tracking - raises a ZeroDivisionError"""
-    result = 42 / 0
-    return {'result': result}
-
-
-#: Prometheus metrics endpoint and pipeline
-if PROMETHEUS_ENABLED and PROMETHEUS_AVAILABLE:
-    from emmett import Pipe
-    
-    @app.route('/metrics')
-    async def metrics():
-        """Expose Prometheus metrics"""
-        response.headers['Content-Type'] = CONTENT_TYPE_LATEST
-        return generate_latest().decode('utf-8')
-    
-    print(f"✓ Prometheus metrics helper available: @app.track_metrics()")
