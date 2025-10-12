@@ -17,27 +17,47 @@ NC='\033[0m'
 VERBOSE=false
 COVERAGE=true  # Coverage is ON by default
 TEST_MODE="all"  # Default to running all tests
+STOP_ON_FAILURE=false
+TEST_PATTERN=""
+SHOW_DURATIONS=false
+PYTEST_EXTRA_ARGS=""
 
 # Show help
 show_help() {
     echo "Usage: ./run_tests.sh [OPTIONS]"
     echo ""
-    echo "Options:"
-    echo "  -v, --verbose      Verbose output"
-    echo "  --no-coverage      Skip coverage report (coverage enabled by default)"
+    echo "Test Selection:"
     echo "  --all              Run all tests (app + UI + Chrome) [DEFAULT]"
     echo "  --app              Run only application tests"
     echo "  --ui               Run only UI tests"
     echo "  --chrome           Run only Chrome DevTools tests"
+    echo "  -k PATTERN         Run tests matching PATTERN (e.g., -k test_api)"
+    echo ""
+    echo "Output Options:"
+    echo "  -v, --verbose      Verbose output (show individual test names)"
+    echo "  -vv                Very verbose output (show test details)"
+    echo "  -x, --stop         Stop on first failure"
+    echo "  --durations=N      Show N slowest tests (default: 10)"
+    echo "  --tb=short         Short traceback format"
+    echo "  --tb=long          Long traceback format"
+    echo ""
+    echo "Coverage Options:"
+    echo "  --no-coverage      Skip coverage report (coverage enabled by default)"
+    echo "  --cov-min=N        Fail if coverage below N% (default: no minimum)"
+    echo ""
+    echo "Other Options:"
     echo "  -h, --help         Show this help message"
     echo ""
     echo "Examples:"
-    echo "  ./run_tests.sh                # Run all tests (default)"
-    echo "  ./run_tests.sh --app          # Run only app tests"
-    echo "  ./run_tests.sh --ui           # Run only UI tests"
-    echo "  ./run_tests.sh --chrome       # Run only Chrome tests"
-    echo "  ./run_tests.sh -v --all       # Run all tests with verbose output"
-    echo "  ./run_tests.sh --no-coverage  # Run without coverage report"
+    echo "  ./run_tests.sh                          # Run all tests (default)"
+    echo "  ./run_tests.sh --app                    # Run only app tests"
+    echo "  ./run_tests.sh -v --app                 # Run app tests with verbose output"
+    echo "  ./run_tests.sh -k test_api              # Run only tests matching 'test_api'"
+    echo "  ./run_tests.sh -k prometheus --app      # Run Prometheus tests only"
+    echo "  ./run_tests.sh -x --app                 # Stop on first failure"
+    echo "  ./run_tests.sh --durations=5 --app      # Show 5 slowest tests"
+    echo "  ./run_tests.sh --no-coverage --app      # Run without coverage"
+    echo "  ./run_tests.sh -vv -x -k test_login     # Very verbose, stop on fail, specific test"
     echo ""
     exit 0
 }
@@ -46,7 +66,39 @@ show_help() {
 while [[ $# -gt 0 ]]; do
     case $1 in
         -v|--verbose)
-            VERBOSE=true
+            if [ "$VERBOSE" = "false" ]; then
+                VERBOSE=true
+            else
+                VERBOSE="vv"  # Very verbose if -v used twice
+            fi
+            shift
+            ;;
+        -vv)
+            VERBOSE="vv"
+            shift
+            ;;
+        -x|--stop)
+            STOP_ON_FAILURE=true
+            shift
+            ;;
+        -k)
+            TEST_PATTERN="$2"
+            shift 2
+            ;;
+        --durations*)
+            if [[ "$1" == *"="* ]]; then
+                SHOW_DURATIONS="${1#*=}"
+            else
+                SHOW_DURATIONS="10"
+            fi
+            shift
+            ;;
+        --tb=*)
+            PYTEST_EXTRA_ARGS="$PYTEST_EXTRA_ARGS --tb=${1#*=}"
+            shift
+            ;;
+        --cov-min=*)
+            PYTEST_EXTRA_ARGS="$PYTEST_EXTRA_ARGS --cov-fail-under=${1#*=}"
             shift
             ;;
         --no-coverage)
@@ -118,6 +170,26 @@ case $TEST_MODE in
         echo -e "${CYAN}📋 Test Mode: Chrome DevTools Tests Only${NC}"
         ;;
 esac
+
+# Display options
+if [ -n "$TEST_PATTERN" ]; then
+    echo -e "${CYAN}🔍 Test Pattern: $TEST_PATTERN${NC}"
+fi
+if [ "$VERBOSE" = "vv" ]; then
+    echo -e "${CYAN}📢 Verbosity: Very Verbose (-vv)${NC}"
+elif [ "$VERBOSE" = true ]; then
+    echo -e "${CYAN}📢 Verbosity: Verbose (-v)${NC}"
+fi
+if [ "$STOP_ON_FAILURE" = true ]; then
+    echo -e "${CYAN}⛔ Stop on first failure: Enabled${NC}"
+fi
+if [ "$COVERAGE" = false ]; then
+    echo -e "${CYAN}📊 Coverage: Disabled${NC}"
+fi
+if [ "$SHOW_DURATIONS" != "false" ]; then
+    echo -e "${CYAN}⏱️  Show slowest: ${SHOW_DURATIONS} tests${NC}"
+fi
+
 echo ""
 
 # Function to run app tests
@@ -127,13 +199,41 @@ run_app_tests() {
     
     TEST_CMD="pytest runtime/tests.py"
     
-    if [ "$VERBOSE" = true ]; then
+    # Add verbosity
+    if [ "$VERBOSE" = "vv" ]; then
+        TEST_CMD="$TEST_CMD -vv"
+    elif [ "$VERBOSE" = true ]; then
         TEST_CMD="$TEST_CMD -v"
     fi
     
+    # Add stop on failure
+    if [ "$STOP_ON_FAILURE" = true ]; then
+        TEST_CMD="$TEST_CMD -x"
+    fi
+    
+    # Add test pattern
+    if [ -n "$TEST_PATTERN" ]; then
+        TEST_CMD="$TEST_CMD -k \"$TEST_PATTERN\""
+        echo -e "${CYAN}🔍 Running tests matching: $TEST_PATTERN${NC}"
+    fi
+    
+    # Add duration reporting
+    if [ "$SHOW_DURATIONS" != "false" ]; then
+        TEST_CMD="$TEST_CMD --durations=$SHOW_DURATIONS"
+    fi
+    
+    # Add coverage
     if [ "$COVERAGE" = true ]; then
         TEST_CMD="$TEST_CMD --cov=runtime --cov-report=html --cov-report=term"
     fi
+    
+    # Add extra pytest args
+    if [ -n "$PYTEST_EXTRA_ARGS" ]; then
+        TEST_CMD="$TEST_CMD $PYTEST_EXTRA_ARGS"
+    fi
+    
+    echo -e "${CYAN}📝 Command: $TEST_CMD${NC}"
+    echo ""
     
     if $DOCKER_COMPOSE exec runtime bash -c "$TEST_CMD"; then
         echo -e "${GREEN}✅ Application tests passed!${NC}"
@@ -152,9 +252,36 @@ run_ui_tests() {
     
     TEST_CMD="pytest runtime/ui_tests.py"
     
-    if [ "$VERBOSE" = true ]; then
+    # Add verbosity
+    if [ "$VERBOSE" = "vv" ]; then
+        TEST_CMD="$TEST_CMD -vv"
+    elif [ "$VERBOSE" = true ]; then
         TEST_CMD="$TEST_CMD -v"
     fi
+    
+    # Add stop on failure
+    if [ "$STOP_ON_FAILURE" = true ]; then
+        TEST_CMD="$TEST_CMD -x"
+    fi
+    
+    # Add test pattern
+    if [ -n "$TEST_PATTERN" ]; then
+        TEST_CMD="$TEST_CMD -k \"$TEST_PATTERN\""
+        echo -e "${CYAN}🔍 Running tests matching: $TEST_PATTERN${NC}"
+    fi
+    
+    # Add duration reporting
+    if [ "$SHOW_DURATIONS" != "false" ]; then
+        TEST_CMD="$TEST_CMD --durations=$SHOW_DURATIONS"
+    fi
+    
+    # Add extra pytest args
+    if [ -n "$PYTEST_EXTRA_ARGS" ]; then
+        TEST_CMD="$TEST_CMD $PYTEST_EXTRA_ARGS"
+    fi
+    
+    echo -e "${CYAN}📝 Command: $TEST_CMD${NC}"
+    echo ""
     
     if $DOCKER_COMPOSE exec runtime bash -c "$TEST_CMD"; then
         echo -e "${GREEN}✅ UI tests passed!${NC}"

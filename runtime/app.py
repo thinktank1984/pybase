@@ -15,6 +15,31 @@ import os
 sys.path.insert(0, os.path.dirname(__file__))
 from openapi_generator import OpenAPIGenerator
 
+# Import Sentry extension for error tracking
+try:
+    from emmett_sentry import Sentry
+    SENTRY_AVAILABLE = True
+except ImportError:
+    SENTRY_AVAILABLE = False
+    print("Warning: emmett-sentry not installed. Error tracking disabled.")
+
+# Import Prometheus client for metrics
+try:
+    from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
+    PROMETHEUS_AVAILABLE = True
+except ImportError:
+    PROMETHEUS_AVAILABLE = False
+    print("Warning: prometheus-client not installed. Metrics collection disabled.")
+
+# Import Valkey for caching (optional)
+try:
+    from valkey import Valkey
+    import pickle
+    VALKEY_AVAILABLE = True
+except ImportError:
+    VALKEY_AVAILABLE = False
+    print("Warning: valkey not installed. Valkey cache backend unavailable.")
+
 
 app = App(__name__, template_folder='templates')
 app.config.url_default_namespace = 'app'
@@ -29,11 +54,8 @@ app.config.auth.registration_verification = False
 app.config.auth.hmac_key = "november.5.1955"
 
 #: database configuration
-import os
 app.config.db.uri = f"sqlite://{os.path.join(os.path.dirname(__file__), 'databases', 'bloggy.db')}"
 
-<<<<<<< Updated upstream
-=======
 #: sentry/bugsink error tracking configuration
 SENTRY_ENABLED = os.environ.get('SENTRY_ENABLED', 'true').lower() == 'true'
 SENTRY_DSN = os.environ.get('SENTRY_DSN', 'http://public@bugsink:8000/1')
@@ -275,8 +297,6 @@ class ValkeyCache:
 #         print("✗ Valkey cache disabled via VALKEY_ENABLED=false")
 #     elif not VALKEY_AVAILABLE:
 #         print("✗ Valkey cache unavailable: valkey not installed")
-
->>>>>>> Stashed changes
 
 #: define models
 class User(AuthUser):
