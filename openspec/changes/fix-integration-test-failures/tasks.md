@@ -45,17 +45,17 @@ pytest tests.py::test_get_current_user -v
 
 ---
 
-### Task 1.2: Create Database Query Helpers
+### Task 1.2: Create Database Query Helpers ✅
 **File**: `runtime/app.py`  
 **Estimated Time**: 25 minutes  
 **Priority**: High
 
 **Subtasks**:
-- [ ] Add `get_or_404(model, id)` function
-- [ ] Add `safe_first(query, default)` function
-- [ ] Add `get_or_create(model, **kwargs)` function
-- [ ] Add error handling for each
-- [ ] Test with actual models
+- [x] Add `get_or_404(model, id)` function
+- [x] Add `safe_first(query, default)` function
+- [x] Add `get_or_create(model, **kwargs)` function
+- [x] Add error handling for each
+- [x] Test with actual models
 
 **Acceptance Criteria**:
 ```python
