@@ -1,27 +1,3 @@
-✅ /proposal refactor_code - COMPLETED (October 12, 2025)
-    Active Record design pattern implementation complete
-    - Model files consolidated (3 → 1 per model)
-    - Documentation: emmett_active_record_guide.md (4,700+ lines)
-    - Pattern enforcement: validate_models.py
-    - Permissions: model_permissions.py
-    - Testing utilities: model_factory.py
-    - Tests passing: 61/74 (82%, Chrome MCP not configured)
-    - Ready for archive: openspec archive add-active-record-design-pattern --yes
-    
-    See: ACTIVE_RECORD_COMPLETION.md for full details
-
-/proposal add_typing 
-    add Pyright 
-    first Use MonkeyType  uv pip install monkeytype
-    then apply to each file
-    <>Use MonkeyType
-    pip install monkeytype
-    Run your app/tests normally to collect runtime traces:
-    python -m monkeytype run your_app.py
-    Then apply inferred types:
-    monkeytype apply your_module
-    It inserts inferred annotations directly into the code based on runtime data — a great way to bootstrap typing for legacy projects.<>
-
 
 /proposal add-realtime-pub-sub-support
 <>

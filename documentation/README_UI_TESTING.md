@@ -39,10 +39,10 @@ This document describes how to run REAL UI integration tests using actual Chrome
 
 Additional real Chrome integration tests for specific features.
 
-### `chrome_test_helpers.py` ✅
+### `playwright_helpers.py` ✅
 
-Helper utilities for Chrome testing:
-- ChromeTestHelper class
+Helper utilities for Playwright-based Chrome testing:
+- ChromeTestHelper class (using Playwright)
 - Viewport management
 - Element finding utilities
 - Screenshot capture utilities
@@ -268,7 +268,7 @@ open runtime/screenshots/homepage_desktop.png
 ### ChromeTestHelper Class
 
 ```python
-from chrome_test_helpers import get_chrome_helper
+from playwright_helpers import get_chrome_helper
 
 chrome = get_chrome_helper()
 
@@ -449,7 +449,7 @@ jobs:
 
 ### ❌ `demo_chrome_tests.py` (DELETED)
 **Reason:** Referenced deleted mock tests  
-**Replacement:** This guide and `chrome_test_helpers.py`
+**Replacement:** This guide and `playwright_helpers.py`
 
 ---
 

@@ -2,32 +2,43 @@
 """
 Real User OAuth Integration Tests
 
-This test suite uses REAL user credentials for OAuth testing.
-Based on user image: Name: Ed, Email: ed.s.sharood@gmail.com
+This test suite uses REAL user credentials and REAL OAuth tokens for testing.
+Based on user: Name: Ed, Email: ed.s.sharood@gmail.com
 
 🚨 CRITICAL POLICY: NO MOCKING ALLOWED 🚨
 - ✅ Real database operations
 - ✅ Real HTTP requests
+- ✅ Real OAuth tokens from host machine
 - ✅ Real OAuth flows (manual or Chrome DevTools)
 - ❌ NO mocks, stubs, or test doubles
 
+Token Workflow:
+1. On host machine: python3 integration_tests/oauth_token_helper.py --provider google
+2. Script opens browser, authenticates with real provider
+3. Real OAuth token saved to .oauth_tokens.yaml
+4. Docker reads token file during tests
+5. Tests use real token for integration testing
+
 Test Coverage:
 1. OAuth login with real user email
-2. OAuth account creation
+2. OAuth account creation with real tokens
 3. OAuth account linking
-4. OAuth token management
+4. OAuth token management (real encryption)
 5. Security validations
+6. Token-based API access
 """
 
 import pytest
 import yaml
 import os
 import sys
+from datetime import datetime
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'runtime'))
 
 from app import app, db, User, OAuthAccount, OAuthToken
 from auth.oauth_manager import get_oauth_manager
+from auth.tokens import encrypt_token, decrypt_token
 from cryptography.fernet import Fernet
 
 
@@ -39,9 +50,20 @@ def load_test_config():
         return yaml.safe_load(f)
 
 
+def load_oauth_tokens():
+    """Load real OAuth tokens obtained from host machine"""
+    token_path = os.path.join(os.path.dirname(__file__), '.oauth_tokens.yaml')
+    if not os.path.exists(token_path):
+        return None
+    
+    with open(token_path, 'r') as f:
+        return yaml.safe_load(f)
+
+
 TEST_CONFIG = load_test_config()
 TEST_USER_EMAIL = TEST_CONFIG['test_user']['email']
 TEST_USER_NAME = TEST_CONFIG['test_user']['name']
+OAUTH_TOKENS = load_oauth_tokens()
 
 
 @pytest.fixture(scope='module', autouse=True)
@@ -150,6 +172,44 @@ def real_user():
     yield user_id
     
     # Cleanup is handled by module-level fixture
+
+
+@pytest.fixture()
+def real_oauth_token():
+    """
+    Load real OAuth token obtained from host machine.
+    
+    This fixture provides REAL OAuth tokens that were obtained via:
+    python3 integration_tests/oauth_token_helper.py --provider google
+    
+    Returns None if no token is available (test should skip or use alternative).
+    """
+    if not OAUTH_TOKENS:
+        pytest.fail(
+            "No OAuth tokens available. Obtain token from host machine:\n"
+            "  python3 integration_tests/oauth_token_helper.py --provider google\n"
+            "Tests cannot be skipped - they must either run or fail."
+        )
+    
+    # Get Google token (or first available)
+    token_data = OAUTH_TOKENS.get('google')
+    if not token_data:
+        available = ', '.join(OAUTH_TOKENS.keys())
+        pytest.fail(
+            f"Google OAuth token not found. Available: {available}\n"
+            "Obtain Google token from host machine:\n"
+            "  python3 integration_tests/oauth_token_helper.py --provider google\n"
+            "Tests cannot be skipped - they must either run or fail."
+        )
+    
+    print(f"\n   ℹ️  Using real OAuth token from host machine")
+    print(f"      Provider: {token_data['provider']}")
+    print(f"      Obtained: {token_data['obtained_at']}")
+    if 'user_info' in token_data:
+        email = token_data['user_info'].get('email', 'N/A')
+        print(f"      User: {email}")
+    
+    return token_data
 
 
 class TestRealUserOAuth:
@@ -333,6 +393,134 @@ class TestRealUserOAuth:
         assert TEST_CONFIG['providers']['google']['test_email'] == TEST_USER_EMAIL
         
         print(f"   ✅ Test config loaded: user={TEST_USER_NAME}, email={TEST_USER_EMAIL}")
+    
+    def test_store_real_oauth_token_in_database(self, real_user, real_oauth_token):
+        """
+        Test storing REAL OAuth token in database (obtained from host machine).
+        
+        This verifies:
+        - Real token can be encrypted
+        - Real token can be stored in database
+        - Real token can be retrieved and decrypted
+        - Token metadata is preserved
+        """
+        with db.connection():
+            # Create OAuth account for real user
+            oauth_account_id = db.oauth_accounts.insert(
+                user=real_user,
+                provider=real_oauth_token['provider'],
+                provider_user_id=real_oauth_token['user_info']['sub'],
+                email=real_oauth_token['user_info']['email'],
+                name=real_oauth_token['user_info'].get('name', TEST_USER_NAME),
+                picture=real_oauth_token['user_info'].get('picture'),
+            )
+            
+            print(f"   ✅ Created OAuth account (ID: {oauth_account_id})")
+            
+            # Encrypt and store REAL token
+            encrypted_access = encrypt_token(real_oauth_token['access_token'])
+            
+            token_id = db.oauth_tokens.insert(
+                oauth_account=oauth_account_id,
+                access_token_encrypted=encrypted_access,
+                token_type=real_oauth_token['token_type'],
+                scope=real_oauth_token['scope'],
+            )
+            
+            print(f"   ✅ Stored encrypted token (ID: {token_id})")
+            
+            # Verify token is really encrypted
+            stored = db.oauth_tokens[token_id]
+            assert stored.access_token_encrypted != real_oauth_token['access_token']
+            assert 'gAAAAA' in stored.access_token_encrypted  # Fernet signature
+            
+            # Verify we can decrypt to get original token
+            decrypted = decrypt_token(stored.access_token_encrypted)
+            assert decrypted == real_oauth_token['access_token']
+            
+            print(f"   ✅ Token encryption/decryption verified")
+            print(f"      Original length: {len(real_oauth_token['access_token'])}")
+            print(f"      Encrypted length: {len(stored.access_token_encrypted)}")
+            
+            # Cleanup
+            del db.oauth_tokens[token_id]
+            del db.oauth_accounts[oauth_account_id]
+    
+    def test_use_real_token_for_api_call(self, real_oauth_token):
+        """
+        Test using REAL OAuth token to make API calls.
+        
+        This verifies:
+        - Real token is valid
+        - Real token can authenticate API requests
+        - User info can be retrieved with real token
+        """
+        import requests
+        
+        # Use real token to get user info from Google API
+        headers = {
+            'Authorization': f"Bearer {real_oauth_token['access_token']}"
+        }
+        
+        print(f"   🔄 Making real API call to Google with token...")
+        response = requests.get(
+            'https://www.googleapis.com/oauth2/v2/userinfo',
+            headers=headers
+        )
+        
+        if response.status_code == 401:
+            pytest.fail(
+                "Token expired or invalid. Obtain fresh token:\n"
+                "  python3 integration_tests/oauth_token_helper.py --provider google\n"
+                "Tests cannot be skipped - they must either run or fail."
+            )
+        
+        assert response.status_code == 200, f"API call failed: {response.status_code}"
+        
+        user_info = response.json()
+        assert 'email' in user_info
+        assert user_info['email'] == TEST_USER_EMAIL
+        
+        print(f"   ✅ Real API call succeeded")
+        print(f"      Email: {user_info['email']}")
+        print(f"      Name: {user_info.get('name', 'N/A')}")
+        print(f"      Verified: {user_info.get('verified_email', 'N/A')}")
+    
+    def test_token_has_required_scopes(self, real_oauth_token):
+        """
+        Test that real token has required OAuth scopes.
+        
+        Verifies the token obtained from host machine has the scopes
+        needed for our OAuth integration.
+        """
+        scope_string = real_oauth_token.get('scope', '')
+        scopes = scope_string.split() if isinstance(scope_string, str) else []
+        
+        # Required scopes for our OAuth integration
+        required = ['openid', 'email']
+        
+        for required_scope in required:
+            # Check if scope is present (may be in different formats)
+            has_scope = any(required_scope in s for s in scopes)
+            assert has_scope, f"Missing required scope: {required_scope}"
+        
+        print(f"   ✅ Token has required scopes")
+        print(f"      Scopes: {', '.join(scopes)}")
+    
+    def test_token_user_info_matches_config(self, real_oauth_token):
+        """
+        Test that user info from token matches test configuration.
+        
+        Verifies the token was obtained for the correct test user.
+        """
+        user_info = real_oauth_token.get('user_info', {})
+        
+        assert 'email' in user_info
+        assert user_info['email'] == TEST_USER_EMAIL
+        
+        print(f"   ✅ Token user matches test config")
+        print(f"      Expected: {TEST_USER_EMAIL}")
+        print(f"      Got: {user_info['email']}")
 
 
 class TestOAuthManualFlowInstructions:

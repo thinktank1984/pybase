@@ -5,7 +5,7 @@
 After implementing the Active Record design pattern, the codebase has consolidated some structure but still contains unnecessary complexity, redundant files, and utility code that could be streamlined. The codebase currently has:
 
 - **Mixed consolidation**: Some models fully consolidated (Post, User, Comment), others not (Permission, Role still have separate api.py/views.py files)
-- **Utility proliferation**: Multiple utility files (model_factory.py, model_permissions.py, validate_models.py, chrome_test_helpers.py, base_model.py) with overlapping concerns
+- **Utility proliferation**: Multiple utility files (model_factory.py, model_permissions.py, validate_models.py, playwright_helpers.py, base_model.py) with overlapping concerns
 - **Complex auth structure**: auth/ directory with 7+ files that could potentially be simplified
 - **Dead code potential**: Methods, functions, and classes that may no longer be needed after Active Record refactoring
 
@@ -25,7 +25,7 @@ After implementing the Active Record design pattern, the codebase has consolidat
   - `model_factory.py` - Is this used in production or only tests?
   - `model_permissions.py` - Can this be integrated into base_model.py?
   - `validate_models.py` - Should this be a dev tool only?
-  - `chrome_test_helpers.py` - Test-only, should move to tests/
+  - `playwright_helpers.py` - Test-only, should move to tests/
   - `base_model.py` - Is this actually being used?
 
 ### 3. Auth Module Simplification
@@ -73,7 +73,7 @@ After implementing the Active Record design pattern, the codebase has consolidat
 - `model_factory.py` - Test-only? Move to tests/?
 - `model_permissions.py` - Integrate into base_model.py?
 - `validate_models.py` - Dev tool only? Keep as is?
-- `chrome_test_helpers.py` - Move to tests/?
+- `playwright_helpers.py` - Move to tests/?
 - `base_model.py` - Actually being used? Consolidate?
 - `openapi_generator.py` - Keep as is or simplify?
 - `auto_ui_generator.py` - Keep as is or simplify?
@@ -170,7 +170,7 @@ async def validate_token(token): ...
 **Before:**
 ```
 runtime/
-├── chrome_test_helpers.py    # Test utilities in runtime/
+├── playwright_helpers.py     # Test utilities in runtime/
 └── model_factory.py           # Test factories in runtime/
 ```
 

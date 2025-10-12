@@ -27,24 +27,22 @@ This document explains how the NO MOCKING policy is enforced programmatically.
 
 ### 1. Validation Script
 
-**File:** `validate_no_mocking.py`
+**File:** `integration_tests/validate_no_mocking.py`
 
 Automated validator that scans Python files for mocking violations.
 
 **Usage:**
 
 ```bash
-# Check entire codebase
+# From project root
+python3 integration_tests/validate_no_mocking.py
+
+# From integration_tests/ directory
+cd integration_tests
 python3 validate_no_mocking.py
 
-# Check specific directory
-python3 validate_no_mocking.py --path integration_tests/
-
 # Strict mode (exit with error if violations found)
-python3 validate_no_mocking.py --strict
-
-# Verbose output
-python3 validate_no_mocking.py --verbose
+python3 integration_tests/validate_no_mocking.py --strict
 ```
 
 **What it detects:**

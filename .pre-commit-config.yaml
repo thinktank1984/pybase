@@ -8,7 +8,7 @@ repos:
     hooks:
       - id: no-mocking-policy
         name: 🚨 NO MOCKING POLICY VALIDATOR
-        entry: python3 validate_no_mocking.py --strict
+        entry: python3 integration_tests/validate_no_mocking.py --strict
         language: system
         types: [python]
         pass_filenames: false

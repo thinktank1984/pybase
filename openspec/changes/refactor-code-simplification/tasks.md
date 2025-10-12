@@ -113,13 +113,13 @@ python -c "from models import Permission, Role, setup_all; print('✓ OK')"
 
 ### Task 3.1: Move Test-Only Utilities
 - [ ] 3.1.1 Create `tests/helpers/` directory
-- [ ] 3.1.2 Move `runtime/chrome_test_helpers.py` → `tests/helpers/chrome_helpers.py`
+- [ ] 3.1.2 Move `runtime/playwright_helpers.py` → `tests/helpers/playwright_helpers.py`
 - [ ] 3.1.3 Move `runtime/model_factory.py` → `tests/helpers/factories.py`
 - [ ] 3.1.4 Update all test imports
 - [ ] 3.1.5 Test: Run full test suite
 
 **Files to Move:**
-- `runtime/chrome_test_helpers.py` → `tests/helpers/chrome_helpers.py`
+- `runtime/playwright_helpers.py` → `tests/helpers/playwright_helpers.py`
 - `runtime/model_factory.py` → `tests/helpers/factories.py`
 
 **Files to Update:**

@@ -22,7 +22,7 @@ integration_tests/
 └── test_auto_ui.py               # Auto-UI generation tests ✅
 
 runtime/
-└── chrome_test_helpers.py        # Chrome testing helpers (imported by tests) ✅
+└── playwright_helpers.py         # Playwright testing helpers (imported by tests) ✅
 ```
 
 ## Test File Descriptions

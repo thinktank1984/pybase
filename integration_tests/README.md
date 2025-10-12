@@ -1,259 +1,240 @@
-# Test Suite
+# Integration Tests
 
-## 🚨 CRITICAL POLICY: NO MOCKING ALLOWED 🚨
+This directory contains all integration tests for the pybase project.
 
-### ⚠️ ZERO-TOLERANCE POLICY ⚠️
+## 🚨 CRITICAL POLICY: NO MOCKING ALLOWED
 
-**USING MOCKS, STUBS, OR TEST DOUBLES IS ILLEGAL IN THIS REPOSITORY**
+**⚠️ USING MOCKS, STUBS, OR TEST DOUBLES IS ILLEGAL IN THIS REPOSITORY ⚠️**
 
-This is a **ZERO-TOLERANCE POLICY**:
+All tests in this directory must follow the ZERO-TOLERANCE NO MOCKING POLICY:
+
 - ❌ **FORBIDDEN**: `unittest.mock`, `Mock()`, `MagicMock()`, `patch()`
-- ❌ **FORBIDDEN**: `pytest-mock`, `mocker` fixture
+- ❌ **FORBIDDEN**: `pytest-mock`, `mocker` fixture  
 - ❌ **FORBIDDEN**: Any mocking, stubbing, or test double libraries
-- ❌ **FORBIDDEN**: Fake in-memory databases or fake HTTP responses
-- ❌ **FORBIDDEN**: Simulated external services or APIs
+- ✅ **REQUIRED**: Real database operations with actual SQL
+- ✅ **REQUIRED**: Real HTTP requests through test client
+- ✅ **REQUIRED**: Real integration tests only
 
-### ✅ ONLY REAL INTEGRATION TESTS ARE ALLOWED
+## Validation
 
-- ✅ Real database operations with actual SQL
-- ✅ Real HTTP requests through test client
-- ✅ Real browser interactions with Chrome DevTools MCP
-- ✅ Real external service calls (or skip tests if unavailable)
+This directory includes `validate_no_mocking.py` to enforce the NO MOCKING policy.
 
-**If you write a test with mocks, the test is INVALID and must be rewritten.**
+**Run validation:**
+```bash
+# From integration_tests/ directory
+python3 validate_no_mocking.py
 
----
+# From project root
+python3 integration_tests/validate_no_mocking.py
+
+# Strict mode (exits with error if violations found)
+python3 integration_tests/validate_no_mocking.py --strict
+```
+
+**Current status:**
+```
+Files checked: 9
+✅ NO VIOLATIONS FOUND
+```
 
 ## Test Files
 
-All test files in this directory follow the no-mocking policy and contain only real integration tests.
-
-### Main Test Suite
-
-- **`tests.py`** - Main integration tests for Bloggy application
-  - REST API endpoints
-  - Authentication flows
+### Core Integration Tests
+- **`tests.py`** (1,635 lines) - Main application integration tests
+  - User authentication and authorization
+  - Post and comment CRUD operations
+  - API endpoint testing
   - Database operations
-  - Valkey cache integration
-  - Prometheus metrics
-  - Post/Comment lifecycle
-  - Session management
-
-### Role-Based Access Control Tests
-
-- **`test_roles.py`** - Role system validation tests
-  - Model imports
-  - Decorator imports
-  - Seeder imports
-  - User model extensions
-
-- **`test_roles_integration.py`** - Real RBAC integration tests
-  - Role creation and retrieval (real database)
-  - Permission management (real database)
-  - User-role assignments (real database)
-  - Ownership-based permissions (real database)
+  
+- **`conftest.py`** (85 lines) - Pytest configuration and fixtures
+  - Database setup and teardown
+  - Test client fixtures
+  - Shared test utilities
 
 ### OAuth Social Login Tests
+- **`test_oauth_real_user.py`** (419 lines) - OAuth tests with real user (ed.s.sharood@gmail.com)
+  - Real database operations
+  - Token encryption/decryption
+  - Multiple provider support
+  - Account linking
+  
+- **`test_oauth_real.py`** (614 lines) - Core OAuth functionality tests
+  - PKCE generation and validation
+  - State parameter security
+  - Token management
+  - Security features
 
-- **`test_oauth_real.py`** - Real OAuth integration tests
-  - Token encryption/decryption (real Fernet)
-  - PKCE generation and validation (real cryptography)
-  - State parameter security (real randomness)
-  - OAuth account management (real database)
-  - OAuth token storage (real database)
+- **`oauth_test_config.yaml`** (106 lines) - OAuth test configuration
+  - Test user credentials
+  - Provider settings
+
+### Role-Based Access Control Tests
+- **`test_roles_integration.py`** (587 lines) - RBAC integration tests
+  - Role creation and management
+  - Permission assignment
+  - Access control validation
+  
+- **`test_roles.py`** (188 lines) - Role system tests
+  - Role hierarchy
+  - Permission checks
+  - User role assignment
 
 ### Auto UI Generation Tests
+- **`test_auto_ui.py`** (313 lines) - Automatic UI generation tests
+  - Form generation from models
+  - CRUD interface generation
+  - UI component validation
 
-- **`test_auto_ui.py`** - Auto UI generator tests
-  - UI mapping loading
-  - Route generation
-  - Form generation
-  - Permission checking
-  - Template rendering
+### Chrome DevTools UI Tests
+- **`test_ui_chrome_real.py`** (251 lines) - Real browser UI tests
+  - Real Chrome browser interactions
+  - Page navigation and forms
+  - Visual testing
+  
+- **`chrome_integration_tests.py`** (426 lines) - Chrome DevTools integration
+  - Browser automation with MCP
+  - Screenshot capture
+  - DOM validation
 
-### Chrome Browser Integration Tests
-
-- **`chrome_integration_tests.py`** - Chrome DevTools MCP integration tests
-  - Page loading verification
-  - Navigation elements
-  - Responsive design testing
-  - Console error checking
-  - Network request validation
-  - Performance metrics
-
-- **`test_ui_chrome_real.py`** - Real Chrome UI tests
-  - Homepage testing
-  - Authentication flows
-  - Performance monitoring
-  - Visual regression testing
-
----
+### Validation Script
+- **`validate_no_mocking.py`** - NO MOCKING policy validator
+  - Scans all test files for mocking violations
+  - Enforces zero-tolerance policy
+  - Used in CI/CD and pre-commit hooks
 
 ## Running Tests
 
-### Using Docker (Recommended)
-
+### All Tests
 ```bash
-# Run all tests
-docker compose -f docker/docker-compose.yaml exec runtime pytest tests/
-
-# Run specific test file
-docker compose -f docker/docker-compose.yaml exec runtime pytest tests/tests.py -v
-
-# Run with coverage
-docker compose -f docker/docker-compose.yaml exec runtime pytest tests/ --cov=app --cov-report=html
-```
-
-### Using Local Environment
-
-```bash
-# Run all tests
+# From project root
 ./run_tests.sh
 
-# Run specific test file
-cd runtime && uv run pytest ../tests/tests.py -v
-
-# Run with coverage
-./run_tests.sh --coverage
+# Or with Docker (recommended)
+docker compose -f docker/docker-compose.yaml exec runtime \
+  pytest /app/integration_tests/ -v
 ```
 
-### Chrome Integration Tests
-
-Chrome tests require Chrome DevTools MCP to be available:
-
+### Specific Test Files
 ```bash
-# Enable Chrome MCP
-export HAS_CHROME_MCP=true
+# OAuth tests
+pytest integration_tests/test_oauth_real_user.py -v
 
-# Run Chrome tests
-pytest tests/chrome_integration_tests.py -v -s
-pytest tests/test_ui_chrome_real.py -v -s
+# Role tests
+pytest integration_tests/test_roles_integration.py -v
+
+# UI tests (requires Chrome MCP)
+HAS_CHROME_MCP=true pytest integration_tests/test_ui_chrome_real.py -v
+
+# Core tests
+pytest integration_tests/tests.py -v
 ```
 
----
-
-## Test Coverage Goals
-
-- **95%+ line coverage** - All code paths tested with real requests
-- **90%+ branch coverage** - All conditionals tested with real data
-- **100% endpoint coverage** - Every route tested with real HTTP
-- **100% database operations** - Every CRUD operation tested for real
-
----
-
-## Why No Mocking?
-
-### Mocking Creates False Confidence
-
-- ✗ Mocked tests pass but real code fails
-- ✗ Mocks don't catch integration issues
-- ✗ Mocks don't test actual database behavior
-- ✗ Mocks don't test real serialization/deserialization
-- ✗ Mocks don't test real error handling
-- ✗ Mocks become outdated when implementation changes
-
-### Integration Tests Provide Real Confidence
-
-- ✓ Tests fail when real code has bugs
-- ✓ Tests catch integration issues between components
-- ✓ Tests verify actual database behavior and constraints
-- ✓ Tests verify real API contracts
-- ✓ Tests verify real error handling
-- ✓ Tests verify actual user experience
-
----
-
-## What to Test
-
-### ✅ DO Test (Integration Level)
-
-- **Complete HTTP request/response cycles**
-  - Route handlers with real requests
-  - Form submissions with real validation
-  - API endpoints with real serialization
-  - Redirects and status codes
-
-- **Real Database Operations**
-  - Create: Insert records and verify in database
-  - Read: Query records and verify results
-  - Update: Modify records and verify changes
-  - Delete: Remove records and verify deletion
-  - Relationships: Test joins and foreign keys
-  - Constraints: Test uniqueness, required fields
-
-- **Real Authentication Flows**
-  - Login with real password hashing
-  - Session creation and persistence
-  - Authorization checks with real permissions
-  - CSRF token generation and validation
-
-- **Real UI Interactions**
-  - Page navigation in real browser
-  - Form filling with real input
-  - Button clicks with real events
-  - JavaScript execution
-  - CSS rendering and layout
-  - Network requests from browser
-
-### ❌ DON'T Test (Use Integration, Not Mocks)
-
-- **Isolated function logic** → Test via real HTTP endpoint instead
-- **Database queries in isolation** → Test via complete route handlers
-- **Template rendering alone** → Test by requesting page and verifying HTML
-- **Form validation alone** → Test by submitting real forms
-
----
-
-## Test Data Management
-
-All tests use real database operations with proper cleanup:
-
-```python
-# ✅ CORRECT - Real test data with cleanup
-@pytest.fixture()
-def test_posts():
-    """Create real test posts in database"""
-    posts = []
-    with db.connection():
-        for i in range(3):
-            post = Post.create(
-                title=f'Test Post {i}',
-                text=f'Test content {i}',
-                user=1
-            )
-            posts.append(post)
-    
-    yield posts
-    
-    # Real cleanup
-    with db.connection():
-        for post in posts:
-            post.delete_record()
+### With Coverage
+```bash
+pytest integration_tests/ --cov=runtime --cov-report=term-missing
 ```
 
+## Test Statistics
+
+- **Total test files:** 9
+- **Total lines of test code:** ~5,500 lines
+- **Mocking violations:** 0 ✅
+- **Policy compliance:** 100% ✅
+
+## Key Features
+
+### Real Integration Testing
+All tests use real operations:
+- ✅ Real SQLite database with actual SQL
+- ✅ Real HTTP requests via test client
+- ✅ Real encryption with Fernet
+- ✅ Real browser with Chrome DevTools MCP
+- ✅ Real OAuth flows (when configured)
+
+### Comprehensive Coverage
+- User authentication and sessions
+- CRUD operations (create, read, update, delete)
+- API endpoints with validation
+- Role-based access control
+- OAuth social login
+- Auto UI generation
+- Browser UI interactions
+
+### Repository Policy Compliance
+- Zero mocking - all tests use real operations
+- Enforced via `validate_no_mocking.py`
+- Pre-commit hooks prevent mocking
+- CI/CD validation blocks PRs with mocks
+
+## Configuration Files
+
+- **`oauth_test_config.yaml`** - OAuth test user and provider configuration
+- **`conftest.py`** - Pytest fixtures and test setup
+- **`pytest.ini`** - Pytest configuration (in runtime/)
+
+## Documentation
+
+- **`../documentation/OAUTH_TESTING_GUIDE.md`** - Complete OAuth testing guide
+- **`../documentation/OAUTH_QUICK_START.md`** - 5-minute OAuth quick start
+- **`../documentation/NO_MOCKING_ENFORCEMENT.md`** - Policy enforcement guide
+- **`../documentation/README_UI_TESTING.md`** - UI testing guide
+- **`../documentation/CHROME_TESTING_GUIDE.md`** - Chrome DevTools guide
+- **`../AGENTS.md`** - Repository policy and agent instructions
+
+## Support
+
+### Validate NO MOCKING Policy
+```bash
+cd integration_tests
+python3 validate_no_mocking.py
+```
+
+### Check Logs
+```bash
+docker compose -f docker/docker-compose.yaml logs runtime
+```
+
+### Run Specific Test
+```bash
+pytest integration_tests/tests.py::test_user_login -v
+```
+
+### Debug Test
+```bash
+pytest integration_tests/tests.py::test_user_login -v -s  # Show print statements
+```
+
+## Contributing
+
+When adding new tests:
+
+1. **Follow NO MOCKING policy** - Use real operations only
+2. **Run validator** - `python3 validate_no_mocking.py`
+3. **Test your tests** - Ensure they pass
+4. **Add documentation** - Update this README if needed
+5. **Check coverage** - Run with `--cov` flag
+
+**Remember:** Mocking is ILLEGAL. Tests must use real database, real HTTP, real everything!
+
+## Quick Reference
+
+| Task | Command |
+|------|---------|
+| Run all tests | `pytest integration_tests/ -v` |
+| Run OAuth tests | `pytest integration_tests/test_oauth_real_user.py -v` |
+| Run with coverage | `pytest integration_tests/ --cov=runtime` |
+| Validate no mocking | `python3 integration_tests/validate_no_mocking.py` |
+| Run in Docker | `docker compose -f docker/docker-compose.yaml exec runtime pytest /app/integration_tests/ -v` |
+| Check logs | `docker compose -f docker/docker-compose.yaml logs runtime` |
+
+## Test User Information
+
+For OAuth testing, we use:
+- **Name:** Ed
+- **Email:** ed.s.sharood@gmail.com
+
+See `oauth_test_config.yaml` for full configuration.
+
 ---
 
-## Enforcement
-
-**Any test using mocks will be rejected in code review and must be rewritten as a real integration test.**
-
-**Speed is NEVER a reason to use mocks. Mocking is ILLEGAL regardless of test performance.**
-
-If tests become slow:
-- ✅ Use module-scoped fixtures for expensive setup
-- ✅ Use function-scoped fixtures for test-specific data
-- ✅ Parallelize with pytest-xdist if needed
-- ✅ Optimize database operations (bulk creates)
-- ✅ Use transaction rollbacks for faster cleanup
-- ❌ **ILLEGAL** to switch to mocking to make tests faster
-
----
-
-## Additional Resources
-
-- [Main README](../README.md)
-- [AGENTS.md](../AGENTS.md) - Full testing philosophy
-- [Emmett Documentation](../emmett_documentation/)
-- [UI Testing Guide](../documentation/README_UI_TESTING.md)
-- [Chrome Testing Guide](../documentation/README_CHROME_TESTING.md)
-
+**All tests in this directory are REAL integration tests with ZERO mocking.**

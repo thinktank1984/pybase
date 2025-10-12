@@ -57,7 +57,7 @@ docker compose -f docker/docker-compose.yaml exec runtime pytest integration_tes
 **Files**: 
 - `runtime/test_ui_chrome_real.py`
 - `runtime/chrome_integration_tests.py`
-- `runtime/chrome_test_helpers.py`
+- `runtime/playwright_helpers.py`
 
 **Status**: ✅ **REAL tests using actual Chrome browser**  
 **Browser**: Yes (Chrome via MCP Chrome DevTools)
@@ -345,7 +345,7 @@ The following MCP tools are available for real browser testing:
 - `mcp_chrome-devtools_list_pages()` - List open tabs
 - `mcp_chrome-devtools_select_page(pageIdx)` - Switch tabs
 
-See `runtime/chrome_test_helpers.py` for helper utilities that wrap these tools.
+See `runtime/playwright_helpers.py` for helper utilities that wrap Playwright APIs.
 
 ---
 

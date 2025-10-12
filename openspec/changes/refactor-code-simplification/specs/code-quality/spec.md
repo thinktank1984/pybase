@@ -28,7 +28,7 @@ Test-only utilities SHALL be located in the `tests/` directory, not in productio
 - **AND** it SHALL NOT be located in `runtime/` directory
 
 #### Scenario: Chrome test helpers relocation
-- **WHEN** reviewing `chrome_test_helpers.py`
+- **WHEN** reviewing `playwright_helpers.py`
 - **THEN** it SHALL be located at `tests/helpers/chrome_helpers.py`
 - **AND** it SHALL NOT exist in `runtime/` directory
 

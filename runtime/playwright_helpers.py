@@ -1,8 +1,8 @@
 """
-Chrome DevTools Test Helpers - REAL Browser Automation
+Playwright Test Helpers - REAL Browser Automation
 
-This module provides helper functions for Chrome integration testing
-using Playwright for REAL browser automation.
+This module provides helper functions for browser integration testing
+using Playwright for REAL browser automation (Chrome, Firefox, Safari).
 
 🚨 NO MOCKING POLICY 🚨
 This module uses REAL Playwright browser automation.

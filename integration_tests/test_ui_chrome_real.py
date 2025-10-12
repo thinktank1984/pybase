@@ -42,10 +42,10 @@ import pytest
 import os
 import sys
 
-# Add runtime directory to path for chrome_test_helpers
+# Add runtime directory to path for playwright_helpers
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'runtime'))
 
-from chrome_test_helpers import get_chrome_helper, check_viewports, VIEWPORTS
+from playwright_helpers import get_chrome_helper, check_viewports, VIEWPORTS
 
 
 @pytest.fixture(scope="session")

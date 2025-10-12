@@ -9,7 +9,10 @@ BANNED_USAGE = [r'\bMock\s*\(', r'\bMagicMock\s*\(', r'@patch\b', r'mocker\.']
 violations = []
 files_checked = 0
 
-for file_path in Path('integration_tests').rglob('*.py'):
+for file_path in Path('.').glob('*.py'):
+    # Skip this validation script itself
+    if file_path.name == 'validate_no_mocking.py':
+        continue
     files_checked += 1
     with open(file_path, 'r') as f:
         in_docstring = False

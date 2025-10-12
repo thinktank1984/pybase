@@ -23,6 +23,10 @@ coverage>=7.0.0         # Coverage reporting
 playwright>=1.40.0      # Real browser automation for UI tests
 pytest-playwright>=0.4.0  # Playwright pytest plugin
 
+# Type Checking
+monkeytype>=23.3.0     # Automatic type annotation generation from runtime traces
+pyright>=1.1.0         # Fast static type checker
+
 # Enhanced debugging
 ipdb>=0.13.13           # Interactive debugger
 

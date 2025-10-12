@@ -116,6 +116,7 @@ See "Integration Testing Philosophy" section below for complete details.
 - ✅ **DO**: Write REAL integration tests with actual database changes
 - ✅ **DO**: Test real UI with Chrome DevTools MCP (not Selenium)
 - ✅ **DO**: Build Tailwind CSS before running (`npm run build:css` in runtime/)
+- ✅ **DO**: Run type checking with `./run_type_check.sh` (Pyright)
 - ⚠️ **PREFERRED**: Always use Docker commands over local development scripts
 - 🚫 **ILLEGAL**: Using mocks, stubs, or test doubles in tests is FORBIDDEN
 - 🚫 **ILLEGAL**: Skipping tests with @pytest.mark.skip or pytest.skip() is FORBIDDEN
@@ -403,6 +404,125 @@ async def new_post():
         redirect(url('index'))
     return {'form': form}
 ```
+
+## Type Checking
+
+**⚠️ IMPORTANT: Type checking is enabled using Pyright for static analysis.**
+
+### Overview
+
+This project uses **Pyright** for static type checking to catch type-related bugs before runtime and improve IDE support.
+
+### Running Type Checks
+
+```bash
+# Using the type check script (Recommended)
+./run_type_check.sh
+
+# Or manually in Docker
+docker compose -f docker/docker-compose.yaml exec runtime pyright
+
+# Check specific files
+./run_type_check.sh runtime/app.py runtime/models/
+
+# Run locally (if pyright installed)
+./run_type_check.sh --local
+```
+
+### Configuration
+
+Type checking is configured in `pyrightconfig.json`:
+- **Mode**: `basic` (not too strict, focuses on actual bugs)
+- **Included**: `runtime/`, `integration_tests/`
+- **Excluded**: `migrations/`, `__pycache__`, `databases/`, `node_modules`
+
+### Working with pyDAL/Emmett Dynamic Features
+
+pyDAL and Emmett are dynamically-typed frameworks, so Pyright will report errors for:
+- ORM field access (e.g., `post.id`, `post.title`)
+- Dynamic methods (e.g., `.update_record()`, `.form`)
+- Request/response objects
+
+**This is expected.** Use these strategies:
+
+#### 1. Type Ignore for ORM Fields
+
+```python
+# ✅ CORRECT - Suppress ORM attribute errors
+post = Post.get(id)  # type: ignore[attr-defined]
+title = post.title  # type: ignore[attr-defined]
+```
+
+#### 2. Use `Any` for Dynamic Objects
+
+```python
+from typing import Any
+
+async def my_route() -> dict[str, Any]:
+    # Route handlers return dict with any values
+    return {'post': post, 'comments': comments}
+```
+
+#### 3. Type Annotations for Function Signatures
+
+```python
+# Add type hints to function parameters and returns
+async def create_post(title: str, text: str, user_id: int) -> dict[str, Any]:
+    post = Post.create(title=title, text=text, user=user_id)
+    return {'id': post.id}  # type: ignore[attr-defined]
+```
+
+### Expected Type Errors
+
+**Current Status**: ~89 errors, ~150 warnings
+
+Most errors are ORM-related and expected:
+- `Cannot access attribute "id"` - ORM fields
+- `Cannot access attribute "update_record"` - ORM methods  
+- `Cannot access attribute "form"` - Dynamic form generation
+- `Cannot access attribute "validation"` - ORM model attributes
+
+These errors are documented in the design and are acceptable for a dynamic framework. They can be silenced with `type: ignore` comments when needed.
+
+### Best Practices
+
+**✅ DO**:
+- Add type hints to new functions (`def func(x: int) -> str:`)
+- Use `type: ignore[attr-defined]` for ORM field access
+- Use `dict[str, Any]` for route return types
+- Run type checks before committing code
+
+**❌ DON'T**:
+- Try to achieve 100% type coverage (not realistic for pyDAL)
+- Add type hints that break Emmett decorators
+- Ignore type errors without understanding why
+
+### Type Checking in CI/CD
+
+Type checking can be added to CI/CD as warnings (not blockers):
+
+```yaml
+# Example GitHub Actions
+- name: Type Check
+  run: ./run_type_check.sh
+  continue-on-error: true  # Don't fail build on type errors
+```
+
+### Tools Installed
+
+- **Pyright 1.1.406+**: Fast static type checker
+- **MonkeyType 23.3.0+**: Automatic type annotation inference (optional)
+
+### IDE Integration
+
+Pyright integrates automatically with:
+- **VS Code**: Uses Pylance (Pyright-based) by default
+- **PyCharm**: Configure to use Pyright as external tool
+- **vim/neovim**: Use `pyright-langserver`
+
+Type errors will show inline in your editor with hover information.
+
+---
 
 ## Testing
 
