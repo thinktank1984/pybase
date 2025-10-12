@@ -100,7 +100,7 @@ The `emmett_documentation/` directory contains comprehensive documentation for t
     - Translation file organization
 
 11. **Performance**
-    - Caching strategies (RAM, Disk, Redis)
+    - Caching strategies (RAM, Disk, Redis, Valkey)
     - Cache decorators and manual operations
 
 12. **Utilities**

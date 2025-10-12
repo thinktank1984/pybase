@@ -1,15 +1,54 @@
 {{extend 'layout.html'}}
 
-<a href="{{=url('new_post')}}">Create a new post</a>
-<ul class="posts">
-{{for post in posts:}}
-    <li>
-        <h2>{{=post.title}}</h2>
-        <a href="{{=url('one', post.id)}}">Read more</a>
-        <hr />
-    </li>
-{{pass}}
-{{if not posts:}}
-    <li><em>No posts here so far.</em></li>
-{{pass}}
-</ul>
+<div class="mb-8">
+    <div class="flex items-center justify-between mb-6">
+        <h2 class="text-3xl font-bold text-gray-900">Recent Posts</h2>
+        {{if current.session.auth:}}
+        <a href="{{=url('new_post')}}" 
+           class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-md hover:shadow-lg">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Create New Post
+        </a>
+        {{pass}}
+    </div>
+    
+    {{if not posts:}}
+    <div class="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        <p class="mt-4 text-lg text-gray-500 font-medium">No posts here so far.</p>
+        <p class="mt-2 text-sm text-gray-400">Be the first to create a post!</p>
+    </div>
+    {{else:}}
+    <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+    {{for post in posts:}}
+        <article class="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-lg transition-shadow duration-300 overflow-hidden group">
+            <div class="p-6">
+                <h3 class="text-xl font-bold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors">
+                    {{=post.title}}
+                </h3>
+                <div class="flex items-center justify-between mt-4">
+                    <a href="{{=url('one', post.id)}}" 
+                       class="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium transition-colors">
+                        Read more
+                        <svg class="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-6 py-3 border-t border-gray-100">
+                <p class="text-xs text-gray-500">
+                    {{if post.created_at:}}
+                    <span>Posted {{=post.created_at}}</span>
+                    {{pass}}
+                </p>
+            </div>
+        </article>
+    {{pass}}
+    </div>
+    {{pass}}
+</div>

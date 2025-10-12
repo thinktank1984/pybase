@@ -1,6 +1,22 @@
 version: "3.8"
 
 services:
+  bugsink_db:
+    image: postgres:16-alpine
+    container_name: bugsink_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: bugsink
+      POSTGRES_USER: bugsink
+      POSTGRES_PASSWORD: bugsink_password
+    volumes:
+      - bugsink_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bugsink"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   bugsink:
     image: bugsink/bugsink:latest
     container_name: bugsink
@@ -9,12 +25,12 @@ services:
       - "8000:8000"
     environment:
       # Security / basic setup
-      SECRET_KEY: "super_secret_key_change_me"
+      SECRET_KEY: "ZT_yLiPDHWra2sww5j7k8Ay5oOKcXJ4is3XeoYL-SEMi0irOvgqgkJRB3VxZuz8ZrOI"
       CREATE_SUPERUSER: "admin:admin_password"
       PORT: 8000
 
-      # Database (SQLite)
-      DATABASE_URL: "sqlite:///data/bugsink.sqlite3"
+      # Database (PostgreSQL)
+      DATABASE_URL: "postgresql://bugsink:bugsink_password@bugsink_db:5432/bugsink"
 
       # Optional: public URL if behind proxy
       BASE_URL: "http://localhost:8000"
@@ -26,6 +42,9 @@ services:
 
     volumes:
       - bugsink_data:/data
+    depends_on:
+      bugsink_db:
+        condition: service_healthy
 
   prometheus:
     image: prom/prometheus:latest
@@ -93,14 +112,39 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - EMMETT_ENV=development
+      # Valkey cache configuration (optional - enable with VALKEY_ENABLED=true)
+      - VALKEY_ENABLED=false
+      - VALKEY_HOST=valkey
+      - VALKEY_PORT=6379
+      - VALKEY_DB=0
     volumes:
       # Mount the full repository to /app in the container
       - ..:/app
     working_dir: /app
     command: ["granian", "--interface", "asgi", "--host", "0.0.0.0", "--port", "8081", "runtime.app:app"]
+    depends_on:
+      valkey:
+        condition: service_healthy
+
+  valkey:
+    image: valkey/valkey:7.2-alpine
+    container_name: valkey
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - valkey_data:/data
+    command: valkey-server --appendonly yes --save 60 1 --loglevel warning
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
 volumes:
+  bugsink_db_data:
   bugsink_data:
   prometheus_data:
   alertmanager_data:
   grafana_data:
+  valkey_data:

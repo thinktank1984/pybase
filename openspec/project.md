@@ -35,7 +35,7 @@ The project serves as both a reference implementation and learning resource for 
 - Session management (cookie-based, file-based, Redis-backed)
 - WebSocket support for real-time features
 - RESTful API capabilities via `emmett-rest`
-- Caching (RAM, Disk, Redis)
+- Caching (RAM, Disk, Redis, Valkey)
 - Email sending (`Mailer`)
 - Internationalization support
 
@@ -291,7 +291,7 @@ The example application in `runtime/` demonstrates:
 - **ASGI Server**: Granian (included)
 
 ### Optional Services
-- **Redis**: For session storage and caching (if configured)
+- **Redis/Valkey**: For session storage and caching (if configured)
 - **SMTP Server**: For email functionality via Mailer
 - **WebSocket Support**: Built into Emmett, no external service needed
 

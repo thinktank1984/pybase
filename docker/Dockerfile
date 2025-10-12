@@ -19,6 +19,21 @@ RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
 # Install Gemini CLI globally
 RUN npm install -g @google/gemini-cli@latest
 
+# Install Tailwind CSS standalone CLI
+# Detect architecture and download appropriate binary
+RUN ARCH=$(uname -m) && \
+    if [ "$ARCH" = "x86_64" ]; then \
+        curl -sLO https://github.com/tailwindlabs/tailwindcss/releases/latest/download/tailwindcss-linux-x64 && \
+        chmod +x tailwindcss-linux-x64 && \
+        mv tailwindcss-linux-x64 /usr/local/bin/tailwind; \
+    elif [ "$ARCH" = "aarch64" ]; then \
+        curl -sLO https://github.com/tailwindlabs/tailwindcss/releases/latest/download/tailwindcss-linux-arm64 && \
+        chmod +x tailwindcss-linux-arm64 && \
+        mv tailwindcss-linux-arm64 /usr/local/bin/tailwind; \
+    else \
+        echo "Unsupported architecture: $ARCH" && exit 1; \
+    fi
+
 # Copy requirements file for Python dependencies
 COPY setup/requirements.txt /tmp/requirements.txt
 

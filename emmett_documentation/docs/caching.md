@@ -84,6 +84,81 @@ As we saw with the other handlers, `RedisCache` class accepts some parameters to
 | prefix | `'cache:'` | allows to specify a common prefix for caching keys |
 | default\_expire | 300 | set a default expiration (in seconds) for stored objects |
 
+### Valkey Cache
+
+[Valkey](https://valkey.io) is an open-source, Redis-compatible alternative maintained by the Linux Foundation. After Redis adopted restrictive licensing (SSPL/RSALv2) in 2024, Valkey emerged as a truly open-source alternative backed by major cloud providers and the open-source community. Valkey provides the same performance and features as Redis while maintaining protocol compatibility.
+
+> **Note:** While Emmett doesn't provide a built-in `ValkeyCache` handler, you can easily create one in your application. Valkey uses the same wire protocol as Redis, ensuring full compatibility.
+
+To use Valkey, you can create a custom cache handler:
+
+```python
+from emmett.cache import Cache
+from valkey import Valkey
+import pickle
+
+class ValkeyCache:
+    def __init__(self, host='localhost', port=6379, db=0, 
+                 prefix='cache:', default_expire=300):
+        self.client = Valkey(host=host, port=port, db=db, decode_responses=False)
+        self.prefix = prefix
+        self.default_expire = default_expire
+    
+    def _make_key(self, key):
+        return f"{self.prefix}{key}"
+    
+    def get(self, key):
+        try:
+            value = self.client.get(self._make_key(key))
+            return pickle.loads(value) if value else None
+        except:
+            return None
+    
+    def set(self, key, value, duration=None):
+        try:
+            ttl = duration if duration is not None else self.default_expire
+            return self.client.setex(self._make_key(key), int(ttl), pickle.dumps(value))
+        except:
+            return False
+    
+    def clear(self, key=None):
+        try:
+            if key is None:
+                return self.client.flushdb()
+            if '*' in key:
+                keys = self.client.keys(self._make_key(key))
+                return self.client.delete(*keys) if keys else 0
+            return self.client.delete(self._make_key(key))
+        except:
+            return 0
+
+# Usage
+cache = Cache(valkey=ValkeyCache(host='valkey', port=6379))
+```
+
+The `ValkeyCache` handler accepts the same parameters as `RedisCache`:
+
+| parameter | default value | description |
+| --- | --- | --- |
+| host | `'localhost'` | the host of the valkey backend |
+| port | 6379 | the port of the valkey backend |
+| db | 0 | the database number to use on the valkey backend |
+| prefix | `'cache:'` | allows to specify a common prefix for caching keys |
+| default\_expire | 300 | set a default expiration (in seconds) for stored objects |
+
+**When to choose Valkey over Redis:**
+- ✅ You need truly open-source software without licensing concerns
+- ✅ Your organization requires permissive licensing (BSD-3-Clause)
+- ✅ You want to avoid vendor lock-in with restrictive licenses
+- ✅ You need drop-in Redis compatibility with community-driven development
+
+**Migration from Redis to Valkey:**
+Since Valkey is protocol-compatible with Redis, migration is straightforward:
+1. Replace `redis` package with `valkey` in your requirements
+2. Change `RedisCache` to `ValkeyCache` in your configuration
+3. Point your application to a Valkey server instead of Redis
+4. No code changes required beyond the handler initialization
+
 ### Using multiple systems together
 
 As you probably supposed, you can use multiple caching system together. Let's say you want to use the three systems we just described. You can do it simply:

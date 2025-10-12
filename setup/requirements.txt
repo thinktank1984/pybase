@@ -9,6 +9,7 @@
 emmett>=2.5.0           # Emmett web framework
 emmett-rest>=1.2.0      # REST extension for Emmett (REST API generation)
 emmett-sentry>=0.4.0    # Sentry integration for Emmett (optional)
+prometheus-client>=0.20.0  # Prometheus metrics (custom integration)
 
 # ============================================================================
 # Development & Testing Extras
@@ -17,6 +18,7 @@ emmett-sentry>=0.4.0    # Sentry integration for Emmett (optional)
 # Testing
 pytest>=7.0.0           # Testing framework
 pytest-cov>=4.0.0       # Test coverage
+pytest-asyncio>=0.21.0  # Async test support
 coverage>=7.0.0         # Coverage reporting
 
 # Enhanced debugging
@@ -96,6 +98,7 @@ colorlog>=6.8.0             # Colored console logs
 psycopg>=3.1.0          # PostgreSQL adapter
 pymysql>=1.1.0          # MySQL adapter
 redis>=5.0.0            # Redis client
+valkey>=5.0.0           # Valkey client (Redis-compatible, open-source alternative)
 
 # ============================================================================
 # API Enhancements

@@ -1,23 +1,80 @@
 {{extend 'layout.html'}}
 
-<h1>{{=post.title}}</h1>
-{{=post.text}}
-<br />
-<hr />
-<h4>Comments</h4>
-{{if current.session.auth:}}
-<h5>Write a comment:</h5>
-{{=form}}
-{{pass}}
-<ul class="comments">
-{{for comment in comments:}}
-    <li>
-        {{=comment.text}}
-        <br />
-        <em>by {{=comment.user.first_name}} on {{=comment.date}}</em>
-    </li>
-{{pass}}
-{{if not comments:}}
-    <li><em>No comments here so far.</em></li>
-{{pass}}
-</ul>
+<div class="max-w-4xl mx-auto">
+    <!-- Back Button -->
+    <div class="mb-6">
+        <a href="{{=url('index')}}" class="inline-flex items-center text-blue-600 hover:text-blue-800 transition-colors">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            Back to All Posts
+        </a>
+    </div>
+
+    <!-- Post Content -->
+    <article class="bg-white rounded-lg shadow-md overflow-hidden mb-8">
+        <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6">
+            <h1 class="text-4xl font-bold text-white mb-2">{{=post.title}}</h1>
+            {{if post.created_at:}}
+            <p class="text-blue-100 text-sm">Published on {{=post.created_at}}</p>
+            {{pass}}
+        </div>
+        <div class="px-8 py-6">
+            <div class="prose prose-lg max-w-none text-gray-700 leading-relaxed">
+                {{=post.text}}
+            </div>
+        </div>
+    </article>
+
+    <!-- Comments Section -->
+    <div class="bg-white rounded-lg shadow-md p-6 md:p-8">
+        <div class="flex items-center mb-6">
+            <svg class="w-6 h-6 text-gray-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+            </svg>
+            <h2 class="text-2xl font-bold text-gray-900">Comments</h2>
+        </div>
+
+        <!-- Comment Form -->
+        {{if current.session.auth:}}
+        <div class="mb-8 bg-blue-50 rounded-lg p-6 border border-blue-200">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Write a Comment</h3>
+            {{=form}}
+        </div>
+        {{else:}}
+        <div class="mb-8 bg-gray-50 rounded-lg p-6 border border-gray-200 text-center">
+            <p class="text-gray-600">
+                <a href="{{=url('auth.login')}}" class="text-blue-600 hover:text-blue-800 font-medium">Log in</a> 
+                to leave a comment
+            </p>
+        </div>
+        {{pass}}
+
+        <!-- Comments List -->
+        <div class="space-y-4">
+        {{if not comments:}}
+            <div class="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                <svg class="mx-auto h-10 w-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                </svg>
+                <p class="mt-3 text-gray-500 font-medium">No comments yet</p>
+                <p class="text-sm text-gray-400 mt-1">Be the first to comment!</p>
+            </div>
+        {{else:}}
+        {{for comment in comments:}}
+            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:border-blue-300 transition-colors">
+                <p class="text-gray-800 mb-3">{{=comment.text}}</p>
+                <div class="flex items-center text-sm text-gray-500">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                    <span class="font-medium text-gray-700">{{=comment.user.first_name}}</span>
+                    <span class="mx-2">•</span>
+                    <span>{{=comment.date}}</span>
+                </div>
+            </div>
+        {{pass}}
+        {{pass}}
+        </div>
+    </div>
+</div>
