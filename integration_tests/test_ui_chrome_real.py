@@ -50,15 +50,16 @@ from chrome_test_helpers import get_chrome_helper, check_viewports, VIEWPORTS
 
 @pytest.fixture(scope="session")
 def chrome():
-    """Get Chrome test helper for the session"""
+    """Get REAL Chrome test helper (Playwright) for the session"""
     try:
         helper = get_chrome_helper()
-        print(f"\n🌐 Chrome helper initialized for {helper.base_url}")
+        print(f"\n🌐 REAL Chrome browser started for {helper.base_url}")
         yield helper
-        print("\n✨ Chrome tests complete")
+        helper.close()
+        print("\n✨ REAL Chrome tests complete")
     except Exception as e:
         pytest.fail(
-            f"Chrome MCP not available: {e}\n"
+            f"Playwright Chrome not available: {e}\n"
             "Tests cannot be skipped - they must either run or fail."
         )
 

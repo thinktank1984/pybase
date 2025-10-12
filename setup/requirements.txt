@@ -20,6 +20,8 @@ pytest>=7.0.0           # Testing framework
 pytest-cov>=4.0.0       # Test coverage
 pytest-asyncio>=0.21.0  # Async test support
 coverage>=7.0.0         # Coverage reporting
+playwright>=1.40.0      # Real browser automation for UI tests
+pytest-playwright>=0.4.0  # Playwright pytest plugin
 
 # Enhanced debugging
 ipdb>=0.13.13           # Interactive debugger

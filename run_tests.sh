@@ -388,11 +388,12 @@ run_chrome_tests() {
             TEST_CMD="$TEST_CMD $PYTEST_EXTRA_ARGS"
         fi
         
-        echo -e "${CYAN}📝 Host Command: $TEST_CMD${NC}"
+        echo -e "${CYAN}📝 Host Command: CHROME_HEADED=true $TEST_CMD${NC}"
         echo ""
         
-        # Run on HOST
+        # Run on HOST with CHROME_HEADED environment variable
         cd "$PROJECT_ROOT"
+        export CHROME_HEADED=true
         if eval "$TEST_CMD"; then
             echo ""
             echo -e "${GREEN}✅ Chrome tests passed! (ran on HOST)${NC}"
