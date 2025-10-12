@@ -28,6 +28,7 @@ Following repository policy: Mocking is FORBIDDEN.
 """
 
 import pytest
+import uuid
 from app import app, db, User, Post, Comment
 from models import (
     Role, Permission, UserRole, RolePermission,
@@ -36,6 +37,11 @@ from models import (
     user_has_permission, user_has_any_permission, user_get_permissions,
     user_can_access_resource
 )
+
+
+def unique_email(prefix='test'):
+    """Generate a unique email address for testing"""
+    return f"{prefix}_{uuid.uuid4().hex[:8]}@example.com"
 
 
 @pytest.fixture(scope='module', autouse=True)
@@ -145,7 +151,7 @@ def test_user_role_assignment():
     with db.connection():
         # Create real test user in database
         user_id = db.users.insert(
-            email='test_role_user_001@example.com',
+            email=unique_email('test_role_user'),
             password='password123',
             first_name='Test',
             last_name='User'
@@ -179,7 +185,7 @@ def test_user_multiple_roles():
     with db.connection():
         # Create real user
         user_id = db.users.insert(
-            email='test_multi_role_001@example.com',
+            email=unique_email('test_multi_role'),
             password='password123',
             first_name='Multi',
             last_name='Role'
@@ -213,7 +219,7 @@ def test_user_role_removal():
     with db.connection():
         # Create real user with role
         user_id = db.users.insert(
-            email='test_remove_role_001@example.com',
+            email=unique_email('test_remove_role'),
             password='password123',
             first_name='Remove',
             last_name='Role'
@@ -246,7 +252,7 @@ def test_user_inherits_permissions_from_role():
     with db.connection():
         # Create real user
         user_id = db.users.insert(
-            email='test_perms_001@example.com',
+            email=unique_email('test_perms'),
             password='password123',
             first_name='Perm',
             last_name='User'
@@ -276,7 +282,7 @@ def test_admin_bypass():
     with db.connection():
         # Create real admin user
         user_id = db.users.insert(
-            email='test_admin_001@example.com',
+            email=unique_email('test_admin'),
             password='password123',
             first_name='Admin',
             last_name='User'
@@ -306,7 +312,7 @@ def test_user_without_role_has_no_permissions():
     with db.connection():
         # Create real user without roles
         user_id = db.users.insert(
-            email='test_no_role_001@example.com',
+            email=unique_email('test_no_role'),
             password='password123',
             first_name='No',
             last_name='Role'
@@ -333,13 +339,13 @@ def test_ownership_based_permissions():
     with db.connection():
         # Create two real users
         owner_id = db.users.insert(
-            email='owner_001@example.com',
+            email=unique_email('owner'),
             password='password',
             first_name='Owner',
             last_name='User'
         )
         other_id = db.users.insert(
-            email='other_001@example.com',
+            email=unique_email('other'),
             password='password',
             first_name='Other',
             last_name='User'
@@ -382,13 +388,13 @@ def test_moderator_can_edit_any_post():
     with db.connection():
         # Create real users
         owner_id = db.users.insert(
-            email='post_owner_001@example.com',
+            email=unique_email('post_owner'),
             password='password',
             first_name='Owner',
             last_name='User'
         )
         mod_id = db.users.insert(
-            email='moderator_001@example.com',
+            email=unique_email('moderator'),
             password='password',
             first_name='Mod',
             last_name='User'
@@ -435,7 +441,7 @@ def test_post_can_edit_as_owner():
     with db.connection():
         # Create real user with author role
         user_id = db.users.insert(
-            email='can_edit_001@example.com',
+            email=unique_email('can_edit'),
             password='password',
             first_name='Can',
             last_name='Edit'
@@ -471,7 +477,7 @@ def test_post_can_delete_as_owner():
     with db.connection():
         # Create real user with author role
         user_id = db.users.insert(
-            email='can_delete_001@example.com',
+            email=unique_email('can_delete'),
             password='password',
             first_name='Can',
             last_name='Delete'
@@ -554,7 +560,7 @@ def test_user_has_any_permission():
     with db.connection():
         # Create real user
         user_id = db.users.insert(
-            email='test_any_perm_001@example.com',
+            email=unique_email('test_any_perm'),
             password='password',
             first_name='Any',
             last_name='Perm'

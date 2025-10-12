@@ -190,7 +190,7 @@ run_app_tests() {
     echo -e "${YELLOW}🔬 Running Application Tests...${NC}"
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     
-    TEST_CMD="cd /app/runtime && pytest tests.py"
+    TEST_CMD="cd /app && pytest tests/"
     
     # Add verbosity
     if [ "$VERBOSE" = "vv" ]; then
@@ -217,7 +217,7 @@ run_app_tests() {
     
     # Add coverage
     if [ "$COVERAGE" = true ]; then
-        TEST_CMD="$TEST_CMD --cov=. --cov-report=html --cov-report=term"
+        TEST_CMD="$TEST_CMD --cov=runtime --cov-report=html --cov-report=term"
     fi
     
     # Add extra pytest args

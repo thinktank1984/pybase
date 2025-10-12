@@ -16,7 +16,7 @@ class OAuthToken(Model):
     
     tablename = "oauth_tokens"
     
-    belongs_to('oauth_account')
+    belongs_to({'oauth_account': 'OAuthAccount'})
     
     # Encrypted token fields (stored as text to accommodate encryption overhead)
     access_token_encrypted = Field.text(

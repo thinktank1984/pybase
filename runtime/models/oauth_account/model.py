@@ -15,8 +15,8 @@ class OAuthAccount(Model):
     
     tablename = "oauth_accounts"
     
-    belongs_to('auth_user')  # Link to Emmett's auth_user table
-    has_one('oauth_token')
+    belongs_to({'user': 'User'})  # Link to User model
+    has_one({'oauth_token': 'OAuthToken'})
     
     # Fields
     provider = Field.string(

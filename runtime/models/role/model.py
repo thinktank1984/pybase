@@ -81,6 +81,7 @@ class Role(Model):
     def get_permissions(self):
         """
         Get all permissions associated with this role.
+        Works on both Model instances and Row objects.
         
         Returns:
             list: List of Permission instances
@@ -89,15 +90,19 @@ class Role(Model):
             from ..utils import get_db
             db = get_db()
             
+            # Get role ID (works for both Model and Row objects)
+            role_id = self.id if hasattr(self, 'id') else self['id']
+            
             # Query permissions through role_permissions association
             rows = db(
-                (db.role_permissions.role == self.id) &
+                (db.role_permissions.role == role_id) &
                 (db.role_permissions.permission == db.permissions.id)
             ).select(db.permissions.ALL)
             
             return [row for row in rows]
         except Exception as e:
-            print(f"Error getting permissions for role {self.name}: {e}")
+            role_name = getattr(self, 'name', None) or self.get('name', 'unknown')
+            print(f"Error getting permissions for role {role_name}: {e}")
             return []
     
     def has_permission(self, permission_name):

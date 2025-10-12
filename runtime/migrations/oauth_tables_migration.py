@@ -16,7 +16,7 @@ class Migration(migrations.Migration):
         self.create_table(
             'oauth_accounts',
             migrations.Column('id', 'id'),
-            migrations.Column('auth_user', 'reference auth_user', notnull=True),
+            migrations.Column('user', 'reference users', notnull=True),
             migrations.Column('provider', 'string', length=50, notnull=True),
             migrations.Column('provider_user_id', 'string', length=255, notnull=True),
             migrations.Column('email', 'string', length=255),
@@ -30,8 +30,8 @@ class Migration(migrations.Migration):
         # Create unique index on (provider, provider_user_id)
         self.create_index('oauth_accounts', 'provider', 'provider_user_id', unique=True)
         
-        # Create index on (auth_user, provider)
-        self.create_index('oauth_accounts', 'auth_user', 'provider')
+        # Create index on (user, provider)
+        self.create_index('oauth_accounts', 'user', 'provider')
         
         self.create_table(
             'oauth_tokens',

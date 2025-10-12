@@ -103,31 +103,46 @@ PROMETHEUS_ENABLED = os.environ.get('PROMETHEUS_ENABLED', 'true').lower() == 'tr
 # Initialize Prometheus metrics
 if PROMETHEUS_ENABLED and PROMETHEUS_AVAILABLE:
     from emmett.pipeline import Pipe
+    from prometheus_client import REGISTRY
     
-    # Define custom metrics
-    http_requests_total = Counter(
-        'emmett_http_requests_total',
-        'Total HTTP requests',
-        ['method', 'endpoint', 'status']
-    )
-    
-    http_request_duration_seconds = Histogram(
-        'emmett_http_request_duration_seconds',
-        'HTTP request latency in seconds',
-        ['method', 'endpoint']
-    )
-    
-    http_request_size_bytes = Histogram(
-        'emmett_http_request_size_bytes',
-        'HTTP request size in bytes',
-        ['method', 'endpoint']
-    )
-    
-    http_response_size_bytes = Histogram(
-        'emmett_http_response_size_bytes',
-        'HTTP response size in bytes',
-        ['method', 'endpoint', 'status']
-    )
+    # Define custom metrics (with duplicate check)
+    try:
+        # Try to get existing metrics first to avoid duplication in test environment
+        http_requests_total = REGISTRY._names_to_collectors.get('emmett_http_requests_total')
+        http_request_duration_seconds = REGISTRY._names_to_collectors.get('emmett_http_request_duration_seconds')
+        http_request_size_bytes = REGISTRY._names_to_collectors.get('emmett_http_request_size_bytes')
+        http_response_size_bytes = REGISTRY._names_to_collectors.get('emmett_http_response_size_bytes')
+        
+        # Only create if they don't exist
+        if not http_requests_total:
+            http_requests_total = Counter(
+                'emmett_http_requests_total',
+                'Total HTTP requests',
+                ['method', 'endpoint', 'status']
+            )
+        
+        if not http_request_duration_seconds:
+            http_request_duration_seconds = Histogram(
+                'emmett_http_request_duration_seconds',
+                'HTTP request latency in seconds',
+                ['method', 'endpoint']
+            )
+        
+        if not http_request_size_bytes:
+            http_request_size_bytes = Histogram(
+                'emmett_http_request_size_bytes',
+                'HTTP request size in bytes',
+                ['method', 'endpoint']
+            )
+        
+        if not http_response_size_bytes:
+            http_response_size_bytes = Histogram(
+                'emmett_http_response_size_bytes',
+                'HTTP response size in bytes',
+                ['method', 'endpoint', 'status']
+            )
+    except Exception as e:
+        print(f"Warning: Error initializing Prometheus metrics: {e}")
     
     class PrometheusMetricsPipe(Pipe):
         """Pipeline component to track HTTP metrics"""
@@ -368,7 +383,58 @@ def get_current_session():
 db = Database(app)
 mailer = Mailer(app)
 auth = Auth(app, db, user_model=User)
-db.define_models(Post, Comment, Role, Permission, UserRole, RolePermission)
+db.define_models(Post, Comment, Role, Permission, UserRole, RolePermission, OAuthAccount, OAuthToken)
+
+
+#: Patch Row classes to add custom methods
+# This allows methods defined on Model classes to work on Row objects returned from queries
+def _patch_row_methods():
+    """Add custom methods to Row classes for models."""
+    
+    # Add get_permissions to RoleRow
+    def role_get_permissions(self):
+        """Get permissions for this role (works on Row objects)."""
+        try:
+            role_id = self.id if hasattr(self, 'id') else self['id']
+            rows = db(
+                (db.role_permissions.role == role_id) &
+                (db.role_permissions.permission == db.permissions.id)
+            ).select(db.permissions.ALL)
+            return [row for row in rows]
+        except Exception as e:
+            role_name = getattr(self, 'name', self.get('name', 'unknown')) if hasattr(self, 'get') else getattr(self, 'name', 'unknown')
+            print(f"Error getting permissions for role {role_name}: {e}")
+            return []
+    
+    # Add can_edit to PostRow
+    def post_can_edit(self, user):
+        """Check if user can edit this post (works on Row objects)."""
+        from models.utils import user_can_access_resource
+        if not user:
+            return False
+        user_id = user.id if hasattr(user, 'id') else user['id']
+        return user_can_access_resource(user_id, 'post', 'edit', self)
+    
+    # Add can_delete to PostRow  
+    def post_can_delete(self, user):
+        """Check if user can delete this post (works on Row objects)."""
+        from models.utils import user_can_access_resource
+        if not user:
+            return False
+        user_id = user.id if hasattr(user, 'id') else user['id']
+        return user_can_access_resource(user_id, 'post', 'delete', self)
+    
+    # Patch the Row classes
+    try:
+        if hasattr(db, 'roles') and hasattr(db.roles, '_rowclass'):
+            db.roles._rowclass.get_permissions = role_get_permissions
+        if hasattr(db, 'posts') and hasattr(db.posts, '_rowclass'):
+            db.posts._rowclass.can_edit = post_can_edit
+            db.posts._rowclass.can_delete = post_can_delete
+    except Exception as e:
+        print(f"Warning: Could not patch Row methods: {e}")
+
+_patch_row_methods()
 
 
 #: database helper functions (defined after db is initialized)

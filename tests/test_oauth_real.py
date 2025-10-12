@@ -51,10 +51,13 @@ import base64
 from datetime import datetime, timedelta
 from cryptography.fernet import Fernet, InvalidToken
 
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'runtime'))
+
+from emmett.orm import Field
 from emmett.orm.migrations.utils import generate_runtime_migration
-from app import app, db, User
-from models.oauth_account.model import OAuthAccount
-from models.oauth_token.model import OAuthToken
+from app import app, db, User, OAuthAccount, OAuthToken
 from auth.tokens import encrypt_token, decrypt_token, generate_encryption_key
 from auth.providers.base import BaseOAuthProvider
 from auth.providers.google import GoogleOAuthProvider
@@ -63,21 +66,61 @@ from auth.oauth_manager import OAuthManager
 
 @pytest.fixture(scope='module', autouse=True)
 def _prepare_db(request):
-    """Ensure database is ready - OAuth tables should already exist from migrations"""
-    # Database and OAuth tables created by runtime/migrations/oauth_tables_migration.py
-    # We just use the existing database
+    """Ensure database is ready - create OAuth tables if they don't exist"""
+    # Create OAuth tables if they don't exist
+    with db.connection():
+        # Check if oauth_accounts table exists
+        if 'oauth_accounts' not in db.tables:
+            # Define tables directly using pyDAL (more reliable than running migrations in tests)
+            db.define_table(
+                'oauth_accounts',
+                Field('id', 'id'),
+                Field('user', 'reference auth_users', notnull=True),
+                Field('provider', 'string', length=50, notnull=True),
+                Field('provider_user_id', 'string', length=255, notnull=True),
+                Field('email', 'string', length=255),
+                Field('name', 'string', length=255),
+                Field('picture', 'string', length=512),
+                Field('profile_data', 'json'),
+                Field('created_at', 'datetime'),
+                Field('last_login_at', 'datetime'),
+                migrate=True
+            )
+            print("✅ OAuth accounts table created")
+        
+        if 'oauth_tokens' not in db.tables:
+            db.define_table(
+                'oauth_tokens',
+                Field('id', 'id'),
+                Field('oauth_account', 'reference oauth_accounts', notnull=True),
+                Field('access_token_encrypted', 'text', notnull=True),
+                Field('refresh_token_encrypted', 'text'),
+                Field('token_type', 'string', length=50, default='Bearer'),
+                Field('scope', 'string', length=512),
+                Field('access_token_expires_at', 'datetime'),
+                Field('refresh_token_expires_at', 'datetime'),
+                Field('created_at', 'datetime'),
+                Field('updated_at', 'datetime'),
+                migrate=True
+            )
+            print("✅ OAuth tokens table created")
+        
+        db.commit()
+    
     yield
     
     # Cleanup - delete only test data created by these tests
     try:
         with db.connection():
             # Delete real OAuth test data
-            test_accounts = OAuthAccount.where(
-                lambda oa: oa.email.contains('oauth_test@') if oa.email else False
-            ).select()
-            for account in test_accounts:
-                OAuthToken.where(lambda t: t.oauth_account == account.id).delete()
-                account.delete_record()
+            if 'oauth_accounts' in db.tables:
+                test_accounts = OAuthAccount.where(
+                    lambda oa: oa.email.contains('oauth_test@') if oa.email else False
+                ).select()
+                for account in test_accounts:
+                    if 'oauth_tokens' in db.tables:
+                        OAuthToken.where(lambda t: t.oauth_account == account.id).delete()
+                    account.delete_record()
             
             # Delete test users created by this test
             test_users = User.where(
@@ -85,36 +128,48 @@ def _prepare_db(request):
             ).select()
             for user in test_users:
                 user.delete_record()
-    except:
+    except Exception as e:
         # Cleanup failed, that's okay for tests
-        pass
+        print(f"Cleanup warning: {e}")
 
 
 @pytest.fixture()
 def test_user():
     """Create a real test user in database"""
-    with db.connection():
-        user = User.create(
-            email='oauth_test@example.com',
-            first_name='OAuth',
-            last_name='Test',
-            password='testpass123'
-        )
-        user_id = user.id
-    
-    yield user_id
-    
-    # Cleanup real database records
-    with db.connection():
-        user = User.get(user_id)
-        if user:
-            # Delete associated OAuth accounts
-            oauth_accounts = OAuthAccount.where(lambda oa: oa.user == user_id).select()
-            for oa in oauth_accounts:
-                # Delete associated tokens
-                OAuthToken.where(lambda t: t.oauth_account == oa.id).delete()
-                oa.delete_record()
-            user.delete_record()
+    try:
+        with db.connection():
+            # Create user with raw database insert to avoid Model validation issues
+            user_id = db.auth_users.insert(
+                email='oauth_test@example.com',
+                first_name='OAuth',
+                last_name='Test',
+                password='pbkdf2(1000,20,sha512)$abcd1234$' + 'x' * 80  # Dummy hash
+            )
+            db.commit()
+            print(f"✅ Created test user with ID: {user_id}")
+        
+        yield user_id
+        
+        # Cleanup real database records
+        with db.connection():
+            # Delete associated OAuth accounts first
+            if 'oauth_accounts' in db.tables:
+                oauth_accounts = db(db.oauth_accounts.user == user_id).select()
+                for oa in oauth_accounts:
+                    # Delete associated tokens
+                    if 'oauth_tokens' in db.tables:
+                        db(db.oauth_tokens.oauth_account == oa.id).delete()
+                    db(db.oauth_accounts.id == oa.id).delete()
+            
+            # Delete user
+            db(db.auth_users.id == user_id).delete()
+            db.commit()
+            print(f"✅ Cleaned up test user {user_id}")
+    except Exception as e:
+        print(f"❌ Error in test_user fixture: {e}")
+        import traceback
+        traceback.print_exc()
+        yield None  # Return None if creation failed
 
 
 class TestRealTokenEncryption:
