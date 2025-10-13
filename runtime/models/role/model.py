@@ -27,7 +27,12 @@ class Role(BaseModel):
     has_many('user_roles', 'role_permissions')
     
     # Auto Routes Configuration (enables automatic route generation)
-    auto_routes = True
+    # Note: REST API is handled by models/role/api.py, not auto_routes
+    # Only UI routes are auto-generated
+    auto_routes = {
+        'enabled': True,
+        'rest_api': False,  # Disabled - using emmett-rest module instead
+    }
     
     # REST API configuration
     rest_rw = {

@@ -26,7 +26,7 @@ Usage:
 from typing import List, Dict, Any, Optional
 import inspect
 import logging
-from emmett import App
+from emmett import App, response as emmett_response
 from emmett.orm import Database
 from auto_ui_generator import auto_ui
 
@@ -303,10 +303,12 @@ def _generate_rest_api(app: App, model_class: type, rest_prefix: str, enabled_ac
     if 'detail' in enabled_actions:
         @app.route(f"{rest_prefix}/<int:id>", methods=['get'], output='json', name=f'{model_class.tablename}_api_detail')
         async def api_detail(id):
+            from emmett import response
             with db.connection():
                 record = model_class.get(id)
                 if not record:
-                    return {'status': 'error', 'message': 'Not found'}, 404
+                    response.status = 404
+                    return {'status': 'error', 'message': 'Not found'}
                 return {
                     'status': 'success',
                     'data': record.as_dict()
@@ -316,25 +318,27 @@ def _generate_rest_api(app: App, model_class: type, rest_prefix: str, enabled_ac
     if 'create' in enabled_actions:
         @app.route(f"{rest_prefix}", methods=['post'], output='json', name=f'{model_class.tablename}_api_create')
         async def api_create():
-            from emmett import request
+            from emmett import request, response
             with db.connection():
                 data = await request.body_params
                 record = model_class.create(**data)  # type: ignore[arg-type]
                 db.commit()
+                response.status = 201
                 return {
                     'status': 'success',
                     'data': record.as_dict()
-                }, 201
+                }
     
     # UPDATE endpoint: PUT /api/model/:id
     if 'update' in enabled_actions:
         @app.route(f"{rest_prefix}/<int:id>", methods=['put'], output='json', name=f'{model_class.tablename}_api_update')
         async def api_update(id):
-            from emmett import request
+            from emmett import request, response
             with db.connection():
                 record = model_class.get(id)
                 if not record:
-                    return {'status': 'error', 'message': 'Not found'}, 404
+                    response.status = 404
+                    return {'status': 'error', 'message': 'Not found'}
                 
                 data = await request.body_params
                 record.update_record(**data)  # type: ignore[arg-type]
@@ -348,10 +352,12 @@ def _generate_rest_api(app: App, model_class: type, rest_prefix: str, enabled_ac
     if 'delete' in enabled_actions:
         @app.route(f"{rest_prefix}/<int:id>", methods=['delete'], output='json', name=f'{model_class.tablename}_api_delete')
         async def api_delete(id):
+            from emmett import response
             with db.connection():
                 record = model_class.get(id)
                 if not record:
-                    return {'status': 'error', 'message': 'Not found'}, 404
+                    response.status = 404
+                    return {'status': 'error', 'message': 'Not found'}
                 
                 record.delete_record()
                 db.commit()

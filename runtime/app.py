@@ -499,9 +499,6 @@ def get_or_create(model, **kwargs):
 app.use_extension(REST)
 rest_ext = app.ext.REST
 
-# Note: Role REST API is now handled by auto_routes system (role model has auto_routes=True)
-# Permission REST API is still handled by setup_all()
-
 #: Automatic Route Generation for models with auto_routes attribute
 # Import auto_routes system
 try:
