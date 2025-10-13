@@ -46,34 +46,11 @@ def unique_name(prefix='test'):
 
 @pytest.fixture(scope='module', autouse=True)
 def _prepare_db(request):
-    """Ensure database is ready with all tables and seed data"""
-    print("\n🔧 Preparing database for Role REST API tests")
+    """Ensure roles are seeded for REST API tests"""
+    print("\n🔧 Preparing Role REST API test data")
     
-    # Verify required tables exist
+    # Ensure roles are seeded (idempotent - safe for concurrent access)
     with db.connection():
-        # Check users table
-        try:
-            db.executesql("SELECT COUNT(*) FROM users LIMIT 1")
-            print("   ✅ Users table exists")
-        except:
-            pytest.fail(
-                "Users table does not exist. Run migrations first:\n"
-                "  cd runtime && emmett migrations up\n"
-                "Tests cannot be skipped - they must either run or fail with clear error."
-            )
-        
-        # Check roles table
-        try:
-            db.executesql("SELECT COUNT(*) FROM roles LIMIT 1")
-            print("   ✅ Roles table exists")
-        except:
-            pytest.fail(
-                "Roles table does not exist. Run migrations first:\n"
-                "  cd runtime && emmett migrations up\n"
-                "Tests cannot be skipped - they must either run or fail with clear error."
-            )
-        
-        # Ensure roles are seeded
         role_count = db.executesql("SELECT COUNT(*) FROM roles")[0][0]
         if role_count == 0:
             print("   🌱 Seeding roles and permissions...")
@@ -85,17 +62,7 @@ def _prepare_db(request):
     
     yield
     
-    # Minimal cleanup - just remove test data, not tables
-    print("\n🧹 Cleaning up Role REST API test data")
-    try:
-        with db.connection():
-            # Delete test users (those created by fixtures with unique emails)
-            db.executesql("DELETE FROM user_roles WHERE user IN (SELECT id FROM users WHERE email LIKE '%@example.com')")
-            db.executesql("DELETE FROM users WHERE email LIKE '%@example.com'")
-            db.commit()
-            print("   ✅ Test data cleaned up")
-    except Exception as e:
-        print(f"   ⚠️  Cleanup warning: {e}")
+    # Cleanup handled by session fixture in conftest.py
 
 
 @pytest.fixture()

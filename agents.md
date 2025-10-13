@@ -243,7 +243,6 @@ This project contains an Emmett-based web application framework with example app
 runtime/                 # Main application directory
 ├── app.py              # Main Emmett application
 ├── migrations/         # Database migrations
-├── databases/          # SQLite database files
 ├── templates/          # Renoir templates
 │   ├── layout.html    # Base template
 │   ├── index.html     # Home page

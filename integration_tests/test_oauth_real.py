@@ -66,46 +66,17 @@ from auth.oauth_manager import OAuthManager
 
 @pytest.fixture(scope='module', autouse=True)
 def _prepare_db(request):
-    """Ensure database is ready - create all tables including users and OAuth tables"""
-    print(f"🔧 _prepare_db fixture running...")
+    """Prepare OAuth test environment"""
+    print(f"🔧 Preparing OAuth test environment")
     
-    # Drop all existing tables using PostgreSQL-compatible approach
+    # Tables already exist from session fixture in conftest.py
+    # Just verify OAuth tables are accessible
     with db.connection():
-        try:
-            # Get all tables from information_schema (PostgreSQL)
-            result = db.executesql(
-                "SELECT tablename FROM pg_tables WHERE schemaname = 'public'"
-            )
-            tables = [row[0] for row in result]
-            
-            # Drop all tables with CASCADE to handle foreign keys
-            if tables:
-                for table in tables:
-                    db.executesql(f'DROP TABLE IF EXISTS "{table}" CASCADE')
-                print(f"   ✅ Dropped {len(tables)} tables from existing database")
-        except Exception as e:
-            print(f"   ⚠️  Could not drop tables: {e}")
-    
-    # Create all tables using Emmett migrations
-    with db.connection():
-        migration = generate_runtime_migration(db)
-        migration.up()
-        print("   ✅ All tables created via migration")
-        
-        # Ensure OAuth tables exist (they should be in migration now)
         try:
             db.executesql("SELECT COUNT(*) FROM oauth_accounts LIMIT 1")
-            print("   ℹ️  oauth_accounts table confirmed")
+            print("   ✅ OAuth tables ready")
         except Exception as e:
-            print(f"   ⚠️  oauth_accounts table issue: {e}")
-        
-        try:
-            db.executesql("SELECT COUNT(*) FROM oauth_tokens LIMIT 1")
-            print("   ℹ️  oauth_tokens table confirmed")
-        except Exception as e:
-            print(f"   ⚠️  oauth_tokens table issue: {e}")
-        
-        db.commit()
+            pytest.fail(f"OAuth tables not accessible: {e}. Ensure migrations ran.")
     
     yield
     

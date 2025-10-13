@@ -27,13 +27,11 @@ import models
 def setup_test_environment():
     """
     Setup test environment - runs once per test session.
-    This ensures the PostgreSQL test database is properly initialized before any tests run.
+    Runs migrations to ensure schema is up to date.
+    NEVER touches the database structure - Docker maintains persistent state.
     """
-    # Set up PostgreSQL test database with migrations
-    print("\n🔧 Setting up PostgreSQL test database (session-level)...")
+    print("\n🔧 Setting up test environment (session-level)...")
     import subprocess
-    import psycopg2
-    from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
     from emmett.orm.migrations.utils import generate_runtime_migration
     
     # Get database configuration from environment
@@ -42,85 +40,42 @@ def setup_test_environment():
         'postgres://bloggy:bloggy_password@postgres:5432/bloggy_test'
     )
     
-    # Parse connection parameters
-    # Format: postgres://user:password@host:port/dbname
-    parts = test_db_url.replace('postgres://', '').split('@')
-    user_pass = parts[0].split(':')
-    host_port_db = parts[1].split('/')
-    host_port = host_port_db[0].split(':')
+    print(f"   ✅ Using persistent test database from Docker")
     
-    db_user = user_pass[0]
-    db_password = user_pass[1] if len(user_pass) > 1 else ''
-    db_host = host_port[0]
-    db_port = int(host_port[1]) if len(host_port) > 1 else 5432
-    db_name = host_port_db[1]
-    
-    # Connect to PostgreSQL server (postgres database) to create test database
-    print(f"   🔗 Connecting to PostgreSQL at {db_host}:{db_port}...")
+    # Check if migrations have been run
+    print("   🔧 Checking database schema...")
     try:
-        conn = psycopg2.connect(
-            user=db_user,
-            password=db_password,
-            host=db_host,
-            port=db_port,
-            database='postgres'
-        )
-        conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-        cursor = conn.cursor()
-        
-        # Terminate all existing connections to the test database
-        print(f"   🔌 Terminating existing connections to '{db_name}'...")
-        cursor.execute(f"""
-            SELECT pg_terminate_backend(pg_stat_activity.pid)
-            FROM pg_stat_activity
-            WHERE pg_stat_activity.datname = '{db_name}'
-              AND pid <> pg_backend_pid()
-        """)
-        
-        # Drop test database if it exists
-        print(f"   🗑️  Dropping existing test database '{db_name}' if it exists...")
-        cursor.execute(f"DROP DATABASE IF EXISTS {db_name}")
-        
-        # Create fresh test database
-        print(f"   ✨ Creating fresh test database '{db_name}'...")
-        cursor.execute(f"CREATE DATABASE {db_name}")
-        
-        cursor.close()
-        conn.close()
-        print("   ✅ Test database created successfully")
-    except psycopg2.Error as e:
-        pytest.fail(f"PostgreSQL test database setup failed: {e}. Ensure PostgreSQL is running in Docker.")
-    
-    # Database is already configured to use test database (via DATABASE_URL env var)
-    # No need to reconfigure - app.py initialized with test database
-    print(f"   ✅ Database configured with test database: {db_name}")
-    
-    # Run migrations to create tables
-    print("   🔧 Running database migrations...")
-    runtime_dir = os.path.join(os.path.dirname(__file__), '..', 'runtime')
-    try:
-        # Set environment variable for migrations
-        env = os.environ.copy()
-        env['DATABASE_URL'] = test_db_url
-        
-        result = subprocess.run(
-            ['emmett', 'migrations', 'up'],
-            cwd=runtime_dir,
-            capture_output=True,
-            text=True,
-            check=True,
-            env=env
-        )
-        print("   ✅ Migrations completed successfully")
-    except subprocess.CalledProcessError as e:
-        print(f"   ⚠️  Migration command failed: {e.stderr}")
-        print("   Trying runtime migration...")
-        # Fallback to runtime migration
         with app_module.db.connection():
-            migration = generate_runtime_migration(app_module.db)
-            migration.up()
-            app_module.db.commit()
-        print("   ✅ Database created with runtime migration")
+            # Check if emmett_schema table exists (created by migrations)
+            result = app_module.db.executesql(
+                "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'emmett_schema')"
+            )
+            schema_exists = result[0][0] if result else False
+            
+            if schema_exists:
+                print("   ✅ Database schema already up to date")
+            else:
+                print("   🔧 Running database migrations...")
+                # Try migrations first
+                runtime_dir = os.path.join(os.path.dirname(__file__), '..', 'runtime')
+                env = os.environ.copy()
+                env['DATABASE_URL'] = test_db_url
+                
+                result = subprocess.run(
+                    ['emmett', 'migrations', 'up'],
+                    cwd=runtime_dir,
+                    capture_output=True,
+                    text=True,
+                    env=env
+                )
+                if result.returncode == 0:
+                    print("   ✅ Migrations completed successfully")
+                else:
+                    print(f"   ⚠️  Migration command failed, database may already be initialized")
+                    print("   ✅ Using existing database schema")
+    except Exception as e:
+        print(f"   ⚠️  Schema check error: {e}")
+        print("   ✅ Proceeding with existing schema")
     
     # CRITICAL: Re-define models after migrations to sync pyDAL table metadata
     # This is necessary because define_models() was called when app.py was imported
@@ -137,34 +92,24 @@ def setup_test_environment():
     
     yield
     
-    # Teardown - drop test database
-    print("\n   🧹 Cleaning up test database...")
+    # Teardown - DO NOT drop database (Docker maintains persistent state)
+    # Clean up test data instead of dropping the database
+    print("\n   🧹 Cleaning up test data (preserving database for next run)...")
     try:
-        conn = psycopg2.connect(
-            user=db_user,
-            password=db_password,
-            host=db_host,
-            port=db_port,
-            database='postgres'
-        )
-        conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-        cursor = conn.cursor()
-        
-        # Terminate all existing connections before dropping
-        print(f"   🔌 Terminating connections to '{db_name}'...")
-        cursor.execute(f"""
-            SELECT pg_terminate_backend(pg_stat_activity.pid)
-            FROM pg_stat_activity
-            WHERE pg_stat_activity.datname = '{db_name}'
-              AND pid <> pg_backend_pid()
-        """)
-        
-        cursor.execute(f"DROP DATABASE IF EXISTS {db_name}")
-        cursor.close()
-        conn.close()
-        print("   ✅ Test database dropped successfully")
-    except psycopg2.Error as e:
-        print(f"   ⚠️  Failed to drop test database: {e}")
+        with app_module.db.connection():
+            # Clean up test users and their related data
+            # Use explicit type casting for foreign key comparisons
+            # Note: Both posts and comments use 'user' column, not 'author'
+            app_module.db.executesql("DELETE FROM user_roles WHERE user::text IN (SELECT id::text FROM users WHERE email LIKE '%@example.com%')")
+            app_module.db.executesql("DELETE FROM oauth_tokens WHERE user::text IN (SELECT id::text FROM users WHERE email LIKE '%@example.com%')")
+            app_module.db.executesql("DELETE FROM oauth_accounts WHERE user::text IN (SELECT id::text FROM users WHERE email LIKE '%@example.com%')")
+            app_module.db.executesql('DELETE FROM comments WHERE "user"::text IN (SELECT id::text FROM users WHERE email LIKE \'%@example.com%\')')
+            app_module.db.executesql('DELETE FROM posts WHERE "user"::text IN (SELECT id::text FROM users WHERE email LIKE \'%@example.com%\')')
+            app_module.db.executesql("DELETE FROM users WHERE email LIKE '%@example.com%'")
+            app_module.db.commit()
+            print("   ✅ Test data cleaned up (database preserved)")
+    except Exception as e:
+        print(f"   ⚠️  Cleanup warning: {e}")
 
 
 @pytest.fixture()

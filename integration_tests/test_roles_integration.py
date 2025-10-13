@@ -54,43 +54,19 @@ def unique_email(prefix='test'):
 
 @pytest.fixture(scope='module', autouse=True)
 def _prepare_db(request):
-    """Ensure database is ready with all tables (PostgreSQL-compatible)"""
-    print("\n🔧 Preparing database for roles integration tests...")
+    """Ensure roles are seeded and Row methods patched for integration tests"""
+    print("\n🔧 Preparing roles integration test data")
     
-    # Verify required tables exist (migrations should have been run by conftest.py)
+    # Ensure roles are seeded (idempotent - safe for concurrent access)
     with db.connection():
-        # Check if tables exist
-        try:
-            db.executesql("SELECT COUNT(*) FROM users LIMIT 1")
-            print("   ✅ Users table exists")
-        except:
-            pytest.fail(
-                "Users table does not exist. Ensure conftest.py session fixture ran migrations.\n"
-                "Tests cannot be skipped - they must either run or fail with clear error."
-            )
-        
-        try:
-            db.executesql("SELECT COUNT(*) FROM roles LIMIT 1")
-            print("   ✅ Roles table exists")
-        except:
-            pytest.fail(
-                "Roles table does not exist. Ensure conftest.py session fixture ran migrations.\n"
-                "Tests cannot be skipped - they must either run or fail with clear error."
-            )
-        
-        # Check if roles are already seeded
         role_count = db.executesql("SELECT COUNT(*) FROM roles")[0][0]
         if role_count == 0:
-            # Seed roles and permissions
             print("   🌱 Seeding roles and permissions...")
             seed_all(db)
             db.commit()
             print("   ✅ Seeded roles and permissions")
         else:
             print(f"   ✅ Roles already seeded ({role_count} roles)")
-            # Debug: Check what roles exist
-            roles_debug = db.executesql("SELECT name FROM roles ORDER BY name")
-            print(f"   🔍 Role names in DB: {[r[0] for r in roles_debug]}")
         
         # Patch Row classes with methods after seeding
         # Get a seeded role to find its Row class

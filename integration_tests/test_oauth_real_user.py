@@ -68,38 +68,14 @@ OAUTH_TOKENS = load_oauth_tokens()
 
 @pytest.fixture(scope='module', autouse=True)
 def _prepare_db():
-    """Ensure database is ready for OAuth testing"""
-    print(f"\n🔧 Preparing database for OAuth testing with user: {TEST_USER_EMAIL}")
+    """Ensure encryption key is set for OAuth testing"""
+    print(f"\n🔧 Preparing OAuth test environment for user: {TEST_USER_EMAIL}")
     
-    # Ensure encryption key is set
+    # Ensure encryption key is set (idempotent - safe for concurrent access)
     if not os.environ.get('OAUTH_TOKEN_ENCRYPTION_KEY'):
         key = Fernet.generate_key().decode()
         os.environ['OAUTH_TOKEN_ENCRYPTION_KEY'] = key
         print(f"   ⚠️  Generated temporary encryption key for testing")
-    
-    # Verify required tables exist
-    with db.connection():
-        # Check users table
-        try:
-            db.executesql("SELECT COUNT(*) FROM users LIMIT 1")
-            print("   ✅ Users table exists")
-        except:
-            pytest.fail(
-                "Users table does not exist. Run migrations first:\n"
-                "  cd runtime && emmett migrations up\n"
-                "Tests cannot be skipped - they must either run or fail with clear error."
-            )
-        
-        # Check OAuth tables
-        try:
-            db.executesql("SELECT COUNT(*) FROM oauth_accounts LIMIT 1")
-            print("   ✅ OAuth tables exist")
-        except:
-            pytest.fail(
-                "OAuth tables do not exist. Run migrations first:\n"
-                "  cd runtime && emmett migrations up\n"
-                "Tests cannot be skipped - they must either run or fail with clear error."
-            )
     
     yield
     

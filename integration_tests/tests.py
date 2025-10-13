@@ -50,38 +50,26 @@ def client():
 
 @pytest.fixture(scope='module', autouse=True)
 def _prepare_db(request):
-    """
-    Prepare database for main tests.
-    Note: Session fixture in conftest.py handles table creation.
-    This just ensures admin user exists.
-    """
+    """Ensure admin user exists for main tests"""
     print("\n🔧 Preparing main test data...")
     
-    # Ensure admin user exists
+    # Ensure admin user exists (idempotent - safe for concurrent access)
     with db.connection():
         try:
-            # Check if admin user already exists
             admin = db(db.users.email == 'doc@emmettbrown.com').select().first()
             if not admin:
                 print("   🔧 Creating admin user...")
                 setup_admin()
+                db.commit()
                 print("   ✅ Admin user created")
             else:
                 print("   ✅ Admin user already exists")
         except Exception as e:
-            print(f"   ⚠️  Error checking admin user: {e}")
-            # Try to create admin anyway
-            try:
-                setup_admin()
-                print("   ✅ Admin user created")
-            except:
-                pass
+            print(f"   ⚠️  Error with admin user: {e}")
     
     yield
     
-    # Minimal cleanup - just remove test data
-    print("\n🧹 Cleaning up main test data...")
-    # Note: Don't drop tables, other tests might still need them
+    # Cleanup handled by session fixture in conftest.py
 
 
 @pytest.fixture(scope='module')
