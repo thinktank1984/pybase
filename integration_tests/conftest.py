@@ -41,41 +41,7 @@ def setup_test_environment():
     )
     
     print(f"   ✅ Using persistent test database from Docker")
-    
-    # Check if migrations have been run
-    print("   🔧 Checking database schema...")
-    try:
-        with app_module.db.connection():
-            # Check if emmett_schema table exists (created by migrations)
-            result = app_module.db.executesql(
-                "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'emmett_schema')"
-            )
-            schema_exists = result[0][0] if result else False
-            
-            if schema_exists:
-                print("   ✅ Database schema already up to date")
-            else:
-                print("   🔧 Running database migrations...")
-                # Try migrations first
-                runtime_dir = os.path.join(os.path.dirname(__file__), '..', 'runtime')
-                env = os.environ.copy()
-                env['DATABASE_URL'] = test_db_url
-                
-                result = subprocess.run(
-                    ['emmett', 'migrations', 'up'],
-                    cwd=runtime_dir,
-                    capture_output=True,
-                    text=True,
-                    env=env
-                )
-                if result.returncode == 0:
-                    print("   ✅ Migrations completed successfully")
-                else:
-                    print(f"   ⚠️  Migration command failed, database may already be initialized")
-                    print("   ✅ Using existing database schema")
-    except Exception as e:
-        print(f"   ⚠️  Schema check error: {e}")
-        print("   ✅ Proceeding with existing schema")
+    print("   ✅ Database schema maintained by Docker (migrations already applied)")
     
     # CRITICAL: Re-define models after migrations to sync pyDAL table metadata
     # This is necessary because define_models() was called when app.py was imported
@@ -92,24 +58,9 @@ def setup_test_environment():
     
     yield
     
-    # Teardown - DO NOT drop database (Docker maintains persistent state)
-    # Clean up test data instead of dropping the database
-    print("\n   🧹 Cleaning up test data (preserving database for next run)...")
-    try:
-        with app_module.db.connection():
-            # Clean up test users and their related data
-            # Use explicit type casting for foreign key comparisons
-            # Note: Both posts and comments use 'user' column, not 'author'
-            app_module.db.executesql("DELETE FROM user_roles WHERE user::text IN (SELECT id::text FROM users WHERE email LIKE '%@example.com%')")
-            app_module.db.executesql("DELETE FROM oauth_tokens WHERE user::text IN (SELECT id::text FROM users WHERE email LIKE '%@example.com%')")
-            app_module.db.executesql("DELETE FROM oauth_accounts WHERE user::text IN (SELECT id::text FROM users WHERE email LIKE '%@example.com%')")
-            app_module.db.executesql('DELETE FROM comments WHERE "user"::text IN (SELECT id::text FROM users WHERE email LIKE \'%@example.com%\')')
-            app_module.db.executesql('DELETE FROM posts WHERE "user"::text IN (SELECT id::text FROM users WHERE email LIKE \'%@example.com%\')')
-            app_module.db.executesql("DELETE FROM users WHERE email LIKE '%@example.com%'")
-            app_module.db.commit()
-            print("   ✅ Test data cleaned up (database preserved)")
-    except Exception as e:
-        print(f"   ⚠️  Cleanup warning: {e}")
+    # Teardown - Preserve test data for inspection
+    # Integration tests keep data so you can debug and inspect results
+    print("\n   ✅ Test data preserved for inspection (database and data intact)")
 
 
 @pytest.fixture()

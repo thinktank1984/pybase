@@ -168,6 +168,12 @@ fi
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
+# Run migrations ONCE before any tests (idempotent - fast if already applied)
+echo -e "${CYAN}📦 Running database migrations...${NC}"
+docker compose -f docker/docker-compose.yaml exec -T runtime bash -c "cd /app/runtime && emmett migrations up"
+echo -e "${GREEN}✅ Migrations complete${NC}"
+echo ""
+
 # Check if separate mode is requested - run each test suite separately with output files
 if [ "$SEPARATE_MODE" = true ]; then
     echo -e "${YELLOW}🔬 Running All 8 Test Suites Separately...${NC}"
