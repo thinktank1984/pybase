@@ -1,17 +1,17 @@
 {
   "include": [
-    "runtime",
-    "integration_tests"
+    "../runtime",
+    "../integration_tests"
   ],
   "exclude": [
-    "runtime/migrations",
+    "../runtime/migrations",
     "**/__pycache__",
     "**/node_modules",
-    "runtime/databases",
-    "runtime/htmlcov",
-    "runtime/screenshots",
-    "venv",
-    "htmlcov"
+    "../runtime/databases",
+    "../runtime/htmlcov",
+    "../runtime/screenshots",
+    "../venv",
+    "../htmlcov"
   ],
   "pythonVersion": "3.9",
   "pythonPlatform": "All",

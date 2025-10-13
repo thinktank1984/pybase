@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Emmett Model Pattern Validation CLI
-
+Should run before running the user app
 Validates that Emmett models follow best practices and don't contain anti-patterns.
 
 Usage:

@@ -61,10 +61,10 @@ if [ "$DOCKER_MODE" = true ]; then
     # Run Pyright in Docker
     if [ -z "$TARGET_FILES" ]; then
         echo -e "${BLUE}Checking entire project...${NC}"
-        docker compose -f docker/docker-compose.yaml exec runtime pyright
+        docker compose -f docker/docker-compose.yaml exec runtime pyright --project /app/setup/pyrightconfig.json
     else
         echo -e "${BLUE}Checking: $TARGET_FILES${NC}"
-        docker compose -f docker/docker-compose.yaml exec runtime pyright $TARGET_FILES
+        docker compose -f docker/docker-compose.yaml exec runtime pyright --project /app/setup/pyrightconfig.json $TARGET_FILES
     fi
     
     EXIT_CODE=$?
@@ -83,10 +83,10 @@ else
     # Run Pyright locally
     if [ -z "$TARGET_FILES" ]; then
         echo -e "${BLUE}Checking entire project...${NC}"
-        pyright
+        pyright --project setup/pyrightconfig.json
     else
         echo -e "${BLUE}Checking: $TARGET_FILES${NC}"
-        pyright $TARGET_FILES
+        pyright --project setup/pyrightconfig.json $TARGET_FILES
     fi
     
     EXIT_CODE=$?

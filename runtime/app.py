@@ -1,26 +1,25 @@
 # -*- coding: utf-8 -*-
 
-from emmett import App, session, now, url, redirect, abort, response, current
-from emmett.orm import Database, Model, Field, belongs_to, has_many
+from emmett import App, session, url, redirect, abort, response, current  # type: ignore[reportUnusedImport]
+from emmett.orm import Database
 from emmett.tools import requires, service
-from emmett.tools.auth import Auth, AuthUser
+from emmett.tools.auth import Auth
 from emmett.tools import Mailer
 from emmett.sessions import SessionManager
 from emmett_rest import REST
-import json
 
 # Import OpenAPI generator (deferred to avoid import issues)
 import sys
 import os
 sys.path.insert(0, os.path.dirname(__file__))
-from openapi_generator import OpenAPIGenerator
-from auto_ui_generator import auto_ui
+from openapi_generator import OpenAPIGenerator  # type: ignore[reportMissingImports]
+from auto_ui_generator import auto_ui  # type: ignore[reportMissingImports]
 
 # Import models
-from models import (
+from models import (  # type: ignore[reportMissingImports]
     User, Post, Comment, Role, Permission, UserRole, RolePermission,
     OAuthAccount, OAuthToken,
-    is_admin, get_current_user, is_authenticated, get_or_404,
+    get_current_user, is_authenticated, get_or_404,
     requires_role, requires_any_role, requires_permission,
     seed_all, ensure_roles_exist
 )
@@ -1029,10 +1028,19 @@ openapi_gen = OpenAPIGenerator(
     - **Posts**: Create, read, update, and delete blog posts
     - **Comments**: Add and manage comments on posts
     - **Users**: View user information (read-only)
+    - **Roles**: Manage user roles (admin only)
+    - **Permissions**: Manage permissions (admin only, delete disabled)
     
     ## Authentication
-    Currently, the API endpoints are accessible without authentication.
-    User context is automatically set from session cookies when available.
+    Authentication is handled via session cookies. Admin access is required for
+    role and permission management.
+    
+    ## Authorization
+    The API uses a Role-Based Access Control (RBAC) system with the following roles:
+    - **Admin**: Full access to all resources
+    - **Moderator**: Can edit/delete any content
+    - **Author**: Can create/edit own content
+    - **Viewer**: Read-only access
     
     ## Response Format
     - List endpoints return paginated data with metadata
@@ -1046,6 +1054,9 @@ openapi_gen.register_rest_module('posts_api', Post, 'api/posts')
 openapi_gen.register_rest_module('comments_api', Comment, 'api/comments')
 openapi_gen.register_rest_module('users_api', User, 'api/users', 
                                 disabled_methods=['create', 'update', 'delete'])
+openapi_gen.register_rest_module('roles_api', Role, 'api/roles')
+openapi_gen.register_rest_module('permissions_api', Permission, 'api/permissions',
+                                disabled_methods=['delete'])
 
 
 @app.route('/api/openapi.json')

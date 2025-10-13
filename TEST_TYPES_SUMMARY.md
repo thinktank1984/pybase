@@ -10,8 +10,8 @@ Total test classes: **18+**
 
 ## Test Files (Alphabetically)
 
-### 1. `test_auth_comprehensive.py`
-**Status:** 🟡 Not currently run by main test script  
+### 1. `test_auth_comprehensive.py` ✅
+**Status:** ✅ Active (included in `./run_tests.sh --separate`)  
 **Test Functions:** 17  
 **Purpose:** Comprehensive authentication testing
 - Advanced authentication scenarios
@@ -19,7 +19,7 @@ Total test classes: **18+**
 - Session management
 
 ### 2. `test_auto_ui.py` ✅
-**Status:** ✅ Active (included in run_tests_separate.sh)  
+**Status:** ✅ Active (included in `./run_tests.sh --separate`)  
 **Test Classes:** 5  
 **Test Count:** 14 tests  
 **Purpose:** Auto UI generation system
@@ -30,16 +30,16 @@ Total test classes: **18+**
 - Permission checking
 - Route registration
 
-### 3. `test_base_model.py`
-**Status:** 🟡 Not currently run by main test script  
+### 3. `test_base_model.py` ✅
+**Status:** ✅ Active (included in `./run_tests.sh --separate`)  
 **Test Functions:** Unknown  
 **Purpose:** Base model functionality testing
 - Model inheritance
 - Common model methods
 - Base model utilities
 
-### 4. `test_model_utils.py`
-**Status:** 🟡 Not currently run by main test script  
+### 4. `test_model_utils.py` ✅
+**Status:** ✅ Active (included in `./run_tests.sh --separate`)  
 **Test Functions:** 30  
 **Purpose:** Model utility functions
 - Helper functions
@@ -47,7 +47,7 @@ Total test classes: **18+**
 - Data processing utilities
 
 ### 5. `test_oauth_real.py` ✅
-**Status:** ✅ Active (included in run_tests_separate.sh)  
+**Status:** ✅ Active (included in `./run_tests.sh --separate`)  
 **Test Classes:** 7  
 **Test Count:** 23 tests  
 **Purpose:** OAuth social login integration (NO MOCKING)
@@ -67,16 +67,16 @@ Total test classes: **18+**
 - `TestRealOAuthManager`
 - `TestRealProviderConfiguration`
 
-### 6. `test_oauth_real_user.py`
-**Status:** 🟡 Not currently run by main test script  
+### 6. `test_oauth_real_user.py` ✅
+**Status:** ✅ Active (included in `./run_tests.sh --separate`)  
 **Test Classes:** 2  
 **Purpose:** OAuth testing with real user account (ed.s.sharood@gmail.com)
 - Real user OAuth flows
 - Account linking
 - Token management
 
-### 7. `test_roles.py`
-**Status:** 🟡 Not currently run by main test script  
+### 7. `test_roles.py` ✅
+**Status:** ✅ Active (included in `./run_tests.sh --separate`)  
 **Test Functions:** 5  
 **Purpose:** Basic role system tests
 - Role creation
@@ -84,7 +84,7 @@ Total test classes: **18+**
 - Basic permission checks
 
 ### 8. `test_roles_integration.py` ✅
-**Status:** ✅ Active (included in run_tests_separate.sh)  
+**Status:** ✅ Active (included in `./run_tests.sh --separate`)  
 **Test Functions:** 19  
 **Test Count:** 19 tests  
 **Purpose:** Role-Based Access Control (RBAC) integration (NO MOCKING)
@@ -98,8 +98,8 @@ Total test classes: **18+**
 - Moderator capabilities
 - Seeded data verification
 
-### 9. `test_roles_rest_api.py`
-**Status:** 🟡 Not currently run by main test script  
+### 9. `test_roles_rest_api.py` ✅
+**Status:** ✅ Active (included in `./run_tests.sh --separate`)  
 **Test Functions:** 17  
 **Purpose:** REST API for roles and permissions
 - Role CRUD operations via API
@@ -108,7 +108,7 @@ Total test classes: **18+**
 - API authentication/authorization
 
 ### 10. `test_ui_chrome_real.py` ⚠️
-**Status:** ⚠️ Active but requires Playwright (included in run_tests_separate.sh)  
+**Status:** ⚠️ Active but requires Playwright (included in `./run_tests.sh --separate`)  
 **Test Classes:** 4  
 **Test Count:** 13 tests  
 **Purpose:** Real Chrome browser UI testing
@@ -130,7 +130,7 @@ Total test classes: **18+**
 **Requirements:** Playwright browsers must be installed
 
 ### 11. `tests.py` ✅
-**Status:** ✅ Active (included in run_tests_separate.sh)  
+**Status:** ✅ Active (included in `./run_tests.sh --separate`)  
 **Test Functions:** 81  
 **Test Count:** 83 tests  
 **Purpose:** Main comprehensive integration tests
@@ -149,9 +149,9 @@ Total test classes: **18+**
 
 ---
 
-## Active Test Suites (run_tests_separate.sh)
+## Active Test Suites (./run_tests.sh --separate)
 
-The following 5 test suites are actively run by `./run_tests_separate.sh`:
+The following 11 test suites are actively run by `./run_tests.sh --separate`:
 
 | # | Test File | Tests | Status | Time |
 |---|-----------|-------|--------|------|
@@ -160,24 +160,15 @@ The following 5 test suites are actively run by `./run_tests_separate.sh`:
 | 3 | `test_roles_integration.py` | 19 | ✅ Passing | ~0.2s |
 | 4 | `test_auto_ui.py` | 14 | ✅ Passing | ~0.06s |
 | 5 | `test_ui_chrome_real.py` | 13 | ⚠️ Needs Playwright | ~1s |
+| 6 | `test_auth_comprehensive.py` | 17 | 🆕 Included | - |
+| 7 | `test_model_utils.py` | 30 | 🆕 Included | - |
+| 8 | `test_roles_rest_api.py` | 17 | 🆕 Included | - |
+| 9 | `test_roles.py` | 5 | 🆕 Included | - |
+| 10 | `test_oauth_real_user.py` | ? | 🆕 Included | - |
+| 11 | `test_base_model.py` | ? | 🆕 Included | - |
 
-**Total Active Tests:** 152 tests  
-**Currently Passing:** 139 tests (91.4%)
-
----
-
-## Inactive Test Suites
-
-The following test files exist but are not currently run by the main test script:
-
-1. `test_auth_comprehensive.py` (17 tests)
-2. `test_base_model.py`
-3. `test_model_utils.py` (30 tests)
-4. `test_oauth_real_user.py`
-5. `test_roles.py` (5 tests)
-6. `test_roles_rest_api.py` (17 tests)
-
-**Estimated Additional Tests:** 69+ tests
+**Total Active Tests:** 220+ tests  
+**Currently Passing:** 139 tests (from first 4 suites)
 
 ---
 
@@ -214,9 +205,14 @@ The following test files exist but are not currently run by the main test script
 
 ## Running Tests
 
-### Run All Active Tests
+### Run All Tests Separately (with individual output files)
 ```bash
-./run_tests_separate.sh
+./run_tests.sh --separate
+```
+
+### Run All Tests Together
+```bash
+./run_tests.sh --app
 ```
 
 ### Run Individual Test Suite
@@ -235,10 +231,7 @@ docker compose -f docker/docker-compose.yaml exec runtime pytest /app/integratio
 
 # Chrome UI tests (requires Playwright)
 docker compose -f docker/docker-compose.yaml exec runtime pytest /app/integration_tests/test_ui_chrome_real.py -v
-```
 
-### Run Inactive Tests
-```bash
 # Auth comprehensive
 docker compose -f docker/docker-compose.yaml exec runtime pytest /app/integration_tests/test_auth_comprehensive.py -v
 
@@ -247,6 +240,15 @@ docker compose -f docker/docker-compose.yaml exec runtime pytest /app/integratio
 
 # Roles REST API
 docker compose -f docker/docker-compose.yaml exec runtime pytest /app/integration_tests/test_roles_rest_api.py -v
+
+# Base roles
+docker compose -f docker/docker-compose.yaml exec runtime pytest /app/integration_tests/test_roles.py -v
+
+# OAuth real user
+docker compose -f docker/docker-compose.yaml exec runtime pytest /app/integration_tests/test_oauth_real_user.py -v
+
+# Base model
+docker compose -f docker/docker-compose.yaml exec runtime pytest /app/integration_tests/test_base_model.py -v
 ```
 
 ---

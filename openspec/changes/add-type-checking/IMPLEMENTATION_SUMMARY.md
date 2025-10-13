@@ -20,7 +20,7 @@ Successfully implemented comprehensive type checking for the pybase project usin
 
 ### 2. Configuration Files
 
-#### `pyrightconfig.json`
+#### `setup/pyrightconfig.json`
 ```json
 {
   "include": ["runtime", "integration_tests"],
@@ -77,6 +77,7 @@ Successfully implemented comprehensive type checking for the pybase project usin
 - ✅ `docker/Dockerfile` - Already configured to install from requirements.txt
 - ✅ Docker container rebuilt with new dependencies
 - ✅ Verified Pyright and MonkeyType work in container
+- ✅ `run_type_check.sh` - Uses `--project setup/pyrightconfig.json`
 
 **Commands:**
 ```bash

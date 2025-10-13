@@ -2,12 +2,13 @@
 
 ## Overview
 
-`run_tests_separate.sh` runs each integration test suite separately and saves the output to individual timestamped files.
+The `run_tests.sh` script provides comprehensive test execution options, including the ability to run each test suite separately with individual output files using the `--separate` flag.
 
 ## Usage
 
 ```bash
-./run_tests_separate.sh
+# Run tests separately with individual output files
+./run_tests.sh --separate
 ```
 
 ## What It Does

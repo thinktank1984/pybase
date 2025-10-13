@@ -77,7 +77,7 @@ The project currently has no static type checking or type annotations, which mak
 - **Pyre**: Requires Facebook's infrastructure, less portable
 - **pytype**: Google's type checker, slower and less IDE integration
 
-**Configuration** (`pyrightconfig.json`):
+**Configuration** (`setup/pyrightconfig.json`):
 ```json
 {
   "include": ["runtime", "tests"],

@@ -277,6 +277,11 @@ docker/                # Docker configuration
 emmett_documentation/  # Emmett framework documentation
 └── docs/              # Detailed documentation
 
+hooks/                 # Git hooks for code quality
+├── pre-commit         # Model validation hook
+├── install.sh         # Hook installation script
+└── README.md          # Hook documentation
+
 setup/                 # Setup scripts
 └── setup.sh           # Environment setup
 ```
@@ -342,6 +347,36 @@ uv run emmett migrations down
 cd runtime
 uv run emmett setup
 ```
+
+### Git Hooks
+
+Git hooks help maintain code quality by validating models before commits.
+
+```bash
+# Install git hooks (one-time setup)
+./hooks/install.sh
+
+# Test pre-commit hook manually
+./hooks/pre-commit
+
+# Validate models directly
+cd runtime
+python validate_models.py --all
+```
+
+**What the pre-commit hook does:**
+- ✅ Runs automatically on `git commit`
+- ✅ Validates Emmett models for anti-patterns
+- ✅ **Blocks commits** with model errors (anti-patterns)
+- ✅ Allows commits with warnings (can be fixed later)
+- ✅ Only runs when model files are changed
+
+**To bypass hook (not recommended):**
+```bash
+git commit --no-verify -m "WIP"
+```
+
+See `/hooks/README.md` for complete documentation.
 
 ## Emmett Application Patterns
 
@@ -431,7 +466,7 @@ docker compose -f docker/docker-compose.yaml exec runtime pyright
 
 ### Configuration
 
-Type checking is configured in `pyrightconfig.json`:
+Type checking is configured in `setup/pyrightconfig.json`:
 - **Mode**: `basic` (not too strict, focuses on actual bugs)
 - **Included**: `runtime/`, `integration_tests/`
 - **Excluded**: `migrations/`, `__pycache__`, `databases/`, `node_modules`

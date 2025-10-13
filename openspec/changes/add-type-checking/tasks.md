@@ -106,10 +106,71 @@ Type checking is now fully integrated:
 - ✅ Docker environment updated
 - ✅ Baseline established: 89 errors, 150 warnings (expected for dynamic ORM)
 
-### Next Steps (Optional)
+### Next Steps - Progressive Type Error Fixing
 
-- Gradually add type hints to new code as it's written
-- Use `type: ignore[attr-defined]` for ORM field access
-- Consider adding type stubs for Emmett/pyDAL in the future
-- Enable strict type checking in CI/CD once baseline is cleaned up
+**Phase 1: Core Application Files** (Priority: High)
+- [ ] Run `./run_type_check.sh runtime/app.py` and fix errors
+  - Add `# type: ignore[attr-defined]` for ORM attribute access
+  - Remove unused imports
+  - Add type hints to route handlers: `async def route() -> dict[str, Any]:`
+- [ ] Run `./run_type_check.sh runtime/base_model.py` and fix errors
+- [ ] Run `./run_type_check.sh runtime/model_factory.py` and fix errors
+- [ ] Run `./run_type_check.sh runtime/model_permissions.py` and fix errors
+
+**Phase 2: Model Files** (Priority: High)
+- [ ] Run `./run_type_check.sh runtime/models/user/model.py` and fix errors
+- [ ] Run `./run_type_check.sh runtime/models/post/model.py` and fix errors
+- [ ] Run `./run_type_check.sh runtime/models/comment/model.py` and fix errors
+- [ ] Run `./run_type_check.sh runtime/models/role/model.py` and fix errors
+- [ ] Run `./run_type_check.sh runtime/models/permission/model.py` and fix errors
+- [ ] Run `./run_type_check.sh runtime/models/oauth_account/model.py` and fix errors
+- [ ] Run `./run_type_check.sh runtime/models/oauth_token/model.py` and fix errors
+
+**Phase 3: Auth Module** (Priority: Medium)
+- [ ] Run `./run_type_check.sh runtime/auth/tokens.py` and fix errors
+- [ ] Run `./run_type_check.sh runtime/auth/oauth_manager.py` and fix errors
+- [ ] Run `./run_type_check.sh runtime/auth/providers/` and fix errors
+- [ ] Run `./run_type_check.sh runtime/auth/rate_limit.py` and fix errors
+- [ ] Run `./run_type_check.sh runtime/auth/token_refresh.py` and fix errors
+
+**Phase 4: Utility Files** (Priority: Medium)
+- [ ] Run `./run_type_check.sh runtime/auto_ui_generator.py` and fix errors
+- [ ] Run `./run_type_check.sh runtime/openapi_generator.py` and fix errors
+- [ ] Run `./run_type_check.sh runtime/playwright_helpers.py` and fix errors
+- [ ] Run `./run_type_check.sh runtime/chrome_test_helpers.py` and fix errors
+
+**Phase 5: Test Files** (Priority: Low)
+- [ ] Run `./run_type_check.sh integration_tests/conftest.py` and fix errors
+- [ ] Run `./run_type_check.sh integration_tests/tests.py` and fix errors
+- [ ] Run `./run_type_check.sh integration_tests/test_*.py` and fix errors
+
+**Phase 6: Final Cleanup** (Priority: Low)
+- [ ] Remove unused imports across all files
+- [ ] Add missing type hints to function signatures
+- [ ] Document common type patterns in AGENTS.md
+- [ ] Update baseline: Reduce from ~89 errors to <20
+- [ ] Consider enabling stricter type checking mode
+
+**Fixing Guidelines:**
+- Use `# type: ignore[attr-defined]` for ORM fields: `post.id`, `user.email`, etc.
+- Use `# type: ignore[attr-defined]` for ORM methods: `.update_record()`, `.delete_record()`
+- Add type hints to route handlers: `async def handler() -> dict[str, Any]:`
+- Add type hints to utility functions: `def func(x: int, y: str) -> bool:`
+- Remove genuinely unused imports
+- Keep imports needed for type checking with `# type: ignore[reportUnusedImport]`
+
+**Example Fix Pattern:**
+```python
+# Before
+async def show_post(id):
+    post = Post.get(id)
+    return {'post': post}
+
+# After
+from typing import Any
+
+async def show_post(id: int) -> dict[str, Any]:
+    post = Post.get(id)  # type: ignore[attr-defined]
+    return {'post': post}
+```
 

@@ -77,6 +77,23 @@ else
 fi
 echo ""
 
+# Validate models for anti-patterns
+echo -e "${BLUE}Validating Emmett models...${NC}"
+if [ "$USE_DOCKER" = true ]; then
+    docker compose -f docker/docker-compose.yaml exec -T runtime python validate_models.py --all --severity warning 2>/dev/null || {
+        echo -e "${YELLOW}⚠ Model validation skipped (container not running or validation failed)${NC}"
+    }
+else
+    cd runtime
+    if python validate_models.py --all --severity warning; then
+        echo -e "${GREEN}✅ Model validation passed${NC}"
+    else
+        echo -e "${YELLOW}⚠ Model validation found issues (see output above)${NC}"
+    fi
+    cd "$PROJECT_ROOT"
+fi
+echo ""
+
 if [ "$USE_DOCKER" = true ]; then
     # ============================================================================
     # DOCKER MODE

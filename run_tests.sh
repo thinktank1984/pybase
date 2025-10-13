@@ -163,23 +163,148 @@ fi
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
-# Check if separate mode is requested - if so, delegate to run_tests_separate.sh
+# Check if separate mode is requested - run each test suite separately with output files
 if [ "$SEPARATE_MODE" = true ]; then
-    echo -e "${CYAN}🔄 Delegating to run_tests_separate.sh...${NC}"
+    echo -e "${YELLOW}🔬 Running All 11 Test Suites Separately...${NC}"
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${CYAN}Each test suite will be saved to a separate output file${NC}"
     echo ""
     
-    if [ ! -f "run_tests_separate.sh" ]; then
-        echo -e "${RED}❌ run_tests_separate.sh not found${NC}"
-        echo "Please ensure run_tests_separate.sh exists in the project root"
-        exit 1
-    fi
+    # Create output directory if it doesn't exist
+    OUTPUT_DIR="test_results"
+    mkdir -p "$OUTPUT_DIR"
     
-    # Make sure it's executable
-    chmod +x run_tests_separate.sh
+    # Timestamp for this run
+    TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
     
-    # Run the separate test script
-    ./run_tests_separate.sh
-    exit $?
+    echo -e "${YELLOW}[1/11]${NC} Running tests.py (main integration tests)..."
+    $DOCKER_COMPOSE exec -T runtime \
+        pytest /app/integration_tests/tests.py -v --tb=short \
+        > "${OUTPUT_DIR}/01_tests_${TIMESTAMP}.txt" 2>&1
+    echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/01_tests_${TIMESTAMP}.txt"
+    echo ""
+    
+    echo -e "${YELLOW}[2/11]${NC} Running test_oauth_real.py (OAuth integration tests)..."
+    $DOCKER_COMPOSE exec -T runtime \
+        pytest /app/integration_tests/test_oauth_real.py -v --tb=short \
+        > "${OUTPUT_DIR}/02_oauth_${TIMESTAMP}.txt" 2>&1
+    echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/02_oauth_${TIMESTAMP}.txt"
+    echo ""
+    
+    echo -e "${YELLOW}[3/11]${NC} Running test_roles_integration.py (roles & permissions tests)..."
+    $DOCKER_COMPOSE exec -T runtime \
+        pytest /app/integration_tests/test_roles_integration.py -v --tb=short \
+        > "${OUTPUT_DIR}/03_roles_integration_${TIMESTAMP}.txt" 2>&1
+    echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/03_roles_integration_${TIMESTAMP}.txt"
+    echo ""
+    
+    echo -e "${YELLOW}[4/11]${NC} Running test_auto_ui.py (auto UI generation tests)..."
+    $DOCKER_COMPOSE exec -T runtime \
+        pytest /app/integration_tests/test_auto_ui.py -v --tb=short \
+        > "${OUTPUT_DIR}/04_auto_ui_${TIMESTAMP}.txt" 2>&1
+    echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/04_auto_ui_${TIMESTAMP}.txt"
+    echo ""
+    
+    echo -e "${YELLOW}[5/11]${NC} Running test_ui_chrome_real.py (Chrome UI tests)..."
+    $DOCKER_COMPOSE exec -T runtime \
+        pytest /app/integration_tests/test_ui_chrome_real.py -v --tb=short \
+        > "${OUTPUT_DIR}/05_chrome_ui_${TIMESTAMP}.txt" 2>&1 || true
+    echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/05_chrome_ui_${TIMESTAMP}.txt"
+    echo ""
+    
+    echo -e "${YELLOW}[6/11]${NC} Running test_auth_comprehensive.py (comprehensive auth tests)..."
+    $DOCKER_COMPOSE exec -T runtime \
+        pytest /app/integration_tests/test_auth_comprehensive.py -v --tb=short \
+        > "${OUTPUT_DIR}/06_auth_comprehensive_${TIMESTAMP}.txt" 2>&1 || true
+    echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/06_auth_comprehensive_${TIMESTAMP}.txt"
+    echo ""
+    
+    echo -e "${YELLOW}[7/11]${NC} Running test_model_utils.py (model utility tests)..."
+    $DOCKER_COMPOSE exec -T runtime \
+        pytest /app/integration_tests/test_model_utils.py -v --tb=short \
+        > "${OUTPUT_DIR}/07_model_utils_${TIMESTAMP}.txt" 2>&1 || true
+    echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/07_model_utils_${TIMESTAMP}.txt"
+    echo ""
+    
+    echo -e "${YELLOW}[8/11]${NC} Running test_roles_rest_api.py (roles REST API tests)..."
+    $DOCKER_COMPOSE exec -T runtime \
+        pytest /app/integration_tests/test_roles_rest_api.py -v --tb=short \
+        > "${OUTPUT_DIR}/08_roles_rest_api_${TIMESTAMP}.txt" 2>&1 || true
+    echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/08_roles_rest_api_${TIMESTAMP}.txt"
+    echo ""
+    
+    echo -e "${YELLOW}[9/11]${NC} Running test_roles.py (basic role tests)..."
+    $DOCKER_COMPOSE exec -T runtime \
+        pytest /app/integration_tests/test_roles.py -v --tb=short \
+        > "${OUTPUT_DIR}/09_roles_${TIMESTAMP}.txt" 2>&1 || true
+    echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/09_roles_${TIMESTAMP}.txt"
+    echo ""
+    
+    echo -e "${YELLOW}[10/11]${NC} Running test_oauth_real_user.py (OAuth real user tests)..."
+    $DOCKER_COMPOSE exec -T runtime \
+        pytest /app/integration_tests/test_oauth_real_user.py -v --tb=short \
+        > "${OUTPUT_DIR}/10_oauth_real_user_${TIMESTAMP}.txt" 2>&1 || true
+    echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/10_oauth_real_user_${TIMESTAMP}.txt"
+    echo ""
+    
+    echo -e "${YELLOW}[11/11]${NC} Running test_base_model.py (base model tests)..."
+    $DOCKER_COMPOSE exec -T runtime \
+        pytest /app/integration_tests/test_base_model.py -v --tb=short \
+        > "${OUTPUT_DIR}/11_base_model_${TIMESTAMP}.txt" 2>&1 || true
+    echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/11_base_model_${TIMESTAMP}.txt"
+    echo ""
+    
+    echo "=========================================="
+    echo "Test Summary"
+    echo "=========================================="
+    echo ""
+    
+    # Generate summary by checking each output file
+    echo "Test Results:"
+    echo ""
+    
+    for file in "${OUTPUT_DIR}"/*_${TIMESTAMP}.txt; do
+        if [ -f "$file" ]; then
+            filename=$(basename "$file")
+            
+            # Extract test counts from pytest output (macOS compatible)
+            if grep -q "passed" "$file"; then
+                # Get the summary line from pytest output
+                summary=$(grep -E "[0-9]+ passed" "$file" | tail -1)
+                
+                if echo "$summary" | grep -q "failed"; then
+                    echo -e "${RED}✗${NC} $filename: $summary"
+                elif echo "$summary" | grep -q "error"; then
+                    echo -e "${RED}✗${NC} $filename: $summary"
+                else
+                    echo -e "${GREEN}✓${NC} $filename: $summary"
+                fi
+            else
+                echo -e "${RED}✗${NC} $filename: No test results found"
+            fi
+        fi
+    done
+    
+    echo ""
+    echo "=========================================="
+    echo -e "${GREEN}All test outputs saved to: ${OUTPUT_DIR}/${NC}"
+    echo "=========================================="
+    echo ""
+    echo "To view individual results:"
+    echo "  cat ${OUTPUT_DIR}/01_tests_${TIMESTAMP}.txt"
+    echo "  cat ${OUTPUT_DIR}/02_oauth_${TIMESTAMP}.txt"
+    echo "  cat ${OUTPUT_DIR}/03_roles_integration_${TIMESTAMP}.txt"
+    echo "  cat ${OUTPUT_DIR}/04_auto_ui_${TIMESTAMP}.txt"
+    echo "  cat ${OUTPUT_DIR}/05_chrome_ui_${TIMESTAMP}.txt"
+    echo "  cat ${OUTPUT_DIR}/06_auth_comprehensive_${TIMESTAMP}.txt"
+    echo "  cat ${OUTPUT_DIR}/07_model_utils_${TIMESTAMP}.txt"
+    echo "  cat ${OUTPUT_DIR}/08_roles_rest_api_${TIMESTAMP}.txt"
+    echo "  cat ${OUTPUT_DIR}/09_roles_${TIMESTAMP}.txt"
+    echo "  cat ${OUTPUT_DIR}/10_oauth_real_user_${TIMESTAMP}.txt"
+    echo "  cat ${OUTPUT_DIR}/11_base_model_${TIMESTAMP}.txt"
+    echo ""
+    
+    exit 0
 fi
 
 # Check if runtime directory exists

@@ -22,7 +22,7 @@ The codebase currently lacks type annotations, making it difficult to catch type
 - **Affected code**: 
   - All Python files in `runtime/` will receive type annotations
   - All Python files in `tests/` will receive type annotations
-  - New configuration files: `pyrightconfig.json`, type checking scripts
+  - New configuration files: `setup/pyrightconfig.json`, type checking scripts
   - Updated `requirements.txt` with MonkeyType and Pyright dependencies
   - Updated `docker/Dockerfile` to include type checking tools
   - Updated CI/CD workflows (if any) to run type checks
@@ -33,4 +33,34 @@ The codebase currently lacks type annotations, making it difficult to catch type
   - Self-documenting code through type annotations
   - Easier onboarding for new developers
   - Reduced debugging time
+
+## Implementation Approach
+
+### Progressive Type Error Fixing
+
+After setting up the type checking infrastructure, type errors should be fixed incrementally:
+
+1. **Run type check on individual files**:
+   ```bash
+   ./run_type_check.sh runtime/app.py
+   ./run_type_check.sh runtime/models/user/model.py
+   # etc.
+   ```
+
+2. **Fix errors in order of priority**:
+   - **Critical errors** (actual bugs) - Fix immediately
+   - **ORM attribute access** - Add `# type: ignore[attr-defined]` with comment
+   - **Unused imports** - Remove or comment why needed
+   - **Type mismatches** - Add proper type annotations
+
+3. **Document expected errors**:
+   - pyDAL ORM fields (`.id`, `.update_record()`, etc.) are dynamically generated
+   - Use `# type: ignore[attr-defined]` for ORM operations
+   - Add comments explaining why type ignore is needed
+
+4. **Iterative approach**:
+   - Fix one file or module at a time
+   - Run type check after each fix
+   - Commit working changes incrementally
+   - Track progress in baseline (start: ~89 errors, goal: <20)
 

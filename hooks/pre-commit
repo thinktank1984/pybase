@@ -1,0 +1,62 @@
+#!/bin/bash
+# Pre-commit hook for Emmett model validation
+# Validates models before allowing commit to ensure anti-patterns don't enter codebase
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+# Get project root
+PROJECT_ROOT=$(git rev-parse --show-toplevel)
+cd "$PROJECT_ROOT" || exit 1
+
+# Check if any model files were modified
+MODEL_FILES_CHANGED=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^runtime/(app\.py|models/.*\.py)$' || true)
+
+if [ -z "$MODEL_FILES_CHANGED" ]; then
+    # No model files changed, skip validation
+    exit 0
+fi
+
+echo -e "${BLUE}🔍 Model files changed, running validation...${NC}"
+echo ""
+
+# Run validation
+cd runtime || exit 1
+
+# Try to run validation with proper Python environment
+if [ -f "../venv/bin/python" ]; then
+    PYTHON="../venv/bin/python"
+elif command -v uv &> /dev/null; then
+    PYTHON="uv run python"
+elif command -v python3 &> /dev/null; then
+    PYTHON="python3"
+else
+    PYTHON="python"
+fi
+
+# Run validation - block only on errors, allow warnings
+if $PYTHON validate_models.py --all --severity error 2>&1; then
+    echo ""
+    echo -e "${GREEN}✅ Model validation passed${NC}"
+    exit 0
+else
+    VALIDATION_EXIT_CODE=$?
+    echo ""
+    echo -e "${RED}❌ Model validation failed${NC}"
+    echo ""
+    echo -e "${YELLOW}Models contain anti-patterns that must be fixed before committing.${NC}"
+    echo ""
+    echo "To fix:"
+    echo "  1. Review the validation errors above"
+    echo "  2. Fix the issues in your model files"
+    echo "  3. Re-run: python runtime/validate_models.py --all"
+    echo ""
+    echo -e "To commit anyway (NOT RECOMMENDED): ${YELLOW}git commit --no-verify${NC}"
+    echo ""
+    exit $VALIDATION_EXIT_CODE
+fi
+
