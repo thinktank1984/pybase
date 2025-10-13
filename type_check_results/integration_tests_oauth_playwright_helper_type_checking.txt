@@ -1,11 +1,8 @@
-time="2025-10-13T13:16:29+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+time="2025-10-13T13:46:07+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
 /app/integration_tests/oauth_playwright_helper.py
   /app/integration_tests/oauth_playwright_helper.py:35:58 - warning: Import "BrowserContext" is not accessed (reportUnusedImport)
   /app/integration_tests/oauth_playwright_helper.py:36:8 - warning: Import "json" is not accessed (reportUnusedImport)
-  /app/integration_tests/oauth_playwright_helper.py:84:12 - warning: Import "aiohttp" could not be resolved (reportMissingImports)
-  /app/integration_tests/oauth_playwright_helper.py:116:12 - warning: Import "aiohttp" could not be resolved (reportMissingImports)
   /app/integration_tests/oauth_playwright_helper.py:368:19 - warning: Variable "callback_url" is not accessed (reportUnusedVariable)
   /app/integration_tests/oauth_playwright_helper.py:463:42 - warning: Import "async_playwright" is not accessed (reportUnusedImport)
-  /app/integration_tests/oauth_playwright_helper.py:464:16 - warning: Import "aiohttp" could not be resolved (reportMissingImports)
   /app/integration_tests/oauth_playwright_helper.py:464:16 - warning: Import "aiohttp" is not accessed (reportUnusedImport)
-0 errors, 8 warnings, 0 informations
+0 errors, 5 warnings, 0 informations

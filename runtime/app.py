@@ -19,34 +19,27 @@ from auto_ui_generator import auto_ui  # type: ignore[reportMissingImports]
 from models import (  # type: ignore[reportMissingImports]
     User, Post, Comment, Role, Permission, UserRole, RolePermission,
     OAuthAccount, OAuthToken,
-    get_current_user, is_authenticated, get_or_404,
-    requires_role, requires_any_role, requires_permission,
-    seed_all, ensure_roles_exist
+    seed_all
 )
 
-# Import Sentry extension for error tracking
-try:
-    from emmett_sentry import Sentry
-    SENTRY_AVAILABLE = True
-except ImportError:
-    SENTRY_AVAILABLE = False
-    print("Warning: emmett-sentry not installed. Error tracking disabled.")
+# Import Sentry extension for error tracking (disabled)
+sentry_available = False  # Sentry extension has template conflicts with Emmett
 
 # Import Prometheus client for metrics
 try:
     from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
-    PROMETHEUS_AVAILABLE = True
+    prometheus_available = True
 except ImportError:
-    PROMETHEUS_AVAILABLE = False
+    prometheus_available = False
     print("Warning: prometheus-client not installed. Metrics collection disabled.")
 
 # Import Valkey for caching (optional)
 try:
     from valkey import Valkey
     import pickle
-    VALKEY_AVAILABLE = True
+    valkey_available = True
 except ImportError:
-    VALKEY_AVAILABLE = False
+    valkey_available = False
     print("Warning: valkey not installed. Valkey cache backend unavailable.")
 
 
@@ -82,7 +75,7 @@ SENTRY_DSN = os.environ.get('SENTRY_DSN', 'http://public@bugsink:8000/1')
 SENTRY_ENVIRONMENT = os.environ.get('SENTRY_ENVIRONMENT', os.environ.get('EMMETT_ENV', 'development'))
 SENTRY_TRACES_SAMPLE_RATE = float(os.environ.get('SENTRY_TRACES_SAMPLE_RATE', '0.1'))
 
-if SENTRY_ENABLED and SENTRY_AVAILABLE:
+if SENTRY_ENABLED and sentry_available:
     app.config.Sentry.dsn = SENTRY_DSN
     app.config.Sentry.environment = SENTRY_ENVIRONMENT
     app.config.Sentry.traces_sample_rate = SENTRY_TRACES_SAMPLE_RATE
@@ -93,14 +86,14 @@ if SENTRY_ENABLED and SENTRY_AVAILABLE:
 else:
     if not SENTRY_ENABLED:
         print("✗ Error tracking disabled via SENTRY_ENABLED=false")
-    elif not SENTRY_AVAILABLE:
+    elif not sentry_available:
         print("✗ Error tracking unavailable: emmett-sentry not installed")
 
 #: prometheus metrics configuration
 PROMETHEUS_ENABLED = os.environ.get('PROMETHEUS_ENABLED', 'true').lower() == 'true'
 
 # Initialize Prometheus metrics
-if PROMETHEUS_ENABLED and PROMETHEUS_AVAILABLE:
+if PROMETHEUS_ENABLED and prometheus_available:
     from emmett.pipeline import Pipe
     from prometheus_client import REGISTRY
     
@@ -163,8 +156,8 @@ if PROMETHEUS_ENABLED and PROMETHEUS_AVAILABLE:
             status = str(response.status)
             
             # Record metrics
-            http_requests_total.labels(method=method, endpoint=endpoint, status=status).inc()
-            http_request_duration_seconds.labels(method=method, endpoint=endpoint).observe(duration)
+            http_requests_total.labels(method=method, endpoint=endpoint, status=status).inc()  # type: ignore[attr-defined]
+            http_request_duration_seconds.labels(method=method, endpoint=endpoint).observe(duration)  # type: ignore[attr-defined]
     
     prometheus_pipe = PrometheusMetricsPipe()
     
@@ -173,7 +166,7 @@ else:
     prometheus_pipe = None
     if not PROMETHEUS_ENABLED:
         print("✗ Prometheus metrics disabled via PROMETHEUS_ENABLED=false")
-    elif not PROMETHEUS_AVAILABLE:
+    elif not prometheus_available:
         print("✗ Prometheus metrics unavailable: prometheus-client not installed")
 
 
@@ -202,7 +195,7 @@ class ValkeyCache:
             prefix: Key prefix for all cached data (default: 'cache:')
             default_expire: Default expiration in seconds (default: 300)
         """
-        if not VALKEY_AVAILABLE:
+        if not valkey_available:
             raise ImportError(
                 "valkey package is required for ValkeyCache. "
                 "Install it with: pip install valkey"
@@ -235,7 +228,7 @@ class ValkeyCache:
             value = self.client.get(self._make_key(key))
             if value is None:
                 return None
-            return pickle.loads(value)
+            return pickle.loads(value)  # type: ignore[arg-type]
         except Exception as e:
             print(f"Valkey cache get error: {e}")
             return None
@@ -285,7 +278,7 @@ class ValkeyCache:
                 pattern = self._make_key(key)
                 keys = self.client.keys(pattern)
                 if keys:
-                    return self.client.delete(*keys)
+                    return self.client.delete(*keys)  # type: ignore[misc]
                 return 0
             
             # Single key deletion
@@ -344,7 +337,7 @@ class ValkeyCache:
 # VALKEY_PORT = int(os.environ.get('VALKEY_PORT', '6379'))
 # VALKEY_DB = int(os.environ.get('VALKEY_DB', '0'))
 # 
-# if VALKEY_ENABLED and VALKEY_AVAILABLE:
+# if VALKEY_ENABLED and valkey_available:
 #     from emmett.cache import Cache
 #     cache = Cache(valkey=ValkeyCache(
 #         host=VALKEY_HOST,
@@ -358,7 +351,7 @@ class ValkeyCache:
 #     cache = None
 #     if not VALKEY_ENABLED:
 #         print("✗ Valkey cache disabled via VALKEY_ENABLED=false")
-#     elif not VALKEY_AVAILABLE:
+#     elif not valkey_available:
 #         print("✗ Valkey cache unavailable: valkey not installed")
 
 #: helper functions for context access (must be defined before models)
@@ -579,10 +572,10 @@ def setup():
 
 
 #: pipeline
-if PROMETHEUS_ENABLED and PROMETHEUS_AVAILABLE:
+if PROMETHEUS_ENABLED and prometheus_available:
     app.pipeline = [
         SessionManager.cookies('GreatScott'),
-        prometheus_pipe,
+        prometheus_pipe,  # type: ignore[list-item]
         db.pipe,
         auth.pipe
     ]
@@ -600,7 +593,6 @@ auth_routes = auth.module(__name__)
 #: OAuth Routes
 # Import and configure OAuth functionality
 from auth import get_oauth_manager
-from auth.tokens import encrypt_token
 from auth.rate_limit import rate_limit
 from auth.token_refresh import setup_commands as setup_oauth_commands
 import logging
@@ -661,7 +653,7 @@ async def oauth_callback(provider):
     Handle OAuth callback from provider.
     Validates state, exchanges code for tokens, creates/links account.
     """
-    from emmett import request, redirect, url, session, abort
+    from emmett import request, redirect, url, session
     import traceback
     
     # Check if provider is enabled
@@ -941,10 +933,10 @@ def _clear_oauth_session(provider):
     ]
     
     for key in keys_to_remove:
-        if key in session:
+        if key in session:  # type: ignore[operator]
             del session[key]
     
-    if 'oauth_link_mode' in session:
+    if 'oauth_link_mode' in session:  # type: ignore[operator]
         del session['oauth_link_mode']
 
 
@@ -982,7 +974,7 @@ async def account_settings():
 
 
 #: Prometheus metrics endpoint
-if PROMETHEUS_ENABLED and PROMETHEUS_AVAILABLE:
+if PROMETHEUS_ENABLED and prometheus_available:
     # Provide a simple no-op decorator for compatibility
     def track_metrics(endpoint_path=None):
         """
@@ -992,7 +984,7 @@ if PROMETHEUS_ENABLED and PROMETHEUS_AVAILABLE:
             return f
         return decorator
     
-    app.track_metrics = track_metrics
+    app.track_metrics = track_metrics  # type: ignore[attr-defined]
     
     @app.route('/metrics')
     async def metrics():
@@ -1002,13 +994,13 @@ if PROMETHEUS_ENABLED and PROMETHEUS_AVAILABLE:
     
     # Test endpoints for Prometheus integration
     @app.route('/api')
-    @service.json
+    @service.json  # type: ignore[attr-defined]
     async def api_root():
         """REST API root endpoint"""
         return {'message': 'Bloggy REST API', 'version': '1.0.0'}
     
     @app.route('/test-metrics')
-    @service.json
+    @service.json  # type: ignore[attr-defined]
     async def test_metrics_endpoint():
         """Test endpoint to verify metrics tracking works"""
         return {'automatic': True, 'metrics': 'tracked'}
@@ -1070,7 +1062,7 @@ openapi_gen.register_rest_module('permissions_api', Permission, 'api/permissions
 
 
 @app.route('/api/openapi.json')
-@service.json
+@service.json  # type: ignore[attr-defined]
 async def openapi_spec():
     """Serve OpenAPI 3.0 specification as JSON"""
     return openapi_gen.generate()
@@ -1129,7 +1121,7 @@ async def swagger_ui():
 
 
 @app.route('/api')
-@service.json
+@service.json  # type: ignore[attr-defined]
 async def api_root():
     """API root with links to documentation"""
     return {

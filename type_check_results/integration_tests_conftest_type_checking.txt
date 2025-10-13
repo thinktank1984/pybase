@@ -1,9 +1,6 @@
-time="2025-10-13T13:16:28+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+time="2025-10-13T13:46:06+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
 /app/integration_tests/conftest.py
-  /app/integration_tests/conftest.py:13:6 - warning: Import "app" could not be resolved (reportMissingImports)
-  /app/integration_tests/conftest.py:13:17 - warning: Import "app" is not accessed (reportUnusedImport)
-  /app/integration_tests/conftest.py:13:22 - warning: Import "db" is not accessed (reportUnusedImport)
-  /app/integration_tests/conftest.py:14:6 - warning: Import "models" could not be resolved (reportMissingImports)
-  /app/integration_tests/conftest.py:14:20 - warning: Import "Role" is not accessed (reportUnusedImport)
-  /app/integration_tests/conftest.py:14:26 - warning: Import "Post" is not accessed (reportUnusedImport)
-0 errors, 6 warnings, 0 informations
+  /app/integration_tests/conftest.py:14:8 - warning: Import "app" could not be resolved (reportMissingImports)
+  /app/integration_tests/conftest.py:15:8 - warning: Import "models" could not be resolved (reportMissingImports)
+  /app/integration_tests/conftest.py:15:8 - warning: Import "models" is not accessed (reportUnusedImport)
+0 errors, 3 warnings, 0 informations

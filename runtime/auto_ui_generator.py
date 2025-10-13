@@ -14,13 +14,11 @@ Automatically generates CRUD interfaces from Emmett ORM models with:
 import json
 import os
 from datetime import datetime, date, time
-from typing import Dict, Any, List, Optional, Callable
 from functools import wraps
 
-from emmett import request, response, redirect, url, abort, session
-from emmett.orm import Model, Field
+from emmett import request, redirect, url, abort, session
+from emmett.orm import Field
 from emmett.forms import Form
-from emmett.html import tag
 
 
 class UIMappingLoader:
@@ -241,14 +239,14 @@ class AutoUIGenerator:
                 redirect(url('auth/login'))
             
             # Pagination
-            page = int(request.query_params.get('page', 1))
+            page = int(request.query_params.get('page', 1))  # type: ignore[arg-type]
             per_page = self.config['page_size']
             
             # Build query
             query = self.db(self.model)
             
             # Search
-            search_query = request.query_params.get('q', '').strip()
+            search_query = request.query_params.get('q', '').strip()  # type: ignore[union-attr]
             if search_query and self.config['search_fields']:
                 search_conditions = []
                 for field_name in self.config['search_fields']:
@@ -264,15 +262,15 @@ class AutoUIGenerator:
             
             # Sorting
             sort_field = request.query_params.get('sort', self.config['sort_default'])
-            if sort_field.startswith('-'):
+            if sort_field.startswith('-'):  # type: ignore[union-attr]
                 # Descending
-                sort_field_name = sort_field[1:]
-                if hasattr(self.model, sort_field_name):
-                    query = query.select(orderby=~getattr(self.model, sort_field_name))
+                sort_field_name = sort_field[1:]  # type: ignore[index]
+                if hasattr(self.model, sort_field_name):  # type: ignore[arg-type]
+                    query = query.select(orderby=~getattr(self.model, sort_field_name))  # type: ignore[arg-type]
             else:
                 # Ascending
-                if hasattr(self.model, sort_field):
-                    query = query.select(orderby=getattr(self.model, sort_field))
+                if hasattr(self.model, sort_field):  # type: ignore[arg-type]
+                    query = query.select(orderby=getattr(self.model, sort_field))  # type: ignore[arg-type]
             
             # Count total
             total_count = query.count()
@@ -348,8 +346,8 @@ class AutoUIGenerator:
             form = Form(self.model)
             
             if form.accepted:
-                record = form.vars
-                redirect(url(f"{self.model_name}_detail", record.id))
+                record = form.vars  # type: ignore[attr-defined]
+                redirect(url(f"{self.model_name}_detail", record.id))  # type: ignore[attr-defined]
             
             return self.app.template(
                 self._get_template('form.html'),

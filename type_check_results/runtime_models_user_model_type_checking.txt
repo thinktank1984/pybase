@@ -1,25 +1,2 @@
-time="2025-10-13T13:16:21+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
-/app/runtime/models/user/model.py
-  /app/runtime/models/user/model.py:32:49 - error: Cannot access attribute "id" for class "User*"
-    Attribute "id" is unknown (reportAttributeAccessIssue)
-  /app/runtime/models/user/model.py:34:56 - error: Cannot access attribute "id" for class "User*"
-    Attribute "id" is unknown (reportAttributeAccessIssue)
-  /app/runtime/models/user/model.py:97:59 - error: Cannot access attribute "id" for class "User*"
-    Attribute "id" is unknown (reportAttributeAccessIssue)
-  /app/runtime/models/user/model.py:112:52 - error: Cannot access attribute "id" for class "User*"
-    Attribute "id" is unknown (reportAttributeAccessIssue)
-  /app/runtime/models/user/model.py:116:62 - error: Cannot access attribute "id" for class "User*"
-    Attribute "id" is unknown (reportAttributeAccessIssue)
-  /app/runtime/models/user/model.py:196:45 - error: Cannot access attribute "id" for class "User*"
-    Attribute "id" is unknown (reportAttributeAccessIssue)
-  /app/runtime/models/user/model.py:220:48 - error: Cannot access attribute "id" for class "User*"
-    Attribute "id" is unknown (reportAttributeAccessIssue)
-  /app/runtime/models/user/model.py:244:48 - error: Cannot access attribute "id" for class "User*"
-    Attribute "id" is unknown (reportAttributeAccessIssue)
-  /app/runtime/models/user/model.py:282:55 - error: Cannot access attribute "id" for class "User*"
-    Attribute "id" is unknown (reportAttributeAccessIssue)
-  /app/runtime/models/user/model.py:299:66 - error: Cannot access attribute "id" for class "User*"
-    Attribute "id" is unknown (reportAttributeAccessIssue)
-  /app/runtime/models/user/model.py:316:63 - error: Cannot access attribute "id" for class "User*"
-    Attribute "id" is unknown (reportAttributeAccessIssue)
-11 errors, 0 warnings, 0 informations
+time="2025-10-13T13:45:58+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+0 errors, 0 warnings, 0 informations

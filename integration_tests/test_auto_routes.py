@@ -7,7 +7,6 @@ Tests the auto_routes feature for BaseModel subclasses.
 """
 
 import pytest
-from emmett import url
 import json
 
 
@@ -469,7 +468,7 @@ def test_auto_routes_enforces_permissions_on_create(test_client, db):
         def require_auth():
             """Permission check - user must be authenticated."""
             from emmett import session
-            return 'user_id' in session
+            return 'user_id' in session  # type: ignore[operator]
         
         class TestArticle(BaseModel):
             tablename = 'test_articles'

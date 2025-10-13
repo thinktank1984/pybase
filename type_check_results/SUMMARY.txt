@@ -1,9 +1,9 @@
-Type Checking Summary - Mon Oct 13 13:16:37 NZDT 2025
+Type Checking Summary - Mon Oct 13 13:46:16 NZDT 2025
 ======================================
 
-Total files checked: 58
-Clean files: 42
-Files with issues: 16
+Total files checked: 60
+Clean files: 56
+Files with issues: 4
 
 Files with errors or warnings:
 --------------------------------
@@ -11,6 +11,7 @@ integration_tests_chrome_integration_tests
 integration_tests_conftest
 integration_tests_oauth_playwright_helper
 integration_tests_oauth_token_helper
+integration_tests_test_auto_routes
 integration_tests_test_auto_ui
 integration_tests_test_oauth_real
 integration_tests_test_oauth_real_user
@@ -23,27 +24,18 @@ integration_tests_validate_no_mocking
 runtime_app
 runtime_auth_linking
 runtime_auth_oauth_manager
-runtime_auth_providers_base
 runtime_auth_providers_facebook
 runtime_auth_providers_github
 runtime_auth_providers_google
 runtime_auth_providers_microsoft
-runtime_auth_rate_limit
 runtime_auth_tokens
+runtime_auto_routes
 runtime_auto_ui_generator
-runtime_base_model
-runtime_model_factory
 runtime_model_permissions
 runtime_models_decorators
-runtime_models_oauth_account_model
-runtime_models_oauth_token_model
-runtime_models_permission_model
 runtime_models_post_model
-runtime_models_role_model
 runtime_models_seeder
-runtime_models_user_model
 runtime_models_user_role
 runtime_models_utils
-runtime_openapi_generator
 runtime_playwright_helpers
 runtime_validate_models

@@ -1,4 +1,4 @@
-time="2025-10-13T13:16:32+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+time="2025-10-13T13:46:10+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
 /app/integration_tests/test_ui_chrome_real.py
   /app/integration_tests/test_ui_chrome_real.py:48:6 - warning: Import "playwright_helpers" could not be resolved (reportMissingImports)
   /app/integration_tests/test_ui_chrome_real.py:82:9 - warning: Variable "snapshot" is not accessed (reportUnusedVariable)

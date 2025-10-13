@@ -1,4 +1,4 @@
-time="2025-10-13T13:16:30+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+time="2025-10-13T13:46:08+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
 /app/integration_tests/oauth_token_helper.py
   /app/integration_tests/oauth_token_helper.py:36:8 - warning: Import "json" is not accessed (reportUnusedImport)
   /app/integration_tests/oauth_token_helper.py:470:16 - warning: Import "requests" is not accessed (reportUnusedImport)

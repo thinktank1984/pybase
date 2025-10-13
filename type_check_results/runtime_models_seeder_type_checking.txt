@@ -1,4 +1,4 @@
-time="2025-10-13T13:16:21+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+time="2025-10-13T13:45:59+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
 /app/runtime/models/seeder.py
   /app/runtime/models/seeder.py:6:20 - warning: Import "current" is not accessed (reportUnusedImport)
 0 errors, 1 warning, 0 informations

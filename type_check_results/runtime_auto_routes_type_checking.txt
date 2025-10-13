@@ -1,0 +1,13 @@
+time="2025-10-13T13:46:06+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+/app/runtime/auto_routes.py
+  /app/runtime/auto_routes.py:26:47 - warning: Import "Callable" is not accessed (reportUnusedImport)
+  /app/runtime/auto_routes.py:30:34 - warning: Import "Model" is not accessed (reportUnusedImport)
+  /app/runtime/auto_routes.py:31:6 - warning: Import "runtime.auto_ui_generator" could not be resolved (reportMissingImports)
+  /app/runtime/auto_routes.py:57:21 - warning: Variable "table" is not accessed (reportUnusedVariable)
+  /app/runtime/auto_routes.py:57:40 - error: Cannot access attribute "items" for class "SQLCallableList"
+    Attribute "items" is unknown (reportAttributeAccessIssue)
+  /app/runtime/auto_routes.py:104:10 - warning: Import "runtime.base_model" could not be resolved (reportMissingImports)
+  /app/runtime/auto_routes.py:246:9 - warning: Variable "generator" is not accessed (reportUnusedVariable)
+  /app/runtime/auto_routes.py:305:47 - error: Argument expression after ** must be a mapping with a "str" key type (reportCallIssue)
+  /app/runtime/auto_routes.py:323:40 - error: Argument expression after ** must be a mapping with a "str" key type (reportCallIssue)
+3 errors, 6 warnings, 0 informations

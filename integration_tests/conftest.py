@@ -19,10 +19,48 @@ import models
 def setup_test_environment():
     """
     Setup test environment - runs once per test session.
-    Note: Row class patching is now done in individual test file fixtures.
+    This ensures the database is properly initialized before any tests run.
     """
+    # Set up database with migrations
+    print("\n🔧 Setting up test database (session-level)...")
+    import sqlite3
+    from emmett.orm.migrations.utils import generate_runtime_migration
+    
+    db = app_module.db
+    db_path = os.path.join(os.path.dirname(__file__), '..', 'runtime', 'databases', 'bloggy.db')
+    db_dir = os.path.dirname(db_path)
+    
+    # Ensure database directory exists
+    os.makedirs(db_dir, exist_ok=True)
+    
+    # Check if database needs to be created
+    needs_setup = not os.path.exists(db_path)
+    
+    if needs_setup:
+        print("   🔧 Creating fresh database...")
+        with db.connection():
+            migration = generate_runtime_migration(db)
+            migration.up()
+            db.commit()
+        print("   ✅ Database created")
+    else:
+        # Database exists, just verify tables exist
+        try:
+            with db.connection():
+                db.executesql("SELECT COUNT(*) FROM users LIMIT 1")
+                print("   ✅ Database already exists")
+        except:
+            # Tables don't exist, create them
+            print("   🔧 Creating database tables...")
+            with db.connection():
+                migration = generate_runtime_migration(db)
+                migration.up()
+                db.commit()
+            print("   ✅ Database tables created")
+    
     yield
-    # Teardown - nothing to clean up
+    
+    # Teardown - nothing to clean up (let individual tests handle cleanup)
 
 
 @pytest.fixture()

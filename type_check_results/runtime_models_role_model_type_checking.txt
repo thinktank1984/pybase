@@ -1,15 +1,2 @@
-time="2025-10-13T13:16:15+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
-/app/runtime/models/role/model.py
-  /app/runtime/models/role/model.py:8:22 - warning: Import "datetime" is not accessed (reportUnusedImport)
-  /app/runtime/models/role/model.py:94:28 - error: Cannot access attribute "id" for class "Role*"
-    Attribute "id" is unknown (reportAttributeAccessIssue)
-  /app/runtime/models/role/model.py:94:59 - error: "__getitem__" method not defined on type "Role*" (reportIndexIssue)
-  /app/runtime/models/role/model.py:123:51 - error: Cannot access attribute "id" for class "Role*"
-    Attribute "id" is unknown (reportAttributeAccessIssue)
-  /app/runtime/models/role/model.py:151:51 - error: Cannot access attribute "id" for class "Role*"
-    Attribute "id" is unknown (reportAttributeAccessIssue)
-  /app/runtime/models/role/model.py:160:27 - error: Cannot access attribute "id" for class "Role*"
-    Attribute "id" is unknown (reportAttributeAccessIssue)
-  /app/runtime/models/role/model.py:187:51 - error: Cannot access attribute "id" for class "Role*"
-    Attribute "id" is unknown (reportAttributeAccessIssue)
-6 errors, 1 warning, 0 informations
+time="2025-10-13T13:45:52+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+0 errors, 0 warnings, 0 informations

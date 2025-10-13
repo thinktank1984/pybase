@@ -1,4 +1,4 @@
-time="2025-10-13T13:16:36+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+time="2025-10-13T13:46:15+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
 /app/integration_tests/test_oauth_real_user.py
   /app/integration_tests/test_oauth_real_user.py:35:22 - warning: Import "datetime" is not accessed (reportUnusedImport)
   /app/integration_tests/test_oauth_real_user.py:39:6 - warning: Import "app" could not be resolved (reportMissingImports)
@@ -8,9 +8,5 @@ time="2025-10-13T13:16:36+13:00" level=warning msg="/Users/ed.sharood2/code/pyba
   /app/integration_tests/test_oauth_real_user.py:39:46 - warning: Import "OAuthToken" is not accessed (reportUnusedImport)
   /app/integration_tests/test_oauth_real_user.py:40:6 - warning: Import "auth.oauth_manager" could not be resolved (reportMissingImports)
   /app/integration_tests/test_oauth_real_user.py:41:6 - warning: Import "auth.tokens" could not be resolved (reportMissingImports)
-  /app/integration_tests/test_oauth_real_user.py:279:14 - warning: Import "auth.tokens" could not be resolved (reportMissingImports)
-  /app/integration_tests/test_oauth_real_user.py:563:15 - error: Operator "+" not supported for types "Literal['\n']" and "str | None"
-    Operator "+" not supported for types "Literal['\n']" and "None" when expected type is "object" (reportOperatorIssue)
-  /app/integration_tests/test_oauth_real_user.py:600:15 - error: Operator "+" not supported for types "Literal['\n']" and "str | None"
-    Operator "+" not supported for types "Literal['\n']" and "None" when expected type is "object" (reportOperatorIssue)
-2 errors, 9 warnings, 0 informations
+  /app/integration_tests/test_oauth_real_user.py:263:14 - warning: Import "auth.tokens" could not be resolved (reportMissingImports)
+0 errors, 9 warnings, 0 informations

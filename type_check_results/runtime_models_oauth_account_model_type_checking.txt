@@ -1,7 +1,2 @@
-time="2025-10-13T13:16:14+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
-/app/runtime/models/oauth_account/model.py
-  /app/runtime/models/oauth_account/model.py:125:14 - error: Cannot access attribute "update_record" for class "OAuthAccount*"
-    Attribute "update_record" is unknown (reportAttributeAccessIssue)
-  /app/runtime/models/oauth_account/model.py:150:14 - error: Cannot access attribute "update_record" for class "OAuthAccount*"
-    Attribute "update_record" is unknown (reportAttributeAccessIssue)
-2 errors, 0 warnings, 0 informations
+time="2025-10-13T13:45:51+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+0 errors, 0 warnings, 0 informations

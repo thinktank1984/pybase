@@ -77,28 +77,29 @@ def _prepare_db():
         os.environ['OAUTH_TOKEN_ENCRYPTION_KEY'] = key
         print(f"   ⚠️  Generated temporary encryption key for testing")
     
-    # Wait for other tests to finish initializing database
-    import time
-    max_retries = 10
-    for i in range(max_retries):
+    # Verify required tables exist
+    with db.connection():
+        # Check users table
         try:
-            with db.connection():
-                # Check if tables exist
-                db.executesql("SELECT COUNT(*) FROM users LIMIT 1")
-                db.executesql("SELECT COUNT(*) FROM oauth_accounts LIMIT 1")
-                print("   ✅ Database tables ready")
-                break
-        except Exception as e:
-            if i < max_retries - 1:
-                print(f"   ⏳ Waiting for database setup... ({i+1}/{max_retries})")
-                time.sleep(1)
-            else:
-                pytest.fail(
-                    f"Database tables not ready after {max_retries} attempts.\n"
-                    f"Last error: {e}\n"
-                    "This usually means migrations haven't been run.\n"
-                    "Run: cd runtime && emmett migrations up"
-                )
+            db.executesql("SELECT COUNT(*) FROM users LIMIT 1")
+            print("   ✅ Users table exists")
+        except:
+            pytest.fail(
+                "Users table does not exist. Run migrations first:\n"
+                "  cd runtime && emmett migrations up\n"
+                "Tests cannot be skipped - they must either run or fail with clear error."
+            )
+        
+        # Check OAuth tables
+        try:
+            db.executesql("SELECT COUNT(*) FROM oauth_accounts LIMIT 1")
+            print("   ✅ OAuth tables exist")
+        except:
+            pytest.fail(
+                "OAuth tables do not exist. Run migrations first:\n"
+                "  cd runtime && emmett migrations up\n"
+                "Tests cannot be skipped - they must either run or fail with clear error."
+            )
     
     yield
     

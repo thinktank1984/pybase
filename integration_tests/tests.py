@@ -50,56 +50,38 @@ def client():
 
 @pytest.fixture(scope='module', autouse=True)
 def _prepare_db(request):
-    # Setup test database - ensure clean state
-    import os
-    import sqlite3
-    db_path = os.path.join(os.path.dirname(__file__), '..', 'runtime', 'databases', 'bloggy.db')
-    db_dir = os.path.dirname(db_path)
+    """
+    Prepare database for main tests.
+    Note: Session fixture in conftest.py handles table creation.
+    This just ensures admin user exists.
+    """
+    print("\n🔧 Preparing main test data...")
     
-    # Ensure database directory exists
-    os.makedirs(db_dir, exist_ok=True)
-    
-    # Drop all existing tables using direct SQLite connection
-    # This avoids connection issues with pyDAL
-    if os.path.exists(db_path):
-        try:
-            conn = sqlite3.connect(db_path)
-            cursor = conn.cursor()
-            
-            # Disable foreign keys temporarily
-            cursor.execute("PRAGMA foreign_keys = OFF")
-            
-            # Get all tables
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
-            tables = [row[0] for row in cursor.fetchall()]
-            
-            # Drop all tables
-            for table in tables:
-                cursor.execute(f'DROP TABLE IF EXISTS "{table}"')
-            
-            conn.commit()
-            cursor.execute("PRAGMA foreign_keys = ON")
-            conn.close()
-            print(f"✅ Dropped {len(tables)} tables from existing database")
-        except Exception as e:
-            print(f"⚠️  Could not drop tables: {e}")
-    
-    # Now create fresh schema using Emmett migrations
+    # Ensure admin user exists
     with db.connection():
-        migration = generate_runtime_migration(db)
-        migration.up()
-        setup_admin()
+        try:
+            # Check if admin user already exists
+            admin = db(db.users.email == 'doc@emmettbrown.com').select().first()
+            if not admin:
+                print("   🔧 Creating admin user...")
+                setup_admin()
+                print("   ✅ Admin user created")
+            else:
+                print("   ✅ Admin user already exists")
+        except Exception as e:
+            print(f"   ⚠️  Error checking admin user: {e}")
+            # Try to create admin anyway
+            try:
+                setup_admin()
+                print("   ✅ Admin user created")
+            except:
+                pass
     
     yield
     
-    # Cleanup after tests
-    with db.connection():
-        for table in db.tables:
-            try:
-                db.executesql(f'DROP TABLE IF EXISTS "{table}"')
-            except:
-                pass
-        db.commit()
+    # Minimal cleanup - just remove test data
+    print("\n🧹 Cleaning up main test data...")
+    # Note: Don't drop tables, other tests might still need them
 
 
 @pytest.fixture(scope='module')

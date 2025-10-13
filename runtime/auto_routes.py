@@ -23,11 +23,11 @@ Usage:
     discover_and_register_auto_routes(app, db)
 """
 
-from typing import List, Dict, Any, Optional, Callable
+from typing import List, Dict, Any, Optional
 import inspect
 import logging
 from emmett import App
-from emmett.orm import Database, Model
+from emmett.orm import Database
 from runtime.auto_ui_generator import auto_ui
 
 logger = logging.getLogger(__name__)
@@ -54,7 +54,7 @@ def discover_auto_routes_models(db: Database) -> List[type]:
         return []
     
     # Iterate through all models
-    for table_name, table in db.tables.items():
+    for table_name, table in db.tables.items():  # type: ignore[attr-defined]
         # Skip internal tables
         if table_name.startswith('_'):
             continue
@@ -243,7 +243,7 @@ def generate_routes_for_model(app: App, model_class: type, config: Dict[str, Any
     try:
         # Generate CRUD routes via auto_ui
         logger.info(f"Generating routes for {model_class.__name__} at {url_prefix}")
-        generator = auto_ui(app, model_class, url_prefix, ui_config)
+        auto_ui(app, model_class, url_prefix, ui_config)
         
         # Generate REST API if enabled
         if config['rest_api']:
@@ -302,7 +302,7 @@ def _generate_rest_api(app: App, model_class: type, rest_prefix: str, enabled_ac
             from emmett import request
             with db.connection():
                 data = request.body_params
-                record = model_class.create(**data)
+                record = model_class.create(**data)  # type: ignore[arg-type]
                 db.commit()
                 return {
                     'status': 'success',
@@ -320,7 +320,7 @@ def _generate_rest_api(app: App, model_class: type, rest_prefix: str, enabled_ac
                     return {'status': 'error', 'message': 'Not found'}, 404
                 
                 data = request.body_params
-                record.update_record(**data)
+                record.update_record(**data)  # type: ignore[arg-type]
                 db.commit()
                 return {
                     'status': 'success',

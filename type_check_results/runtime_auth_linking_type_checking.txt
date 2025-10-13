@@ -1,11 +1,5 @@
-time="2025-10-13T13:16:10+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+time="2025-10-13T13:53:17+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
 /app/runtime/auth/linking.py
+  /app/runtime/auth/linking.py:6:41 - warning: Import "List" is not accessed (reportUnusedImport)
   /app/runtime/auth/linking.py:7:20 - warning: Import "current" is not accessed (reportUnusedImport)
-  /app/runtime/auth/linking.py:256:40 - error: Type "dict[str, bool | list[Any] | dict[Any, Any]]" is not assignable to return type "Dict[str, bool]"
-    "list[Any]" is not assignable to "bool" (reportReturnType)
-  /app/runtime/auth/linking.py:269:16 - error: Type "dict[str, bool | list[Unknown] | dict[Unknown, Unknown]]" is not assignable to return type "Dict[str, bool]"
-    "list[Unknown]" is not assignable to "bool"
-    "dict[Unknown, Unknown]" is not assignable to "bool" (reportReturnType)
-  /app/runtime/auth/linking.py:279:32 - error: Type "dict[str, bool | list[Any] | dict[Any, Any]]" is not assignable to return type "Dict[str, bool]"
-    "list[Any]" is not assignable to "bool" (reportReturnType)
-3 errors, 1 warning, 0 informations
+0 errors, 2 warnings, 0 informations

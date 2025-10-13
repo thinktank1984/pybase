@@ -1,5 +1,1 @@
-time="2025-10-13T13:16:11+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
-/app/runtime/auth/rate_limit.py
-  /app/runtime/auth/rate_limit.py:85:73 - error: Cannot access attribute "remote_addr" for class "Request"
-    Attribute "remote_addr" is unknown (reportAttributeAccessIssue)
-1 error, 0 warnings, 0 informations
+time="2025-10-13T13:53:18+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"

@@ -1,11 +1,2 @@
-time="2025-10-13T13:16:27+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
-/app/runtime/model_factory.py
-  /app/runtime/model_factory.py:48:26 - error: Type "None" is not assignable to declared type "type[Model]"
-    Type "None" is not assignable to type "type[Model]" (reportAssignmentType)
-  /app/runtime/model_factory.py:71:12 - warning: Unnecessary isinstance call; "str" is always an instance of "str" (reportUnnecessaryIsInstance)
-  /app/runtime/model_factory.py:86:12 - warning: Condition will always evaluate to False since the types "type[Model]" and "None" have no overlap (reportUnnecessaryComparison)
-  /app/runtime/model_factory.py:288:10 - warning: Import "faker" could not be resolved (reportMissingImports)
-  /app/runtime/model_factory.py:332:23 - error: Type "None" is not assignable to declared type "type[FakerGenerators]"
-    Type "None" is not assignable to type "type[FakerGenerators]" (reportAssignmentType)
-  /app/runtime/model_factory.py:333:5 - error: "FAKER_AVAILABLE" is constant (because it is uppercase) and cannot be redefined (reportConstantRedefinition)
-3 errors, 3 warnings, 0 informations
+time="2025-10-13T13:46:05+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+0 errors, 0 warnings, 0 informations
