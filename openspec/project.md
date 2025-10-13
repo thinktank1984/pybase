@@ -19,11 +19,12 @@ The project serves as both a reference implementation and learning resource for 
 - **Python 3.9+** (3.13+ recommended)
 - **pyDAL** - Database abstraction layer (ORM)
 - **Renoir** - Template engine (Python-like syntax)
+- **PostgreSQL 16** - Primary database backend
 
 ### Infrastructure & Deployment
 - **Docker** - Primary development and deployment environment
 - **Granian** - ASGI server for production
-- **SQLite** - Default database (configurable for PostgreSQL, MySQL, etc.)
+- **PostgreSQL 16** - Production database (Alpine image)
 
 ### Development Tools
 - **pytest** - Testing framework
@@ -61,7 +62,6 @@ The project serves as both a reference implementation and learning resource for 
 - Main application in `runtime/app.py`
 - Templates in `runtime/templates/`
 - Static files in `runtime/static/`
-- Database files in `runtime/databases/`
 - Migrations in `runtime/migrations/`
 - Integration tests in `integration_tests/` (at project root)
 
@@ -287,7 +287,7 @@ The example application in `runtime/` demonstrates:
 ## External Dependencies
 
 ### Required Services
-- **Database**: SQLite (default), PostgreSQL, MySQL, or other pyDAL-supported databases
+- **PostgreSQL 16**: Primary database (runs in Docker)
 - **ASGI Server**: Granian (included)
 
 ### Optional Services

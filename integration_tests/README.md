@@ -145,7 +145,7 @@ pytest integration_tests/ --cov=runtime --cov-report=term-missing
 
 ### Real Integration Testing
 All tests use real operations:
-- ✅ Real SQLite database with actual SQL
+- ✅ Real PostgreSQL database with actual SQL
 - ✅ Real HTTP requests via test client
 - ✅ Real encryption with Fernet
 - ✅ Real browser with Chrome DevTools MCP

@@ -207,7 +207,7 @@ with db.connection():
 
 ### ✅ REAL Integration Tests
 
-- ✅ Real database operations (SQLite)
+- ✅ Real database operations (PostgreSQL)
 - ✅ Real encryption (Fernet)
 - ✅ Real HTTP requests (test client)
 - ✅ Real token management

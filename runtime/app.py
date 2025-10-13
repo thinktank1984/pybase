@@ -60,14 +60,19 @@ app.config.auth.registration_verification = False
 app.config.auth.hmac_key = "november.5.1955"
 
 #: database configuration
-app.config.db.uri = f"sqlite://{os.path.join(os.path.dirname(__file__), 'databases', 'bloggy.db')}"
-# SQLite performance and concurrency settings
-app.config.db.pool_size = 10  # Connection pool size
+# PostgreSQL connection with environment variable support
+# Note: pyDAL uses 'postgres://' not 'postgresql://'
+DATABASE_URL = os.environ.get(
+    'DATABASE_URL',
+    'postgres://bloggy:bloggy_password@postgres:5432/bloggy'
+)
+app.config.db.uri = DATABASE_URL
+
+# PostgreSQL-optimized connection pool settings
+app.config.db.pool_size = int(os.environ.get('DB_POOL_SIZE', '20'))
 app.config.db.adapter_args = {
-    'timeout': 30,  # Increase timeout to 30 seconds (default is 5)
-    'check_same_thread': False,  # Allow access from multiple threads
+    'sslmode': 'prefer',  # Use SSL if available, but don't require it
 }
-# Enable WAL mode for better concurrent access (set after db initialization)
 
 #: inject OAuth providers into templates
 # Note: Disabled - @app.before_routes doesn't exist in this Emmett version
@@ -383,10 +388,40 @@ def get_current_session():
 
 
 #: init db, mailer and auth
+# Connection management is handled by DatabaseConnectionPipe in the pipeline
 db = Database(app)
 mailer = Mailer(app)
 auth = Auth(app, db, user_model=User)
 db.define_models(Post, Comment, Role, Permission, UserRole, RolePermission, OAuthAccount, OAuthToken)
+
+
+#: Custom pipeline component for explicit PostgreSQL connection management
+from emmett.pipeline import Pipe
+
+class DatabaseConnectionPipe(Pipe):
+    """
+    Pipeline component that explicitly wraps requests in database connection contexts.
+    
+    This is required for PostgreSQL to ensure all database queries (including those
+    in auth handlers) have access to a connection context.
+    """
+    async def open(self):
+        """Establish database connection at start of request"""
+        self._connection = db.connection()
+        await self._connection.__aenter__()
+    
+    async def close(self):
+        """Close database connection at end of request"""
+        if hasattr(self, '_connection'):
+            try:
+                await self._connection.__aexit__(None, None, None)
+            except (KeyError, AttributeError):
+                # Connection already closed or doesn't exist - this is fine
+                # Can happen in test contexts or if connection was closed elsewhere
+                pass
+
+# Create instance of the custom pipe
+db_connection_pipe = DatabaseConnectionPipe()
 
 
 #: Patch Row classes to add custom methods
@@ -588,12 +623,14 @@ if PROMETHEUS_ENABLED and prometheus_available:
     app.pipeline = [
         SessionManager.cookies('GreatScott'),
         prometheus_pipe,  # type: ignore[list-item]
+        db_connection_pipe,  # Explicit connection management for PostgreSQL
         db.pipe,
         auth.pipe
     ]
 else:
     app.pipeline = [
         SessionManager.cookies('GreatScott'),
+        db_connection_pipe,  # Explicit connection management for PostgreSQL
         db.pipe,
         auth.pipe
     ]

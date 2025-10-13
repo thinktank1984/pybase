@@ -16,8 +16,10 @@ def get_db():
         Database instance
     """
     # Try importing from app module first (works best in tests)
+    # Use getattr to get current value (not cached import) so tests can replace db
     try:
-        from app import db as app_db
+        import app as app_module
+        app_db = getattr(app_module, 'db', None)
         if app_db is not None:
             return app_db
     except (ImportError, AttributeError):

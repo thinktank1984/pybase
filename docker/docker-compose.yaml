@@ -17,6 +17,24 @@ services:
       timeout: 5s
       retries: 5
 
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: bloggy
+      POSTGRES_USER: bloggy
+      POSTGRES_PASSWORD: bloggy_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bloggy"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   bugsink:
     image: bugsink/bugsink:latest
     container_name: bugsink
@@ -112,6 +130,10 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - EMMETT_ENV=development
+      # Database configuration
+      - DATABASE_URL=postgres://bloggy:bloggy_password@postgres:5432/bloggy
+      - TEST_DATABASE_URL=postgres://bloggy:bloggy_password@postgres:5432/bloggy_test
+      - DB_POOL_SIZE=20
       # Valkey cache configuration (optional - enable with VALKEY_ENABLED=true)
       - VALKEY_ENABLED=false
       - VALKEY_HOST=valkey
@@ -124,6 +146,8 @@ services:
     entrypoint: ["/bin/bash", "/app/docker/entrypoint.sh"]
     command: ["emmett", "serve", "--host", "0.0.0.0", "--port", "8081"]
     depends_on:
+      postgres:
+        condition: service_healthy
       valkey:
         condition: service_healthy
 
@@ -143,6 +167,7 @@ services:
       retries: 5
 
 volumes:
+  postgres_data:
   bugsink_db_data:
   bugsink_data:
   prometheus_data:

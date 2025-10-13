@@ -100,9 +100,9 @@ colorlog>=6.8.0             # Colored console logs
 # Database Utilities
 # ============================================================================
 
-# Additional database drivers (beyond SQLite)
-psycopg>=3.1.0          # PostgreSQL adapter
-pymysql>=1.1.0          # MySQL adapter
+# Database drivers
+psycopg2-binary>=2.9.0  # PostgreSQL adapter for pyDAL (primary database)
+pymysql>=1.1.0          # MySQL adapter (optional)
 redis>=5.0.0            # Redis client
 valkey>=5.0.0           # Valkey client (Redis-compatible, open-source alternative)
 

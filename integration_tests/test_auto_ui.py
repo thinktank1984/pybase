@@ -166,7 +166,8 @@ class TestAutoUIGenerator:
     def setup_method(self):
         """Set up test fixtures."""
         self.app = App(__name__)
-        self.app.config.db.uri = 'sqlite:memory'
+        # Use PostgreSQL for testing (configured via environment)
+        self.app.config.db.uri = os.getenv('DATABASE_URL', 'postgresql://bloggy:bloggy_password@postgres:5432/bloggy_test')
         self.db = Database(self.app)
         self.db.define_models(TestPost, TestComment)
     
@@ -294,7 +295,8 @@ class TestAutoUIFunction:
     def test_auto_ui_function(self):
         """Test auto_ui function creates and registers routes."""
         app = App(__name__)
-        app.config.db.uri = 'sqlite:memory'
+        # Use PostgreSQL for testing (configured via environment)
+        app.config.db.uri = os.getenv('DATABASE_URL', 'postgresql://bloggy:bloggy_password@postgres:5432/bloggy_test')
         db = Database(app)
         db.define_models(TestPost)
         

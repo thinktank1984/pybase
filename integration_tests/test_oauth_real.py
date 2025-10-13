@@ -67,36 +67,22 @@ from auth.oauth_manager import OAuthManager
 @pytest.fixture(scope='module', autouse=True)
 def _prepare_db(request):
     """Ensure database is ready - create all tables including users and OAuth tables"""
-    import sqlite3
     print(f"🔧 _prepare_db fixture running...")
     
-    db_path = os.path.join(os.path.dirname(__file__), '..', 'runtime', 'databases', 'bloggy.db')
-    db_dir = os.path.dirname(db_path)
-    
-    # Ensure database directory exists
-    os.makedirs(db_dir, exist_ok=True)
-    
-    # Drop all existing tables using direct SQLite connection
-    if os.path.exists(db_path):
+    # Drop all existing tables using PostgreSQL-compatible approach
+    with db.connection():
         try:
-            conn = sqlite3.connect(db_path)
-            cursor = conn.cursor()
+            # Get all tables from information_schema (PostgreSQL)
+            result = db.executesql(
+                "SELECT tablename FROM pg_tables WHERE schemaname = 'public'"
+            )
+            tables = [row[0] for row in result]
             
-            # Disable foreign keys temporarily
-            cursor.execute("PRAGMA foreign_keys = OFF")
-            
-            # Get all tables
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
-            tables = [row[0] for row in cursor.fetchall()]
-            
-            # Drop all tables
-            for table in tables:
-                cursor.execute(f'DROP TABLE IF EXISTS "{table}"')
-            
-            conn.commit()
-            cursor.execute("PRAGMA foreign_keys = ON")
-            conn.close()
-            print(f"   ✅ Dropped {len(tables)} tables from existing database")
+            # Drop all tables with CASCADE to handle foreign keys
+            if tables:
+                for table in tables:
+                    db.executesql(f'DROP TABLE IF EXISTS "{table}" CASCADE')
+                print(f"   ✅ Dropped {len(tables)} tables from existing database")
         except Exception as e:
             print(f"   ⚠️  Could not drop tables: {e}")
     

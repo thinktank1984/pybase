@@ -96,7 +96,9 @@ class Permission(Model):
         try:
             from ..utils import get_db
             db = get_db()
-            return db(db.permissions.name == name).select().first()
+            # PostgreSQL requires explicit connection context
+            with db.connection():
+                return db(db.permissions.name == name).select().first()
         except Exception as e:
             print(f"Error in Permission.get_by_name: {e}")
             return None
@@ -115,7 +117,9 @@ class Permission(Model):
         try:
             from ..utils import get_db
             db = get_db()
-            return db(db.permissions.resource == resource).select(orderby='action')
+            # PostgreSQL requires explicit connection context
+            with db.connection():
+                return db(db.permissions.resource == resource).select(orderby='action')
         except Exception as e:
             print(f"Error in Permission.get_by_resource: {e}")
             return []
@@ -131,7 +135,9 @@ class Permission(Model):
         try:
             from ..utils import get_db
             db = get_db()
-            return db(db.permissions).select(orderby='resource|action')
+            # PostgreSQL requires explicit connection context
+            with db.connection():
+                return db(db.permissions).select(orderby='resource|action')
         except Exception as e:
             print(f"Error in Permission.get_all: {e}")
             return []

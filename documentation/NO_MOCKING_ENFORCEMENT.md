@@ -361,7 +361,7 @@ def test_api():
 - Use module-scoped fixtures for expensive setup
 - Use transaction rollbacks for faster cleanup
 - Parallelize with pytest-xdist
-- Use in-memory databases (still real SQLite)
+- Use connection pooling for database efficiency
 
 **Speed is NEVER a reason to use mocks.**
 

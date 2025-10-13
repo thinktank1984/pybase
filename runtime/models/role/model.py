@@ -65,9 +65,20 @@ class Role(BaseModel):
         try:
             from ..utils import get_db
             db = get_db()
-            return db(db.roles.name == name).select().first()
+            print(f"DEBUG get_by_name: db URI = {db.config.uri}")
+            # PostgreSQL requires explicit connection context
+            with db.connection():
+                query = db(db.roles.name == name)
+                print(f"DEBUG get_by_name: query object = {query}")
+                result = query.select()
+                print(f"DEBUG get_by_name: select result = {result}")
+                first = result.first() if result else None
+                print(f"DEBUG get_by_name: first = {first}")
+                return first
         except Exception as e:
             print(f"Error in Role.get_by_name: {e}")
+            import traceback
+            traceback.print_exc()
             return None
     
     @classmethod
@@ -81,7 +92,9 @@ class Role(BaseModel):
         try:
             from ..utils import get_db
             db = get_db()
-            return db(db.roles).select(orderby='name')
+            # PostgreSQL requires explicit connection context
+            with db.connection():
+                return db(db.roles).select(orderby='name')
         except Exception as e:
             print(f"Error in Role.get_all: {e}")
             return []
@@ -101,13 +114,15 @@ class Role(BaseModel):
             # Get role ID (works for both Model and Row objects)
             role_id = self.id if hasattr(self, 'id') else self['id']  # type: ignore[attr-defined, index]
             
-            # Query permissions through role_permissions association
-            rows = db(
-                (db.role_permissions.role == role_id) &
-                (db.role_permissions.permission == db.permissions.id)
-            ).select(db.permissions.ALL)
-            
-            return [row for row in rows]
+            # PostgreSQL requires explicit connection context
+            with db.connection():
+                # Query permissions through role_permissions association
+                rows = db(
+                    (db.role_permissions.role == role_id) &
+                    (db.role_permissions.permission == db.permissions.id)
+                ).select(db.permissions.ALL)
+                
+                return [row for row in rows]
         except Exception as e:
             role_name = getattr(self, 'name', None) or self.get('name', 'unknown')
             print(f"Error getting permissions for role {role_name}: {e}")

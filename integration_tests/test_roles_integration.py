@@ -29,7 +29,7 @@ Following repository policy: Mocking is FORBIDDEN.
 
 import pytest
 import uuid
-from app import app, db, User, Post, Comment
+from app import User, Post, Comment
 from models import (
     Role, Permission, UserRole, RolePermission,
     seed_all, user_add_role, user_remove_role, user_has_role, 
@@ -37,6 +37,14 @@ from models import (
     user_has_permission, user_has_any_permission, user_get_permissions,
     user_can_access_resource
 )
+
+# Import app and db from conftest fixtures
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'runtime'))
+import app as app_module
+app = app_module.app
+db = app_module.db
 
 
 def unique_email(prefix='test'):
@@ -46,52 +54,43 @@ def unique_email(prefix='test'):
 
 @pytest.fixture(scope='module', autouse=True)
 def _prepare_db(request):
-    """Ensure database is ready with all tables"""
-    import os
-    import sqlite3
-    from emmett.orm.migrations.utils import generate_runtime_migration
+    """Ensure database is ready with all tables (PostgreSQL-compatible)"""
+    print("\n🔧 Preparing database for roles integration tests...")
     
-    db_path = os.path.join(os.path.dirname(__file__), '..', 'runtime', 'databases', 'bloggy.db')
-    db_dir = os.path.dirname(db_path)
-    
-    # Ensure database directory exists
-    os.makedirs(db_dir, exist_ok=True)
-    
-    # Drop all existing tables using direct SQLite connection
-    if os.path.exists(db_path):
+    # Verify required tables exist (migrations should have been run by conftest.py)
+    with db.connection():
+        # Check if tables exist
         try:
-            conn = sqlite3.connect(db_path)
-            cursor = conn.cursor()
-            
-            # Disable foreign keys temporarily
-            cursor.execute("PRAGMA foreign_keys = OFF")
-            
-            # Get all tables
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
-            tables = [row[0] for row in cursor.fetchall()]
-            
-            # Drop all tables
-            for table in tables:
-                cursor.execute(f'DROP TABLE IF EXISTS "{table}"')
-            
-            conn.commit()
-            cursor.execute("PRAGMA foreign_keys = ON")
-            conn.close()
-            print(f"✅ Dropped {len(tables)} tables from existing database")
-        except Exception as e:
-            print(f"⚠️  Could not drop tables: {e}")
-    
-    # Create all tables using Emmett migrations
-    with db.connection():
-        migration = generate_runtime_migration(db)
-        migration.up()
-        db.commit()
-    
-    # Seed roles and permissions immediately after DB setup
-    with db.connection():
-        seed_all(db)
-        db.commit()
-        print("✅ Seeded roles and permissions")
+            db.executesql("SELECT COUNT(*) FROM users LIMIT 1")
+            print("   ✅ Users table exists")
+        except:
+            pytest.fail(
+                "Users table does not exist. Ensure conftest.py session fixture ran migrations.\n"
+                "Tests cannot be skipped - they must either run or fail with clear error."
+            )
+        
+        try:
+            db.executesql("SELECT COUNT(*) FROM roles LIMIT 1")
+            print("   ✅ Roles table exists")
+        except:
+            pytest.fail(
+                "Roles table does not exist. Ensure conftest.py session fixture ran migrations.\n"
+                "Tests cannot be skipped - they must either run or fail with clear error."
+            )
+        
+        # Check if roles are already seeded
+        role_count = db.executesql("SELECT COUNT(*) FROM roles")[0][0]
+        if role_count == 0:
+            # Seed roles and permissions
+            print("   🌱 Seeding roles and permissions...")
+            seed_all(db)
+            db.commit()
+            print("   ✅ Seeded roles and permissions")
+        else:
+            print(f"   ✅ Roles already seeded ({role_count} roles)")
+            # Debug: Check what roles exist
+            roles_debug = db.executesql("SELECT name FROM roles ORDER BY name")
+            print(f"   🔍 Role names in DB: {[r[0] for r in roles_debug]}")
         
         # Patch Row classes with methods after seeding
         # Get a seeded role to find its Row class
@@ -116,16 +115,23 @@ def _prepare_db(request):
                         return []
                 
                 RoleRowClass.get_permissions = role_get_permissions
-                print("✅ Patched Role.get_permissions() method")
+                print("   ✅ Patched Role.get_permissions() method")
         
         # Create a temporary post to get its Row class and patch it
         if hasattr(db, 'posts'):
-            temp_user_id = db.users.insert(
-                email='_temp_patch@test.com',
-                password='x',
-                first_name='T',
-                last_name='P'
-            )
+            # Check if temp user already exists
+            temp_user = db(db.users.email == '_temp_patch@test.com').select().first()
+            if temp_user:
+                temp_user_id = temp_user.id
+            else:
+                temp_user_id = db.users.insert(
+                    email='_temp_patch@test.com',
+                    password='x',
+                    first_name='T',
+                    last_name='P'
+                )
+                db.commit()
+            
             temp_post_id = db.posts.insert(
                 title='_temp_',
                 text='x',
@@ -157,27 +163,32 @@ def _prepare_db(request):
                 
                 PostRowClass.can_edit = post_can_edit
                 PostRowClass.can_delete = post_can_delete
-                print("✅ Patched Post.can_edit() and Post.can_delete() methods")
+                print("   ✅ Patched Post.can_edit() and Post.can_delete() methods")
             
             # Cleanup temp data
             db(db.posts.id == temp_post_id).delete()
-            db(db.users.id == temp_user_id).delete()
             db.commit()
     
     yield
     
-    # Cleanup after tests
-    with db.connection():
-        for table in db.tables:
-            try:
-                db.executesql(f'DROP TABLE IF EXISTS "{table}"')
-            except:
-                pass
-        db.commit()
+    # Minimal cleanup - only remove test data created by this module
+    print("\n🧹 Cleaning up roles integration test data")
+    try:
+        with db.connection():
+            # Delete only test users created by fixtures (those with unique emails)
+            # Pattern: test_*@example.com
+            # Quote "user" column name to avoid PostgreSQL keyword conflicts
+            db.executesql("DELETE FROM user_roles WHERE \"user\" IN (SELECT id FROM users WHERE email LIKE 'test_%@example.com')")
+            db.executesql("DELETE FROM posts WHERE \"user\" IN (SELECT id FROM users WHERE email LIKE 'test_%@example.com')")
+            db.executesql("DELETE FROM users WHERE email LIKE 'test_%@example.com'")
+            db.commit()
+            print("   ✅ Test data cleaned up")
+    except Exception as e:
+        print(f"   ⚠️  Cleanup warning: {e}")
 
 
 @pytest.fixture()
-def client():
+def client(app):
     """Test client for HTTP requests"""
     return app.test_client()
 

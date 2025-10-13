@@ -59,7 +59,7 @@ docker compose -f docker/docker-compose.yaml exec runtime \
 ```
 
 **Philosophy:** NO MOCKING (ILLEGAL)
-- ✅ Real database operations (SQLite)
+- ✅ Real database operations (PostgreSQL)
 - ✅ Real HTTP requests (Emmett test client)
 - ✅ Real authentication and sessions
 - ✅ Real form submissions with CSRF tokens
