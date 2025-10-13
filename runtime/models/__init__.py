@@ -72,7 +72,7 @@ def setup_all(app):
     from .post import setup as post_setup
     from .comment import setup as comment_setup
     from .user import setup as user_setup
-    from .role.api import setup_rest_api as role_api_setup
+    # Note: Role API now handled by auto_routes system (role model has auto_routes=True)
     from .permission.api import setup_rest_api as permission_api_setup
     
     # Setup each model (routes and APIs)
@@ -80,7 +80,7 @@ def setup_all(app):
         'posts_api': post_setup(app),
         'comments_api': comment_setup(app),
         'users_api': user_setup(app),
-        'roles_api': role_api_setup(app),
+        # 'roles_api': role_api_setup(app),  # Now handled by auto_routes
         'permissions_api': permission_api_setup(app)
     }
     

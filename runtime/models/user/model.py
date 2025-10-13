@@ -107,14 +107,16 @@ class User(AuthUser):
                     # Model instance or patched Row with method
                     role_permissions = role.get_permissions()
                 else:
-                    # Row object without method - call Role model class method directly
-                    from ..role import Role
+                    # Row object without method - get permissions directly from database
+                    from app import db
                     role_id = role.id if hasattr(role, 'id') else role['id']
-                    role_obj = Role.where(lambda r: r.id == role_id).first()
-                    if role_obj:
-                        role_permissions = role_obj.get_permissions()
-                    else:
-                        role_permissions = []
+                    
+                    # Query permissions through role_permissions association
+                    perm_rows = db(
+                        (db.role_permissions.role == role_id) &
+                        (db.role_permissions.permission == db.permissions.id)
+                    ).select(db.permissions.ALL)
+                    role_permissions = [row for row in perm_rows]
                 
                 for perm in role_permissions:
                     permissions.add(perm.name)

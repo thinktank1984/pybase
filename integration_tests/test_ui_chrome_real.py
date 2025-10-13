@@ -41,11 +41,48 @@ The --headed flag reminds you to have Chrome visible so you can watch the tests!
 import pytest
 import os
 import sys
+from pathlib import Path
 
 # Add runtime directory to path for playwright_helpers
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'runtime'))
 
 from playwright_helpers import get_chrome_helper, check_viewports, VIEWPORTS
+
+
+@pytest.fixture(scope="session", autouse=True)
+def cleanup_screenshots():
+    """Clean up screenshots directory before tests start"""
+    screenshots_dir = Path(__file__).parent.parent / "runtime" / "screenshots"
+    
+    if screenshots_dir.exists():
+        # Count files before cleanup
+        png_files = list(screenshots_dir.glob("*.png"))
+        zip_files = list(screenshots_dir.glob("*.zip"))
+        file_count = len(png_files) + len(zip_files)
+        
+        if file_count > 0:
+            print(f"\n🧹 Cleaning screenshots directory...")
+            print(f"   → Removing {file_count} file(s)")
+            
+            # Remove all PNG and ZIP files
+            for f in png_files + zip_files:
+                f.unlink()
+            
+            print(f"   ✅ Screenshots cleaned")
+        else:
+            print(f"\n📸 Screenshots directory is already clean")
+    else:
+        print(f"\n📁 Creating screenshots directory...")
+        screenshots_dir.mkdir(parents=True, exist_ok=True)
+        print(f"   ✅ Directory created")
+    
+    yield
+    
+    # Optional: Print summary after tests complete
+    if screenshots_dir.exists():
+        new_files = list(screenshots_dir.glob("*.png")) + list(screenshots_dir.glob("*.zip"))
+        if new_files:
+            print(f"\n📸 Generated {len(new_files)} screenshot(s) in {screenshots_dir}")
 
 
 @pytest.fixture(scope="session")

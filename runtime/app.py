@@ -61,6 +61,13 @@ app.config.auth.hmac_key = "november.5.1955"
 
 #: database configuration
 app.config.db.uri = f"sqlite://{os.path.join(os.path.dirname(__file__), 'databases', 'bloggy.db')}"
+# SQLite performance and concurrency settings
+app.config.db.pool_size = 10  # Connection pool size
+app.config.db.adapter_args = {
+    'timeout': 30,  # Increase timeout to 30 seconds (default is 5)
+    'check_same_thread': False,  # Allow access from multiple threads
+}
+# Enable WAL mode for better concurrent access (set after db initialization)
 
 #: inject OAuth providers into templates
 # Note: Disabled - @app.before_routes doesn't exist in this Emmett version
@@ -492,6 +499,12 @@ def get_or_create(model, **kwargs):
 app.use_extension(REST)
 rest_ext = app.ext.REST
 
+#: Register REST API modules using the extension
+# The REST extension's module method creates a RESTModule
+roles_api = rest_ext.module(rest_ext, __name__, 'roles', Role, url_prefix='roles')  # type: ignore[attr-defined]
+permissions_api = rest_ext.module(rest_ext, __name__, 'permissions', Permission, url_prefix='permissions')  # type: ignore[attr-defined]
+print("✓ REST API modules registered for Role and Permission")
+
 #: Automatic Route Generation for models with auto_routes attribute
 # Import auto_routes system
 try:
@@ -500,15 +513,16 @@ try:
     discover_and_register_auto_routes(app, db)
     print("✓ Automatic route generation enabled")
 except Exception as e:
+    import traceback
     print(f"⚠️  Automatic route generation failed: {e}")
+    traceback.print_exc()
 
 #: init Auto UI for models
 # Enable auto-generated CRUD interface for Post model
 auto_ui(app, Post, '/admin/posts')
 # Enable auto-generated CRUD interface for Comment model
 auto_ui(app, Comment, '/admin/comments')
-# Enable auto-generated CRUD interface for Role model
-auto_ui(app, Role, '/admin/roles')
+# Note: Role auto UI is handled by auto_routes system (role model has auto_routes=True)
 # Enable auto-generated CRUD interface for Permission model
 auto_ui(app, Permission, '/admin/permissions')
 

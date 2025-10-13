@@ -3,11 +3,12 @@
 Role model for Role-Based Access Control (RBAC).
 """
 
-from emmett.orm import Model, Field, has_many
+from emmett.orm import Field, has_many
 from emmett import now
+from base_model import BaseModel
 
 
-class Role(Model):
+class Role(BaseModel):
     """
     Role model representing a user role in the system.
     
@@ -24,6 +25,9 @@ class Role(Model):
     
     # Relationships
     has_many('user_roles', 'role_permissions')
+    
+    # Auto Routes Configuration (enables automatic route generation)
+    auto_routes = True
     
     # REST API configuration
     rest_rw = {

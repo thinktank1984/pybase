@@ -303,6 +303,10 @@ class TestRealUserOAuth:
         This is a real database operation test.
         """
         with db.connection():
+            # Clean up any existing OAuth accounts for this user first
+            db.executesql("DELETE FROM oauth_accounts WHERE user = ?", [real_user])
+            db.commit()
+            
             # Link Google
             google_id = db.oauth_accounts.insert(
                 user=real_user,
@@ -325,7 +329,7 @@ class TestRealUserOAuth:
                 [real_user]
             )
             
-            assert len(user_accounts) == 2
+            assert len(user_accounts) == 2, f"Expected 2 accounts, found {len(user_accounts)}: {user_accounts}"
             providers = [acc[1] for acc in user_accounts]
             assert 'google' in providers
             assert 'github' in providers
@@ -333,8 +337,8 @@ class TestRealUserOAuth:
             print(f"   ✅ Multiple providers linked: {providers}")
             
             # Cleanup
-            del db.oauth_accounts[google_id]
-            del db.oauth_accounts[github_id]
+            db.executesql("DELETE FROM oauth_accounts WHERE id IN (?, ?)", [google_id, github_id])
+            db.commit()
     
     def test_oauth_account_retrieval_by_email(self, real_user):
         """

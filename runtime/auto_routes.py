@@ -37,8 +37,8 @@ def discover_auto_routes_models(db: Database) -> List[type]:
     """
     Discover all models with auto_routes enabled.
     
-    Searches through all registered models in the database and
-    finds those with the `auto_routes` class attribute set.
+    Searches through all BaseModel subclasses and finds those
+    with the `auto_routes` class attribute set.
     
     Args:
         db: Emmett Database instance
@@ -48,37 +48,38 @@ def discover_auto_routes_models(db: Database) -> List[type]:
     """
     auto_routes_models = []
     
-    # Get all models registered with the database
-    if not hasattr(db, 'Model'):
-        logger.warning("Database has no models registered")
+    # Import BaseModel to get all subclasses
+    from base_model import BaseModel
+    
+    # Get all BaseModel subclasses
+    all_models = BaseModel.__subclasses__()
+    
+    if not all_models:
+        logger.warning("No BaseModel subclasses found")
         return []
     
-    # Iterate through all models
-    for table_name, table in db.tables.items():  # type: ignore[attr-defined]
-        # Skip internal tables
-        if table_name.startswith('_'):
-            continue
-        
-        # Get the model class associated with this table
-        model_class = _find_model_for_table(db, table_name)
-        if model_class is None:
-            continue
-        
+    logger.info(f"Scanning {len(all_models)} BaseModel subclasses for auto_routes...")
+    
+    # Iterate through all model classes
+    for model_class in all_models:
         # Check if model has auto_routes attribute
-        if hasattr(model_class, 'auto_routes'):
-            auto_routes_config = getattr(model_class, 'auto_routes')
-            
-            # Skip if explicitly disabled
-            if auto_routes_config is False:
-                continue
-            
-            # Skip if model has manual setup() in module
-            if _has_manual_setup(model_class):
-                logger.info(f"Skipping {model_class.__name__} - has manual setup()")
-                continue
-            
-            auto_routes_models.append(model_class)
-            logger.info(f"Discovered auto_routes model: {model_class.__name__}")
+        if not hasattr(model_class, 'auto_routes'):
+            continue
+        
+        auto_routes_config = getattr(model_class, 'auto_routes')
+        
+        # Skip if explicitly disabled
+        if auto_routes_config is False:
+            logger.info(f"Skipping {model_class.__name__} - auto_routes disabled")
+            continue
+        
+        # Skip if model has manual setup() in module
+        if _has_manual_setup(model_class):
+            logger.info(f"Skipping {model_class.__name__} - has manual setup()")
+            continue
+        
+        auto_routes_models.append(model_class)
+        logger.info(f"✓ Discovered auto_routes model: {model_class.__name__}")
     
     return auto_routes_models
 
@@ -279,7 +280,7 @@ def _generate_rest_api(app: App, model_class: type, rest_prefix: str, enabled_ac
                 records = model_class.all().select()
                 return {
                     'status': 'success',
-                    'data': [record.to_dict() for record in records]
+                    'data': [record.as_dict() for record in records]
                 }
     
     # DETAIL endpoint: GET /api/model/:id
@@ -292,7 +293,7 @@ def _generate_rest_api(app: App, model_class: type, rest_prefix: str, enabled_ac
                     return {'status': 'error', 'message': 'Not found'}, 404
                 return {
                     'status': 'success',
-                    'data': record.to_dict()
+                    'data': record.as_dict()
                 }
     
     # CREATE endpoint: POST /api/model
@@ -301,12 +302,12 @@ def _generate_rest_api(app: App, model_class: type, rest_prefix: str, enabled_ac
         async def api_create():
             from emmett import request
             with db.connection():
-                data = request.body_params
+                data = await request.body_params
                 record = model_class.create(**data)  # type: ignore[arg-type]
                 db.commit()
                 return {
                     'status': 'success',
-                    'data': record.to_dict()
+                    'data': record.as_dict()
                 }, 201
     
     # UPDATE endpoint: PUT /api/model/:id
@@ -319,12 +320,12 @@ def _generate_rest_api(app: App, model_class: type, rest_prefix: str, enabled_ac
                 if not record:
                     return {'status': 'error', 'message': 'Not found'}, 404
                 
-                data = request.body_params
+                data = await request.body_params
                 record.update_record(**data)  # type: ignore[arg-type]
                 db.commit()
                 return {
                     'status': 'success',
-                    'data': record.to_dict()
+                    'data': record.as_dict()
                 }
     
     # DELETE endpoint: DELETE /api/model/:id

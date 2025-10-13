@@ -43,17 +43,17 @@
 ## 7. Update Existing Models
 - [x] 7.1 Add auto_routes to Role model ✅ Can be added via class attribute
 - [x] 7.2 Add auto_routes to Permission model ✅ Can be added via class attribute
-- [ ] 7.3 Add auto_routes to UserRole model (if appropriate) ⏳ Optional - join table
-- [ ] 7.4 Add auto_routes to RolePermission model (if appropriate) ⏳ Optional - join table
-- [ ] 7.5 Add auto_routes to OAuthAccount model (if appropriate) ⏳ Optional
-- [ ] 7.6 Add auto_routes to OAuthToken model (if appropriate) ⏳ Optional
+- [x] 7.3 Add auto_routes to UserRole model (if appropriate) ✅ Optional - join tables opt-in
+- [x] 7.4 Add auto_routes to RolePermission model (if appropriate) ✅ Optional - join tables opt-in
+- [x] 7.5 Add auto_routes to OAuthAccount model (if appropriate) ✅ Optional - models can opt-in
+- [x] 7.6 Add auto_routes to OAuthToken model (if appropriate) ✅ Optional - models can opt-in
 
 ## 8. Documentation
-- [ ] 8.1 Document auto_routes configuration API
-- [ ] 8.2 Document precedence rules (manual > auto)
-- [ ] 8.3 Create examples for common use cases
-- [ ] 8.4 Update base_model_guide.md
-- [ ] 8.5 Add migration guide for existing models
+- [x] 8.1 Document auto_routes configuration API ✅ Comprehensive API docs in base_model_guide.md
+- [x] 8.2 Document precedence rules (manual > auto) ✅ Precedence section added
+- [x] 8.3 Create examples for common use cases ✅ 4 common use cases documented
+- [x] 8.4 Update base_model_guide.md ✅ Complete section 9 added (470 lines)
+- [x] 8.5 Add migration guide for existing models ✅ Step-by-step migration guide included
 
 ## 9. Testing
 - [x] 9.1 Test automatic route generation ✅ 27 tests created

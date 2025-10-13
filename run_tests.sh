@@ -23,7 +23,7 @@ SHOW_DURATIONS=false
 PYTEST_EXTRA_ARGS=""
 CLEAN_SCREENSHOTS=true  # Clean screenshots by default
 HEADED_MODE=false  # Run Chrome in visible/headed mode
-SEPARATE_MODE=false  # Run tests separately with output files
+SEPARATE_MODE=true  # Run tests separately with output files (DEFAULT)
 
 # Show help
 show_help() {
@@ -33,7 +33,8 @@ show_help() {
     echo "  --all              Run all tests (app + Chrome) [DEFAULT]"
     echo "  --app              Run only application tests"
     echo "  --chrome           Run only Chrome DevTools tests"
-    echo "  --separate         Run tests separately and save to individual output files"
+    echo "  --separate         Run tests separately with output files [DEFAULT]"
+    echo "  --together         Run tests together (disable separate mode)"
     echo "  -k PATTERN         Run tests matching PATTERN (e.g., -k test_api)"
     echo ""
     echo "Output Options:"
@@ -58,16 +59,16 @@ show_help() {
     echo "  -h, --help         Show this help message"
     echo ""
     echo "Examples:"
-    echo "  ./run_tests.sh                          # Run all tests (app + Chrome)"
-    echo "  ./run_tests.sh --app                    # Run only app tests"
-    echo "  ./run_tests.sh --separate               # Run all 8 tests separately with output files"
-    echo "  ./run_tests.sh -v --app                 # Run app tests with verbose output"
-    echo "  ./run_tests.sh -k test_api              # Run only tests matching 'test_api'"
-    echo "  ./run_tests.sh -k prometheus --app      # Run Prometheus tests only"
-    echo "  ./run_tests.sh -x --app                 # Stop on first failure"
-    echo "  ./run_tests.sh --durations=5 --app      # Show 5 slowest tests"
-    echo "  ./run_tests.sh --no-coverage --app      # Run without coverage"
-    echo "  ./run_tests.sh -vv -x -k test_login     # Very verbose, stop on fail, specific test"
+    echo "  ./run_tests.sh                          # Run all 8 tests separately (DEFAULT)"
+    echo "  ./run_tests.sh --together --app         # Run app tests together (combined output)"
+    echo "  ./run_tests.sh --app                    # Run app tests separately with output files"
+    echo "  ./run_tests.sh -v --app                 # Run app tests separately with verbose output"
+    echo "  ./run_tests.sh -k test_api --together   # Run matching tests together"
+    echo "  ./run_tests.sh -k prometheus --app      # Run Prometheus tests separately"
+    echo "  ./run_tests.sh -x --app                 # Run separately, stop on first failure"
+    echo "  ./run_tests.sh --durations=5 --app      # Run separately, show 5 slowest tests"
+    echo "  ./run_tests.sh --no-coverage --app      # Run separately without coverage"
+    echo "  ./run_tests.sh -vv -x -k test_login     # Separate mode, very verbose, stop on fail"
     echo "  ./run_tests.sh --keep-screenshots --chrome  # Keep screenshots and run Chrome tests"
     echo "  ./run_tests.sh --chrome                     # Run real Chrome UI tests (auto-cleans)"
     echo "  ./run_tests.sh --chrome --headed            # Run Chrome tests in visible browser"
@@ -132,6 +133,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --separate)
             SEPARATE_MODE=true
+            shift
+            ;;
+        --together)
+            SEPARATE_MODE=false
             shift
             ;;
         --keep-screenshots)

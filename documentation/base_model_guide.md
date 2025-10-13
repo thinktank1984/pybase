@@ -811,6 +811,473 @@ Use `@classmethod` for queries that don't need an instance.
 
 ---
 
+---
+
+## 9. Automatic Route Generation
+
+### Overview
+
+BaseModel supports **automatic route generation** through the `auto_routes` class attribute. This eliminates the need for manual `setup()` functions in your model modules.
+
+**Benefits**:
+- ✅ Zero boilerplate - enable with one line
+- ✅ Consistent URL patterns across all models
+- ✅ Automatic REST API generation
+- ✅ Declarative configuration
+- ✅ Backward compatible with manual setup()
+
+### Quick Start
+
+```python
+from base_model import BaseModel
+
+class Role(BaseModel):
+    name = Field.string()
+    description = Field.text()
+    
+    # Enable automatic routes with defaults
+    auto_routes = True
+```
+
+**That's it!** Your model now has:
+- **HTML routes**: `/roles/`, `/roles/<id>`, `/roles/new`, `/roles/<id>/edit`, `/roles/<id>/delete`
+- **REST API**: `GET/POST /api/roles`, `GET/PUT/DELETE /api/roles/<id>`
+
+### Configuration API
+
+#### Basic Configuration
+
+```python
+class Role(BaseModel):
+    name = Field.string()
+    
+    auto_routes = {
+        'url_prefix': '/admin/roles',           # Default: /{tablename}
+        'rest_api': True,                       # Default: True
+        'rest_prefix': '/api/v1/roles',         # Default: /api/{tablename}
+        'enabled_actions': ['list', 'detail'],  # Default: all actions
+    }
+```
+
+#### Configuration Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `url_prefix` | `str` | `/{tablename}` | Base URL for HTML routes |
+| `rest_api` | `bool` | `True` | Generate REST API endpoints |
+| `rest_prefix` | `str` | `/api/{tablename}` | Base URL for REST endpoints |
+| `enabled_actions` | `list` | All | Actions to enable: `list`, `detail`, `create`, `update`, `delete` |
+| `permissions` | `dict` | `{}` | Permission functions per action |
+| `auto_ui_config` | `dict` | `{}` | Pass-through config to auto_ui |
+| `custom_handlers` | `dict` | `{}` | Custom route handlers (future) |
+
+#### Permission Integration
+
+```python
+from model_permissions import requires_role
+
+class Role(BaseModel):
+    name = Field.string()
+    
+    auto_routes = {
+        'url_prefix': '/admin/roles',
+        'permissions': {
+            'list': lambda: requires_role('Admin'),
+            'create': lambda: requires_role('Admin'),
+            'update': lambda: requires_role('Admin'),
+            'delete': lambda: requires_role('Admin'),
+        }
+    }
+```
+
+#### Selective Action Enabling
+
+```python
+class Role(BaseModel):
+    name = Field.string()
+    
+    # Only allow viewing, no modifications
+    auto_routes = {
+        'enabled_actions': ['list', 'detail']
+    }
+```
+
+#### Advanced Configuration
+
+```python
+class Post(BaseModel):
+    title = Field.string()
+    content = Field.text()
+    
+    auto_routes = {
+        'url_prefix': '/blog/posts',
+        'rest_prefix': '/api/v2/posts',
+        'enabled_actions': ['list', 'detail', 'create', 'update'],
+        'permissions': {
+            'create': lambda: requires_role('Author'),
+            'update': lambda: requires_permission('post.edit.own'),
+        },
+        'auto_ui_config': {
+            'list_columns': ['title', 'created_at', 'author'],
+            'search_fields': ['title', 'content'],
+            'sort_default': '-created_at'
+        }
+    }
+```
+
+### Generated Routes
+
+When `auto_routes = True`, the following routes are generated:
+
+**HTML Routes**:
+| Route | Method | Action | Description |
+|-------|--------|--------|-------------|
+| `{url_prefix}/` | GET | list | List all records |
+| `{url_prefix}/new` | GET | create | Show create form |
+| `{url_prefix}/` | POST | create | Process create form |
+| `{url_prefix}/<id>` | GET | detail | Show single record |
+| `{url_prefix}/<id>/edit` | GET | update | Show edit form |
+| `{url_prefix}/<id>` | POST | update | Process update form |
+| `{url_prefix}/<id>/delete` | GET | delete | Show delete confirmation |
+| `{url_prefix}/<id>/delete` | POST | delete | Process deletion |
+
+**REST API Routes** (when `rest_api: True`):
+| Route | Method | Action | Description |
+|-------|--------|--------|-------------|
+| `{rest_prefix}` | GET | list | List all records (JSON) |
+| `{rest_prefix}` | POST | create | Create record (JSON) |
+| `{rest_prefix}/<id>` | GET | detail | Get single record (JSON) |
+| `{rest_prefix}/<id>` | PUT | update | Update record (JSON) |
+| `{rest_prefix}/<id>` | DELETE | delete | Delete record (JSON) |
+
+### Precedence Rules
+
+**Manual setup() takes precedence over auto_routes**:
+
+```python
+# models/role/model.py
+class Role(BaseModel):
+    name = Field.string()
+    auto_routes = True  # This will be IGNORED if setup() exists
+
+# models/role/__init__.py
+from .model import Role
+
+def setup(app, db):
+    """Manual setup takes precedence."""
+    # Custom routes here
+    @app.route('/custom/roles')
+    async def custom_roles():
+        return {'roles': Role.all().select()}
+```
+
+**Why?** Manual setup provides maximum flexibility. The auto discovery system checks for `setup()` functions and skips models that have them.
+
+**Precedence order**:
+1. **Manual setup() function** - Highest priority
+2. **auto_routes configuration** - Used if no setup()
+3. **Default behavior** - Models without either are not auto-registered
+
+### Disabling Auto Routes
+
+```python
+class InternalModel(BaseModel):
+    data = Field.text()
+    
+    # Explicitly disable auto routes
+    auto_routes = False
+```
+
+Or simply omit the `auto_routes` attribute entirely.
+
+### Common Use Cases
+
+#### 1. Admin-Only Model
+
+```python
+class Permission(BaseModel):
+    name = Field.string()
+    resource = Field.string()
+    action = Field.string()
+    
+    auto_routes = {
+        'url_prefix': '/admin/permissions',
+        'permissions': {
+            'list': lambda: requires_role('Admin'),
+            'create': lambda: requires_role('Admin'),
+            'update': lambda: requires_role('Admin'),
+            'delete': lambda: requires_role('Admin'),
+        }
+    }
+```
+
+#### 2. Read-Only API
+
+```python
+class Report(BaseModel):
+    title = Field.string()
+    data = Field.text()
+    
+    auto_routes = {
+        'enabled_actions': ['list', 'detail'],
+        'rest_api': True
+    }
+```
+
+#### 3. Custom URL Structure
+
+```python
+class BlogPost(BaseModel):
+    title = Field.string()
+    slug = Field.string()
+    
+    auto_routes = {
+        'url_prefix': '/blog/posts',
+        'rest_prefix': '/api/blog/posts',
+        'auto_ui_config': {
+            'list_columns': ['title', 'slug', 'created_at'],
+            'search_fields': ['title', 'content']
+        }
+    }
+```
+
+#### 4. Public + Admin Access
+
+```python
+class Article(BaseModel):
+    title = Field.string()
+    published = Field.bool()
+    
+    auto_routes = {
+        'url_prefix': '/articles',
+        'permissions': {
+            # List and detail are public (no permission)
+            'create': lambda: requires_role('Editor'),
+            'update': lambda: requires_permission('article.edit.own'),
+            'delete': lambda: requires_role('Admin'),
+        }
+    }
+```
+
+### Migration Guide
+
+#### From Manual setup() to auto_routes
+
+**Before** (manual setup):
+```python
+# models/role/model.py
+from base_model import BaseModel
+
+class Role(BaseModel):
+    name = Field.string()
+    description = Field.text()
+
+# models/role/__init__.py
+from .model import Role
+from auto_ui_generator import auto_ui
+
+def setup(app, db):
+    """Manual route setup."""
+    auto_ui(app, Role, '/admin/roles', {
+        'permissions': {
+            'list': lambda: requires_role('Admin'),
+            'create': lambda: requires_role('Admin'),
+            'update': lambda: requires_role('Admin'),
+            'delete': lambda: requires_role('Admin'),
+        }
+    })
+```
+
+**After** (auto_routes):
+```python
+# models/role/model.py
+from base_model import BaseModel
+from model_permissions import requires_role
+
+class Role(BaseModel):
+    name = Field.string()
+    description = Field.text()
+    
+    auto_routes = {
+        'url_prefix': '/admin/roles',
+        'permissions': {
+            'list': lambda: requires_role('Admin'),
+            'create': lambda: requires_role('Admin'),
+            'update': lambda: requires_role('Admin'),
+            'delete': lambda: requires_role('Admin'),
+        }
+    }
+
+# models/role/__init__.py - DELETE this file or remove setup()
+# from .model import Role  # Remove setup() function
+```
+
+**Benefits**:
+- ✅ 15 lines → 12 lines
+- ✅ No separate `__init__.py` needed
+- ✅ Configuration lives with the model
+- ✅ Easier to understand at a glance
+
+#### Migration Steps
+
+1. **Add auto_routes to model class**:
+   ```python
+   auto_routes = True  # Start simple
+   ```
+
+2. **Remove or comment out setup() function**:
+   ```python
+   # def setup(app, db):  # Commented out
+   #     auto_ui(app, Role, '/admin/roles')
+   ```
+
+3. **Test the application**:
+   ```bash
+   ./run_bloggy.sh
+   # Visit your model's URL to verify routes work
+   ```
+
+4. **Add configuration if needed**:
+   ```python
+   auto_routes = {
+       'url_prefix': '/admin/roles',
+       'permissions': {...}
+   }
+   ```
+
+5. **Delete setup() completely** once verified
+
+#### Keeping Manual setup() for Complex Cases
+
+Some models may need custom route logic that auto_routes can't handle:
+
+```python
+# Keep manual setup() for:
+# - Custom route handlers
+# - Non-standard URL patterns
+# - Complex permission logic
+# - Integration with external systems
+
+def setup(app, db):
+    """Custom routes that auto_routes can't generate."""
+    
+    @app.route('/roles/export', methods=['get'])
+    async def export_roles():
+        # Custom export logic
+        pass
+    
+    @app.route('/roles/import', methods=['post'])
+    async def import_roles():
+        # Custom import logic
+        pass
+```
+
+**You can mix both approaches**: Use manual setup() for custom routes and let other models use auto_routes.
+
+### Integration with Application
+
+Auto routes are discovered and registered automatically on application startup:
+
+```python
+# runtime/app.py
+from emmett import App
+from emmett.orm import Database
+
+app = App(__name__)
+db = Database(app, auto_migrate=True)
+
+# Define all models
+db.define_models()
+
+# Auto-discover and register routes for models with auto_routes
+from auto_routes import discover_and_register_auto_routes
+discover_and_register_auto_routes(app, db)
+
+# This happens automatically - no need to import each model!
+```
+
+**Discovery process**:
+1. Scans all BaseModel subclasses
+2. Finds models with `auto_routes` attribute
+3. Checks if model has manual `setup()` (skips if found)
+4. Parses and validates configuration
+5. Generates HTML and REST API routes
+6. Registers routes with the app
+
+### Troubleshooting
+
+#### Routes Not Generating
+
+**Problem**: Model has `auto_routes = True` but routes don't appear.
+
+**Solutions**:
+- Check if model has manual `setup()` function (takes precedence)
+- Verify `discover_and_register_auto_routes()` is called in app.py
+- Check application logs for discovery errors
+- Ensure model is imported and registered with database
+
+#### Permission Errors
+
+**Problem**: Routes generate but permission checks fail.
+
+**Solutions**:
+- Verify permission functions are callable: `lambda: requires_role('Admin')`
+- Check that permission functions are imported properly
+- Test permission functions independently
+- Review logs for permission-related errors
+
+#### URL Conflicts
+
+**Problem**: Auto-generated routes conflict with existing routes.
+
+**Solutions**:
+- Change `url_prefix` to avoid conflicts
+- Use manual `setup()` for models with conflicting URLs
+- Review route registration order in app.py
+
+#### REST API Not Generating
+
+**Problem**: HTML routes work but REST API doesn't generate.
+
+**Solutions**:
+- Verify `rest_api: True` in configuration
+- Check `rest_prefix` doesn't conflict with existing routes
+- Review logs for REST API generation errors
+
+### Best Practices
+
+1. **Start Simple**: Begin with `auto_routes = True`, add configuration as needed
+
+2. **Use Descriptive URL Prefixes**: 
+   ```python
+   url_prefix = '/admin/roles'  # Good
+   url_prefix = '/r'            # Bad
+   ```
+
+3. **Group Related Models**: Use consistent URL structure
+   ```python
+   # Good: Consistent structure
+   Role: url_prefix = '/admin/roles'
+   Permission: url_prefix = '/admin/permissions'
+   User: url_prefix = '/admin/users'
+   ```
+
+4. **Document Custom Configurations**: Add comments for non-obvious settings
+   ```python
+   auto_routes = {
+       # Only admins can manage permissions
+       'permissions': {
+           'list': lambda: requires_role('Admin')
+       }
+   }
+   ```
+
+5. **Test After Enabling**: Always verify routes work after adding auto_routes
+
+6. **Keep Manual setup() for Truly Custom Routes**: Don't fight the framework
+
+---
+
 ## Summary
 
 **BaseModel provides**:
@@ -822,6 +1289,7 @@ Use `@classmethod` for queries that don't need an instance.
 - ✅ Session management with `get_session_data()` / `set_session_data()`
 - ✅ Routing logic with `generate_route()` / `redirect_to()`
 - ✅ Complex queries as model methods
+- ✅ **Automatic route generation with `auto_routes`** ⭐ NEW
 
 **All with sensible defaults and decorator-based overrides!**
 
