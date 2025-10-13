@@ -19,7 +19,7 @@ class Permission(Model):
     tablename = 'permissions'
     
     # Fields
-    name = Field.string(length=120, unique=True, notnull=True)
+    name = Field.string(length=120, unique=True)  # notnull removed - auto-generated in _before_insert
     resource = Field.string(length=40, notnull=True)
     action = Field.string(length=40, notnull=True)
     scope = Field.string(length=20)  # Optional: 'own', 'any', or empty
@@ -42,10 +42,8 @@ class Permission(Model):
     
     # Validation
     validation = {
-        'name': {
-            'presence': True,
-            'len': {'range': (3, 120)}
-        },
+        # 'name' is not validated here - it's auto-generated in _before_insert
+        # and validated in _validate_name() after generation
         'resource': {
             'presence': True,
             'len': {'range': (1, 40)},
@@ -78,9 +76,9 @@ class Permission(Model):
     def _validate_name(self):
         """Validate permission name format."""
         pattern = r'^[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)?$'
-        if not re.match(pattern, self.name):
+        if not re.match(pattern, str(self.name)):  # type: ignore[attr-defined, arg-type]
             raise ValueError(
-                f"Invalid permission name format: {self.name}. "
+                f"Invalid permission name format: {self.name}. "  # type: ignore[attr-defined]
                 "Expected format: resource.action or resource.action.scope"
             )
     
@@ -194,12 +192,12 @@ class Permission(Model):
             db = get_db()
             
             rows = db(
-                (db.role_permissions.permission == self.id) &
+                (db.role_permissions.permission == self.id) &  # type: ignore[attr-defined]
                 (db.role_permissions.role == db.roles.id)
             ).select(db.roles.ALL)
             
             return [row for row in rows]
         except Exception as e:
-            print(f"Error getting roles for permission {self.name}: {e}")
+            print(f"Error getting roles for permission {self.name}: {e}")  # type: ignore[attr-defined]
             return []
 

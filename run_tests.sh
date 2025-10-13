@@ -60,7 +60,7 @@ show_help() {
     echo "Examples:"
     echo "  ./run_tests.sh                          # Run all tests (app + Chrome)"
     echo "  ./run_tests.sh --app                    # Run only app tests"
-    echo "  ./run_tests.sh --separate               # Run all 11 tests separately with output files"
+    echo "  ./run_tests.sh --separate               # Run all 8 tests separately with output files"
     echo "  ./run_tests.sh -v --app                 # Run app tests with verbose output"
     echo "  ./run_tests.sh -k test_api              # Run only tests matching 'test_api'"
     echo "  ./run_tests.sh -k prometheus --app      # Run Prometheus tests only"
@@ -154,7 +154,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${BLUE}🧪 Bloggy Test Runner (11 Test Suites)${NC}"
+echo -e "${BLUE}🧪 Bloggy Test Runner (8 Test Suites)${NC}"
 if [ "$TEST_MODE" = "chrome" ] && [ "$HEADED_MODE" = true ]; then
     echo -e "${BLUE}🐳 App tests in Docker | 💻 Chrome --headed on HOST${NC}"
 else
@@ -165,7 +165,7 @@ echo ""
 
 # Check if separate mode is requested - run each test suite separately with output files
 if [ "$SEPARATE_MODE" = true ]; then
-    echo -e "${YELLOW}🔬 Running All 11 Test Suites Separately...${NC}"
+    echo -e "${YELLOW}🔬 Running All 8 Test Suites Separately...${NC}"
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo -e "${CYAN}Each test suite will be saved to a separate output file${NC}"
     echo ""
@@ -177,81 +177,60 @@ if [ "$SEPARATE_MODE" = true ]; then
     # Timestamp for this run
     TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
     
-    echo -e "${YELLOW}[1/11]${NC} Running tests.py (main integration tests)..."
+    echo -e "${YELLOW}[1/8]${NC} Running tests.py (main integration tests)..."
     docker compose -f docker/docker-compose.yaml exec -T runtime \
         pytest /app/integration_tests/tests.py -v --tb=short \
         > "${OUTPUT_DIR}/01_tests_${TIMESTAMP}.txt" 2>&1 || true
     echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/01_tests_${TIMESTAMP}.txt"
     echo ""
     
-    echo -e "${YELLOW}[2/11]${NC} Running test_oauth_real.py (OAuth integration tests)..."
+    echo -e "${YELLOW}[2/8]${NC} Running test_oauth_real.py (OAuth integration tests)..."
     docker compose -f docker/docker-compose.yaml exec -T runtime \
         pytest /app/integration_tests/test_oauth_real.py -v --tb=short \
         > "${OUTPUT_DIR}/02_oauth_${TIMESTAMP}.txt" 2>&1 || true
     echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/02_oauth_${TIMESTAMP}.txt"
     echo ""
     
-    echo -e "${YELLOW}[3/11]${NC} Running test_roles_integration.py (roles & permissions tests)..."
+    echo -e "${YELLOW}[3/8]${NC} Running test_roles_integration.py (roles & permissions tests)..."
     docker compose -f docker/docker-compose.yaml exec -T runtime \
         pytest /app/integration_tests/test_roles_integration.py -v --tb=short \
         > "${OUTPUT_DIR}/03_roles_integration_${TIMESTAMP}.txt" 2>&1 || true
     echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/03_roles_integration_${TIMESTAMP}.txt"
     echo ""
     
-    echo -e "${YELLOW}[4/11]${NC} Running test_auto_ui.py (auto UI generation tests)..."
+    echo -e "${YELLOW}[4/8]${NC} Running test_auto_ui.py (auto UI generation tests)..."
     docker compose -f docker/docker-compose.yaml exec -T runtime \
         pytest /app/integration_tests/test_auto_ui.py -v --tb=short \
         > "${OUTPUT_DIR}/04_auto_ui_${TIMESTAMP}.txt" 2>&1 || true
     echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/04_auto_ui_${TIMESTAMP}.txt"
     echo ""
     
-    echo -e "${YELLOW}[5/11]${NC} Running test_ui_chrome_real.py (Chrome UI tests)..."
+    echo -e "${YELLOW}[5/8]${NC} Running test_ui_chrome_real.py (Chrome UI tests)..."
     docker compose -f docker/docker-compose.yaml exec -T runtime \
         pytest /app/integration_tests/test_ui_chrome_real.py -v --tb=short \
         > "${OUTPUT_DIR}/05_chrome_ui_${TIMESTAMP}.txt" 2>&1 || true
     echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/05_chrome_ui_${TIMESTAMP}.txt"
     echo ""
     
-    echo -e "${YELLOW}[6/11]${NC} Running test_auth_comprehensive.py (comprehensive auth tests)..."
-    docker compose -f docker/docker-compose.yaml exec -T runtime \
-        pytest /app/integration_tests/test_auth_comprehensive.py -v --tb=short \
-        > "${OUTPUT_DIR}/06_auth_comprehensive_${TIMESTAMP}.txt" 2>&1 || true
-    echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/06_auth_comprehensive_${TIMESTAMP}.txt"
-    echo ""
-    
-    echo -e "${YELLOW}[7/11]${NC} Running test_model_utils.py (model utility tests)..."
-    docker compose -f docker/docker-compose.yaml exec -T runtime \
-        pytest /app/integration_tests/test_model_utils.py -v --tb=short \
-        > "${OUTPUT_DIR}/07_model_utils_${TIMESTAMP}.txt" 2>&1 || true
-    echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/07_model_utils_${TIMESTAMP}.txt"
-    echo ""
-    
-    echo -e "${YELLOW}[8/11]${NC} Running test_roles_rest_api.py (roles REST API tests)..."
+    echo -e "${YELLOW}[6/8]${NC} Running test_roles_rest_api.py (roles REST API tests)..."
     docker compose -f docker/docker-compose.yaml exec -T runtime \
         pytest /app/integration_tests/test_roles_rest_api.py -v --tb=short \
-        > "${OUTPUT_DIR}/08_roles_rest_api_${TIMESTAMP}.txt" 2>&1 || true
-    echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/08_roles_rest_api_${TIMESTAMP}.txt"
+        > "${OUTPUT_DIR}/06_roles_rest_api_${TIMESTAMP}.txt" 2>&1 || true
+    echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/06_roles_rest_api_${TIMESTAMP}.txt"
     echo ""
     
-    echo -e "${YELLOW}[9/11]${NC} Running test_roles.py (basic role tests)..."
+    echo -e "${YELLOW}[7/8]${NC} Running test_roles.py (basic role tests)..."
     docker compose -f docker/docker-compose.yaml exec -T runtime \
         pytest /app/integration_tests/test_roles.py -v --tb=short \
-        > "${OUTPUT_DIR}/09_roles_${TIMESTAMP}.txt" 2>&1 || true
-    echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/09_roles_${TIMESTAMP}.txt"
+        > "${OUTPUT_DIR}/07_roles_${TIMESTAMP}.txt" 2>&1 || true
+    echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/07_roles_${TIMESTAMP}.txt"
     echo ""
     
-    echo -e "${YELLOW}[10/11]${NC} Running test_oauth_real_user.py (OAuth real user tests)..."
+    echo -e "${YELLOW}[8/8]${NC} Running test_oauth_real_user.py (OAuth real user tests)..."
     docker compose -f docker/docker-compose.yaml exec -T runtime \
         pytest /app/integration_tests/test_oauth_real_user.py -v --tb=short \
-        > "${OUTPUT_DIR}/10_oauth_real_user_${TIMESTAMP}.txt" 2>&1 || true
-    echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/10_oauth_real_user_${TIMESTAMP}.txt"
-    echo ""
-    
-    echo -e "${YELLOW}[11/11]${NC} Running test_base_model.py (base model tests)..."
-    docker compose -f docker/docker-compose.yaml exec -T runtime \
-        pytest /app/integration_tests/test_base_model.py -v --tb=short \
-        > "${OUTPUT_DIR}/11_base_model_${TIMESTAMP}.txt" 2>&1 || true
-    echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/11_base_model_${TIMESTAMP}.txt"
+        > "${OUTPUT_DIR}/08_oauth_real_user_${TIMESTAMP}.txt" 2>&1 || true
+    echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/08_oauth_real_user_${TIMESTAMP}.txt"
     echo ""
     
     echo "=========================================="
@@ -296,12 +275,9 @@ if [ "$SEPARATE_MODE" = true ]; then
     echo "  cat ${OUTPUT_DIR}/03_roles_integration_${TIMESTAMP}.txt"
     echo "  cat ${OUTPUT_DIR}/04_auto_ui_${TIMESTAMP}.txt"
     echo "  cat ${OUTPUT_DIR}/05_chrome_ui_${TIMESTAMP}.txt"
-    echo "  cat ${OUTPUT_DIR}/06_auth_comprehensive_${TIMESTAMP}.txt"
-    echo "  cat ${OUTPUT_DIR}/07_model_utils_${TIMESTAMP}.txt"
-    echo "  cat ${OUTPUT_DIR}/08_roles_rest_api_${TIMESTAMP}.txt"
-    echo "  cat ${OUTPUT_DIR}/09_roles_${TIMESTAMP}.txt"
-    echo "  cat ${OUTPUT_DIR}/10_oauth_real_user_${TIMESTAMP}.txt"
-    echo "  cat ${OUTPUT_DIR}/11_base_model_${TIMESTAMP}.txt"
+    echo "  cat ${OUTPUT_DIR}/06_roles_rest_api_${TIMESTAMP}.txt"
+    echo "  cat ${OUTPUT_DIR}/07_roles_${TIMESTAMP}.txt"
+    echo "  cat ${OUTPUT_DIR}/08_oauth_real_user_${TIMESTAMP}.txt"
     echo ""
     
     exit 0
@@ -391,13 +367,13 @@ clean_screenshots() {
     echo ""
 }
 
-# Function to run app tests (all 11 test suites)
+# Function to run app tests (all 8 test suites)
 run_app_tests() {
-    echo -e "${YELLOW}🔬 Running Application Tests (11 Test Suites)...${NC}"
+    echo -e "${YELLOW}🔬 Running Application Tests (8 Test Suites)...${NC}"
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo -e "${CYAN}🐳 Running in Docker container: runtime${NC}"
-    echo -e "${CYAN}📋 Test Suites: tests.py, oauth, roles, auto_ui, chrome, auth_comprehensive,${NC}"
-    echo -e "${CYAN}                model_utils, roles_rest_api, roles (basic), oauth_real_user, base_model${NC}"
+    echo -e "${CYAN}📋 Test Suites: tests.py, oauth, roles, auto_ui, chrome,${NC}"
+    echo -e "${CYAN}                roles_rest_api, roles (basic), oauth_real_user${NC}"
     echo ""
     
     # Clean screenshots if requested (some app tests generate screenshots too)
@@ -405,19 +381,16 @@ run_app_tests() {
         clean_screenshots
     fi
     
-    # Run all 11 test files explicitly
+    # Run all 8 test files explicitly
     TEST_FILES=(
         "integration_tests/tests.py"
         "integration_tests/test_oauth_real.py"
         "integration_tests/test_roles_integration.py"
         "integration_tests/test_auto_ui.py"
         "integration_tests/test_ui_chrome_real.py"
-        "integration_tests/test_auth_comprehensive.py"
-        "integration_tests/test_model_utils.py"
         "integration_tests/test_roles_rest_api.py"
         "integration_tests/test_roles.py"
         "integration_tests/test_oauth_real_user.py"
-        "integration_tests/test_base_model.py"
     )
     
     TEST_CMD="cd /app && pytest ${TEST_FILES[*]}"

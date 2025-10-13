@@ -27,5 +27,15 @@ def setup_rest_api(app):
         disabled_methods=['delete']  # Prevent accidental deletion
     )
     
+    @permissions_api.before_create
+    def generate_permission_name(attrs):
+        """Generate permission name from resource, action, and scope before creation."""
+        if 'resource' in attrs and 'action' in attrs:
+            scope = attrs.get('scope', '')
+            if scope:
+                attrs['name'] = f"{attrs['resource']}.{attrs['action']}.{scope}"
+            else:
+                attrs['name'] = f"{attrs['resource']}.{attrs['action']}"
+    
     return permissions_api
 

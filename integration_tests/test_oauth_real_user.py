@@ -71,50 +71,34 @@ def _prepare_db():
     """Ensure database is ready for OAuth testing"""
     print(f"\n🔧 Preparing database for OAuth testing with user: {TEST_USER_EMAIL}")
     
-    # Ensure OAuth tables exist
-    with db.connection():
-        try:
-            db.executesql("SELECT COUNT(*) FROM oauth_accounts LIMIT 1")
-            print("   ✅ OAuth tables already exist")
-        except:
-            print("   ⚠️  Creating OAuth tables...")
-            db.executesql('''
-                CREATE TABLE IF NOT EXISTS oauth_accounts (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user INTEGER NOT NULL REFERENCES users(id),
-                    provider VARCHAR(50) NOT NULL,
-                    provider_user_id VARCHAR(255) NOT NULL,
-                    email VARCHAR(255),
-                    name VARCHAR(255),
-                    picture VARCHAR(512),
-                    profile_data TEXT,
-                    created_at TIMESTAMP,
-                    last_login_at TIMESTAMP,
-                    UNIQUE(provider, provider_user_id)
-                )
-            ''')
-            db.executesql('''
-                CREATE TABLE IF NOT EXISTS oauth_tokens (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    oauth_account INTEGER NOT NULL REFERENCES oauth_accounts(id),
-                    access_token_encrypted TEXT NOT NULL,
-                    refresh_token_encrypted TEXT,
-                    token_type VARCHAR(50) DEFAULT 'Bearer',
-                    scope VARCHAR(512),
-                    access_token_expires_at TIMESTAMP,
-                    refresh_token_expires_at TIMESTAMP,
-                    created_at TIMESTAMP,
-                    updated_at TIMESTAMP
-                )
-            ''')
-            db.commit()
-            print("   ✅ OAuth tables created")
-    
     # Ensure encryption key is set
     if not os.environ.get('OAUTH_TOKEN_ENCRYPTION_KEY'):
         key = Fernet.generate_key().decode()
         os.environ['OAUTH_TOKEN_ENCRYPTION_KEY'] = key
         print(f"   ⚠️  Generated temporary encryption key for testing")
+    
+    # Wait for other tests to finish initializing database
+    import time
+    max_retries = 10
+    for i in range(max_retries):
+        try:
+            with db.connection():
+                # Check if tables exist
+                db.executesql("SELECT COUNT(*) FROM users LIMIT 1")
+                db.executesql("SELECT COUNT(*) FROM oauth_accounts LIMIT 1")
+                print("   ✅ Database tables ready")
+                break
+        except Exception as e:
+            if i < max_retries - 1:
+                print(f"   ⏳ Waiting for database setup... ({i+1}/{max_retries})")
+                time.sleep(1)
+            else:
+                pytest.fail(
+                    f"Database tables not ready after {max_retries} attempts.\n"
+                    f"Last error: {e}\n"
+                    "This usually means migrations haven't been run.\n"
+                    "Run: cd runtime && emmett migrations up"
+                )
     
     yield
     
@@ -560,7 +544,7 @@ class TestOAuthManualFlowInstructions:
         - OAuth tokens stored (encrypted)
         - Session established
         """
-        print("\n" + self.test_manual_oauth_login_instructions.__doc__)
+        print("\n" + (self.test_manual_oauth_login_instructions.__doc__ or ""))
         assert True  # Documentation test
     
     def test_manual_account_linking_instructions(self):
@@ -597,7 +581,7 @@ class TestOAuthManualFlowInstructions:
         - Can log in with either password or Google
         - Both auth methods work
         """
-        print("\n" + self.test_manual_account_linking_instructions.__doc__)
+        print("\n" + (self.test_manual_account_linking_instructions.__doc__ or ""))
         assert True  # Documentation test
 
 

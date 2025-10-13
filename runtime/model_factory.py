@@ -45,7 +45,7 @@ class Factory:
             password = "testpass123"
     """
     
-    model: Type[Model] = None
+    model: Optional[Type[Model]] = None
     _sequence = 0
     _instances: List[Model] = []
     
@@ -68,7 +68,7 @@ class Factory:
     @classmethod
     def _format_string(cls, value: str, sequence: int) -> str:
         """Format string with {n} placeholder."""
-        if isinstance(value, str) and '{n}' in value:
+        if '{n}' in value:  # type: ignore[reportUnnecessaryIsInstance]
             return value.format(n=sequence)
         return value
     
@@ -83,7 +83,7 @@ class Factory:
         Returns:
             Model instance (not saved)
         """
-        if cls.model is None:
+        if cls.model is None:  # type: ignore[reportUnnecessaryComparison]
             raise ValueError("Factory must define 'model' class attribute")
         
         sequence = cls._get_next_sequence()
@@ -285,7 +285,7 @@ def test_custom_post():
 
 # Faker integration (optional)
 try:
-    from faker import Faker
+    from faker import Faker  # type: ignore[reportMissingImports]
     fake = Faker()
     
     class FakerGenerators:
@@ -329,6 +329,6 @@ try:
     
     FAKER_AVAILABLE = True
 except ImportError:
-    FakerGenerators = None
-    FAKER_AVAILABLE = False
+    FakerGenerators = None  # type: ignore[assignment, misc]
+    FAKER_AVAILABLE = False  # type: ignore[reportConstantRedefinition]
 

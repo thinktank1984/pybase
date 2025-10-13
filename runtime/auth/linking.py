@@ -3,7 +3,7 @@
 Account linking and unlinking logic for OAuth providers.
 """
 
-from typing import Optional, Dict
+from typing import Optional, Dict, Any, List
 from emmett import current
 
 
@@ -230,7 +230,7 @@ def get_user_oauth_accounts(user):
         return []
 
 
-def get_user_auth_methods(user) -> Dict[str, bool]:
+def get_user_auth_methods(user) -> Dict[str, Any]:
     """
     Get all authentication methods available to a user.
     

@@ -96,7 +96,7 @@ class OAuthToken(Model):
             str: Decrypted access token
         """
         from ...auth.tokens import decrypt_token
-        return decrypt_token(self.access_token_encrypted)
+        return decrypt_token(self.access_token_encrypted)  # type: ignore[attr-defined]
     
     def get_refresh_token(self):
         """
@@ -105,11 +105,11 @@ class OAuthToken(Model):
         Returns:
             str: Decrypted refresh token or None
         """
-        if not self.refresh_token_encrypted:
+        if not self.refresh_token_encrypted:  # type: ignore[attr-defined]
             return None
         
         from ...auth.tokens import decrypt_token
-        return decrypt_token(self.refresh_token_encrypted)
+        return decrypt_token(self.refresh_token_encrypted)  # type: ignore[attr-defined]
     
     def set_access_token(self, token, expires_in=None):
         """
@@ -129,7 +129,7 @@ class OAuthToken(Model):
         if expires_in:
             update_data['access_token_expires_at'] = now() + timedelta(seconds=expires_in)
         
-        self.update_record(**update_data)
+        self.update_record(**update_data)  # type: ignore[attr-defined]
     
     def set_refresh_token(self, token, expires_in=None):
         """
@@ -149,7 +149,7 @@ class OAuthToken(Model):
         if expires_in:
             update_data['refresh_token_expires_at'] = now() + timedelta(seconds=expires_in)
         
-        self.update_record(**update_data)
+        self.update_record(**update_data)  # type: ignore[attr-defined]
     
     def update_tokens(self, access_token, refresh_token=None, expires_in=None, scope=None):
         """
@@ -177,7 +177,7 @@ class OAuthToken(Model):
         if scope:
             update_data['scope'] = scope
         
-        self.update_record(**update_data)
+        self.update_record(**update_data)  # type: ignore[attr-defined]
     
     @classmethod
     def create_for_oauth_account(cls, oauth_account_id, access_token, refresh_token=None, 

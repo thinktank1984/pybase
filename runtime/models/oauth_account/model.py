@@ -122,7 +122,7 @@ class OAuthAccount(Model):
     
     def update_last_login(self):
         """Update the last login timestamp."""
-        self.update_record(last_login_at=now())
+        self.update_record(last_login_at=now())  # type: ignore[attr-defined]
     
     def update_profile_data(self, user_info):
         """
@@ -147,5 +147,5 @@ class OAuthAccount(Model):
         # Store full profile data
         update_data['profile_data'] = user_info
         
-        self.update_record(**update_data)
+        self.update_record(**update_data)  # type: ignore[attr-defined]
 

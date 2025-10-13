@@ -17,9 +17,7 @@ All features have sensible defaults that can be overridden with decorators.
 from functools import wraps
 from typing import Any, Dict, Optional, Callable
 from emmett.orm import Model
-from emmett import request, response, redirect, url, abort, current, session
-from emmett.tools import Mailer
-import json
+from emmett import request, redirect, url, abort, current, session  # type: ignore[reportUnusedImport]
 
 
 class BaseModel(Model):
@@ -92,8 +90,8 @@ class BaseModel(Model):
         for key, value in data.items():
             if hasattr(self, key):
                 setattr(self, key, value)
-        self.save()
-        return {'id': self.id, 'message': 'Created successfully'}
+        self.save()  # type: ignore[attr-defined]
+        return {'id': self.id, 'message': 'Created successfully'}  # type: ignore[attr-defined]
     
     def _default_read_handler(self, req):
         """Default handler for read operations."""
@@ -102,12 +100,12 @@ class BaseModel(Model):
     def _default_update_handler(self, req):
         """Default handler for update operations."""
         data = req.body_params
-        self.update_record(**data)
-        return {'id': self.id, 'message': 'Updated successfully'}
+        self.update_record(**data)  # type: ignore[attr-defined]
+        return {'id': self.id, 'message': 'Updated successfully'}  # type: ignore[attr-defined]
     
     def _default_delete_handler(self, req):
         """Default handler for delete operations."""
-        self.delete_record()
+        self.delete_record()  # type: ignore[attr-defined]
         return {'message': 'Deleted successfully'}
     
     # ========================================================================
@@ -288,7 +286,7 @@ class BaseModel(Model):
             from emmett import current
             mailer = current.app.ext.Mailer
             
-            message = mailer.send(
+            mailer.send(
                 to=to,
                 subject=subject,
                 body=body
@@ -379,15 +377,15 @@ class BaseModel(Model):
         model_name = self.__class__.__name__.lower()
         
         if action == 'show':
-            return url(f'{model_name}_detail', self.id)
+            return url(f'{model_name}_detail', self.id)  # type: ignore[attr-defined]
         elif action == 'edit':
-            return url(f'{model_name}_edit', self.id)
+            return url(f'{model_name}_edit', self.id)  # type: ignore[attr-defined]
         elif action == 'delete':
-            return url(f'{model_name}_delete', self.id)
+            return url(f'{model_name}_delete', self.id)  # type: ignore[attr-defined]
         elif action == 'list':
             return url(f'{model_name}_list')
         else:
-            return url(f'{model_name}_{action}', self.id, **params)
+            return url(f'{model_name}_{action}', self.id, **params)  # type: ignore[attr-defined]
     
     def redirect_to(self, action: str = 'show', **params):
         """
@@ -428,7 +426,7 @@ def http_handler(operation: str):
             return wrapper
         
         # Store registration function on the wrapper
-        wrapper._register_handler = register_on_class
+        wrapper._register_handler = register_on_class  # type: ignore[attr-defined]
         return wrapper
     return decorator
 
@@ -453,7 +451,7 @@ def response_formatter(format_type: str):
             cls._response_formatters[formatter_key] = func
             return wrapper
         
-        wrapper._register_formatter = register_on_class
+        wrapper._register_formatter = register_on_class  # type: ignore[attr-defined]
         return wrapper
     return decorator
 
@@ -479,7 +477,7 @@ def template_renderer(template_name: str):
             cls._template_renderers[renderer_key] = func
             return wrapper
         
-        wrapper._register_renderer = register_on_class
+        wrapper._register_renderer = register_on_class  # type: ignore[attr-defined]
         return wrapper
     return decorator
 
@@ -505,7 +503,7 @@ def api_client(endpoint: str):
             cls._api_clients[api_key] = func
             return wrapper
         
-        wrapper._register_api = register_on_class
+        wrapper._register_api = register_on_class  # type: ignore[attr-defined]
         return wrapper
     return decorator
 
@@ -531,7 +529,7 @@ def email_handler(email_type: str):
             cls._email_handlers[email_key] = func
             return wrapper
         
-        wrapper._register_email = register_on_class
+        wrapper._register_email = register_on_class  # type: ignore[attr-defined]
         return wrapper
     return decorator
 
@@ -557,7 +555,7 @@ def session_handler(operation: str, key: str):
             cls._session_handlers[session_key] = func
             return wrapper
         
-        wrapper._register_session = register_on_class
+        wrapper._register_session = register_on_class  # type: ignore[attr-defined]
         return wrapper
     return decorator
 
@@ -582,7 +580,7 @@ def route_handler(action: str):
             cls._route_handlers[route_key] = func
             return wrapper
         
-        wrapper._register_route = register_on_class
+        wrapper._register_route = register_on_class  # type: ignore[attr-defined]
         return wrapper
     return decorator
 

@@ -7,7 +7,7 @@ import hashlib
 import secrets
 import base64
 from abc import ABC, abstractmethod
-from typing import Dict, Tuple, Optional, List
+from typing import Dict, Tuple, List
 import requests
 from urllib.parse import urlencode
 
@@ -19,10 +19,10 @@ class BaseOAuthProvider(ABC):
     """
     
     # Subclasses must define these
-    provider_name: str = None
-    authorize_url: str = None
-    token_url: str = None
-    userinfo_url: str = None
+    provider_name: str = None  # type: ignore[assignment]
+    authorize_url: str = None  # type: ignore[assignment]
+    token_url: str = None  # type: ignore[assignment]
+    userinfo_url: str = None  # type: ignore[assignment]
     scopes: List[str] = []
     
     def __init__(self, client_id: str, client_secret: str, redirect_uri: str):
@@ -114,7 +114,7 @@ class BaseOAuthProvider(ABC):
         self, 
         code: str, 
         code_verifier: str
-    ) -> Dict[str, any]:
+    ) -> Dict[str, object]:
         """
         Exchange authorization code for access token.
         
@@ -163,7 +163,7 @@ class BaseOAuthProvider(ABC):
         
         return token_data
     
-    def refresh_access_token(self, refresh_token: str) -> Dict[str, any]:
+    def refresh_access_token(self, refresh_token: str) -> Dict[str, object]:
         """
         Refresh an expired access token.
         
@@ -199,7 +199,7 @@ class BaseOAuthProvider(ABC):
         return response.json()
     
     @abstractmethod
-    def get_user_info(self, access_token: str) -> Dict[str, any]:
+    def get_user_info(self, access_token: str) -> Dict[str, object]:
         """
         Fetch user information from the provider.
         Must be implemented by subclasses.

@@ -82,7 +82,7 @@ def rate_limit(max_requests: int, window_seconds: int):
             from emmett import request, abort
             
             # Create a unique key based on IP and endpoint
-            ip_address = request.headers.get('X-Forwarded-For', request.remote_addr)
+            ip_address = request.headers.get('X-Forwarded-For', request.remote_addr)  # type: ignore[attr-defined]
             endpoint = request.path
             key = f"{ip_address}:{endpoint}"
             

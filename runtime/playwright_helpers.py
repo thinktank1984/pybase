@@ -11,7 +11,7 @@ All browser interactions are REAL - no stubs, no mocks.
 
 import os
 from typing import Dict, List, Optional, Any
-from playwright.sync_api import sync_playwright, Browser, Page, BrowserContext
+from playwright.sync_api import sync_playwright
 
 
 class ChromeTestHelper:
@@ -25,11 +25,11 @@ class ChromeTestHelper:
         # Create screenshots directory if it doesn't exist
         os.makedirs(self.screenshot_dir, exist_ok=True)
         
-        # Initialize Playwright
-        self.playwright = None
-        self.browser = None
-        self.context = None
-        self.page = None
+        # Initialize Playwright (will be set in start())
+        self.playwright = None  # type: ignore[assignment]
+        self.browser = None  # type: ignore[assignment]
+        self.context = None  # type: ignore[assignment]
+        self.page = None  # type: ignore[assignment]
         
     def __enter__(self):
         """Context manager entry - start browser"""
@@ -242,8 +242,9 @@ class ChromeTestHelper:
             for field in fields:
                 selector = field.get('selector')
                 value = field.get('value', '')
-                self.page.fill(selector, value)
-                print(f"      • {selector}: {value[:20]}...")
+                if selector:  # type: ignore[arg-type]
+                    self.page.fill(selector, value)
+                    print(f"      • {selector}: {value[:20]}...")
         except Exception as e:
             print(f"   ❌ Form fill failed: {e}")
             raise
@@ -430,7 +431,7 @@ class ChromeTestHelper:
 
 
 # Convenience function for tests
-def get_chrome_helper(base_url: str = None) -> ChromeTestHelper:
+def get_chrome_helper(base_url: str = None) -> ChromeTestHelper:  # type: ignore[assignment]
     """
     Get a Chrome test helper instance with REAL browser.
     
@@ -444,7 +445,7 @@ def get_chrome_helper(base_url: str = None) -> ChromeTestHelper:
         Exception: If Playwright is not available (NO SKIPPING - tests must fail)
     """
     if base_url is None:
-        base_url = os.environ.get('BLOGGY_URL', 'http://localhost:8081')
+        base_url = os.environ.get('BLOGGY_URL', 'http://localhost:8081')  # type: ignore[assignment]
     
     # Check if CHROME_HEADED environment variable is set
     headless = os.environ.get('CHROME_HEADED', 'false').lower() != 'true'

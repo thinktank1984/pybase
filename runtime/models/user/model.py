@@ -29,9 +29,9 @@ class User(AuthUser):
         """
         try:
             from ..user_role import UserRole
-            return UserRole.get_user_roles(self.id)
+            return UserRole.get_user_roles(self.id)  # type: ignore[attr-defined]
         except Exception as e:
-            print(f"Error getting roles for user {self.id}: {e}")
+            print(f"Error getting roles for user {self.id}: {e}")  # type: ignore[attr-defined]
             return []
     
     def has_role(self, role_name):
@@ -93,9 +93,9 @@ class User(AuthUser):
             set: Set of permission names
         """
         # Check cache first
-        if use_cache and hasattr(session, 'user_permissions') and session.user_permissions:
-            if session.get('user_permissions_id') == self.id:
-                return session.user_permissions
+        if use_cache and hasattr(session, 'user_permissions') and session.user_permissions:  # type: ignore[union-attr]
+            if session.get('user_permissions_id') == self.id:  # type: ignore[attr-defined, union-attr]
+                return session.user_permissions  # type: ignore[union-attr]
         
         try:
             permissions = set()
@@ -108,12 +108,12 @@ class User(AuthUser):
             
             # Cache in session
             if use_cache:
-                session.user_permissions = permissions
-                session.user_permissions_id = self.id
+                session.user_permissions = permissions  # type: ignore[union-attr]
+                session.user_permissions_id = self.id  # type: ignore[attr-defined, union-attr]
             
             return permissions
         except Exception as e:
-            print(f"Error getting permissions for user {self.id}: {e}")
+            print(f"Error getting permissions for user {self.id}: {e}")  # type: ignore[attr-defined]
             return set()
     
     def has_permission(self, permission_name):
@@ -192,8 +192,8 @@ class User(AuthUser):
                 # Check ownership
                 owner_field = getattr(instance, 'user', None) or getattr(instance, 'owner', None)
                 if owner_field:
-                    owner_id = owner_field.id if hasattr(owner_field, 'id') else owner_field
-                    return owner_id == self.id
+                    owner_id = owner_field.id if hasattr(owner_field, 'id') else owner_field  # type: ignore[attr-defined]
+                    return owner_id == self.id  # type: ignore[attr-defined]
             
             # Check for permission without scope
             base_perm = f"{resource}.{action}"
@@ -215,9 +215,9 @@ class User(AuthUser):
         """
         try:
             from ..user_role import UserRole
-            role_id = role.id if hasattr(role, 'id') else role
+            role_id = role.id if hasattr(role, 'id') else role  # type: ignore[attr-defined]
             
-            result = UserRole.assign_role(self.id, role_id)
+            result = UserRole.assign_role(self.id, role_id)  # type: ignore[attr-defined]
             
             # Invalidate permission cache
             self.refresh_permissions()
@@ -239,9 +239,9 @@ class User(AuthUser):
         """
         try:
             from ..user_role import UserRole
-            role_id = role.id if hasattr(role, 'id') else role
+            role_id = role.id if hasattr(role, 'id') else role  # type: ignore[attr-defined]
             
-            result = UserRole.remove_role(self.id, role_id)
+            result = UserRole.remove_role(self.id, role_id)  # type: ignore[attr-defined]
             
             # Invalidate permission cache
             self.refresh_permissions()
@@ -257,9 +257,9 @@ class User(AuthUser):
         """
         try:
             if hasattr(session, 'user_permissions'):
-                del session.user_permissions
+                del session.user_permissions  # type: ignore[union-attr]
             if hasattr(session, 'user_permissions_id'):
-                del session.user_permissions_id
+                del session.user_permissions_id  # type: ignore[union-attr]
             
             # Reload permissions
             self.get_permissions(use_cache=True)
@@ -279,7 +279,7 @@ class User(AuthUser):
         """
         try:
             from ..oauth_account import OAuthAccount
-            return list(OAuthAccount.get_by_user(self.id))
+            return list(OAuthAccount.get_by_user(self.id))  # type: ignore[attr-defined]
         except Exception as e:
             print(f"Error getting OAuth accounts: {e}")
             return []
@@ -296,7 +296,7 @@ class User(AuthUser):
         """
         try:
             from ..oauth_account import OAuthAccount
-            account = OAuthAccount.get_by_user_and_provider(self.id, provider)
+            account = OAuthAccount.get_by_user_and_provider(self.id, provider)  # type: ignore[attr-defined]
             return account is not None
         except:
             return False
@@ -313,7 +313,7 @@ class User(AuthUser):
         """
         try:
             from ..oauth_account import OAuthAccount
-            return OAuthAccount.get_by_user_and_provider(self.id, provider)
+            return OAuthAccount.get_by_user_and_provider(self.id, provider)  # type: ignore[attr-defined]
         except:
             return None
     
@@ -391,9 +391,9 @@ def get_current_user():
     """Get currently authenticated user."""
     try:
         if hasattr(current, 'session') and hasattr(current.session, 'auth') and current.session.auth:
-            return current.session.auth.user
-        elif hasattr(session, 'auth') and session.auth:
-            return session.auth.user
+            return current.session.auth.user  # type: ignore[union-attr]
+        elif hasattr(session, 'auth') and session.auth:  # type: ignore[union-attr]
+            return session.auth.user  # type: ignore[union-attr]
     except:
         pass
     return None
@@ -406,10 +406,10 @@ def is_authenticated():
 
 def is_admin():
     """Check if current user has admin role."""
-    if not session.auth:
+    if not session.auth:  # type: ignore[union-attr]
         return False
     
-    user = session.auth.user
+    user = session.auth.user  # type: ignore[union-attr]
     if not user:
         return False
     

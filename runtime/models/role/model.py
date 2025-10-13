@@ -5,7 +5,6 @@ Role model for Role-Based Access Control (RBAC).
 
 from emmett.orm import Model, Field, has_many
 from emmett import now
-from datetime import datetime
 
 
 class Role(Model):
@@ -91,7 +90,7 @@ class Role(Model):
             db = get_db()
             
             # Get role ID (works for both Model and Row objects)
-            role_id = self.id if hasattr(self, 'id') else self['id']
+            role_id = self.id if hasattr(self, 'id') else self['id']  # type: ignore[attr-defined, index]
             
             # Query permissions through role_permissions association
             rows = db(
@@ -120,7 +119,7 @@ class Role(Model):
             db = get_db()
             
             result = db(
-                (db.role_permissions.role == self.id) &
+                (db.role_permissions.role == self.id) &  # type: ignore[attr-defined]
                 (db.role_permissions.permission == db.permissions.id) &
                 (db.permissions.name == permission_name)
             ).select().first()
@@ -144,11 +143,11 @@ class Role(Model):
             from ..utils import get_db
             db = get_db()
             
-            permission_id = permission.id if hasattr(permission, 'id') else permission
+            permission_id = permission.id if hasattr(permission, 'id') else permission  # type: ignore[attr-defined]
             
             # Check if already exists
             existing = db(
-                (db.role_permissions.role == self.id) &
+                (db.role_permissions.role == self.id) &  # type: ignore[attr-defined]
                 (db.role_permissions.permission == permission_id)
             ).select().first()
             
@@ -157,7 +156,7 @@ class Role(Model):
             
             # Create new association
             db.role_permissions.insert(
-                role=self.id,
+                role=self.id,  # type: ignore[attr-defined]
                 permission=permission_id,
                 granted_at=now()
             )
@@ -181,10 +180,10 @@ class Role(Model):
             from ..utils import get_db
             db = get_db()
             
-            permission_id = permission.id if hasattr(permission, 'id') else permission
+            permission_id = permission.id if hasattr(permission, 'id') else permission  # type: ignore[attr-defined]
             
             db(
-                (db.role_permissions.role == self.id) &
+                (db.role_permissions.role == self.id) &  # type: ignore[attr-defined]
                 (db.role_permissions.permission == permission_id)
             ).delete()
             

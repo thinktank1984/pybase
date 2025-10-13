@@ -6,7 +6,7 @@ This module automatically generates OpenAPI 3.0 specifications from
 Emmett REST modules, providing interactive Swagger UI documentation.
 """
 
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from emmett.orm import Model
 from emmett import App
 
@@ -23,7 +23,7 @@ class OpenAPIGenerator:
         self.rest_modules = []
         
     def register_rest_module(self, module_name: str, model: Model, 
-                            url_prefix: str, disabled_methods: List[str] = None):
+                            url_prefix: str, disabled_methods: Optional[List[str]] = None):
         """Register a REST module for documentation generation"""
         self.rest_modules.append({
             'name': module_name,
@@ -66,7 +66,7 @@ class OpenAPIGenerator:
             return {'type': 'object', 'properties': {}}
         
         # Get model fields
-        for field_name in model.table.fields:
+        for field_name in model.table.fields:  # type: ignore[union-attr]
             if field_name == 'id':
                 continue  # Skip ID for input schemas
                 
@@ -88,8 +88,8 @@ class OpenAPIGenerator:
             properties[field_name] = field_schema
             
             # Check if field is required (from validation)
-            if hasattr(model, 'validation') and field_name in model.validation:
-                validation = model.validation[field_name]
+            if hasattr(model, 'validation') and field_name in model.validation:  # type: ignore[attr-defined]
+                validation = model.validation[field_name]  # type: ignore[attr-defined]
                 if isinstance(validation, dict) and validation.get('presence'):
                     required.append(field_name)
         

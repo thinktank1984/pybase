@@ -106,10 +106,10 @@ def _is_admin():
     from emmett import session
     from models.utils import user_has_role
     
-    if not session.auth:
+    if not session.auth:  # type: ignore[union-attr]
         return False
     
-    user = session.auth.user
+    user = session.auth.user  # type: ignore[union-attr]
     if not user:
         return False
     
@@ -147,7 +147,7 @@ def setup(app):
         
         form = None
         if is_authenticated():
-            form = await Comment.form(onvalidation=_validate_comment)
+            form = await Comment.form(onvalidation=_validate_comment)  # type: ignore[attr-defined]
             if form.accepted:
                 redirect(url('one', pid))
         
@@ -155,7 +155,7 @@ def setup(app):
 
     async def new_post():
         """Create a new blog post (admin only)."""
-        form = await Post.form()
+        form = await Post.form()  # type: ignore[attr-defined]
         if form.accepted:
             redirect(url('one', form.params.id))
         return dict(form=form)
@@ -174,8 +174,8 @@ def setup(app):
     @posts_api.before_create
     def set_post_user(attrs):
         """Automatically set user from session if authenticated."""
-        if session.auth and session.auth.user:
+        if session.auth and session.auth.user:  # type: ignore[union-attr]
             if 'user' not in attrs:
-                attrs['user'] = session.auth.user.id
+                attrs['user'] = session.auth.user.id  # type: ignore[union-attr]
     
     return posts_api
