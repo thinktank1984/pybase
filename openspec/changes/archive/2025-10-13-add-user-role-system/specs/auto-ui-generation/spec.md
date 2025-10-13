@@ -112,8 +112,6 @@ The system SHALL provide visual representation of permission structure.
 - **THEN** a tree diagram shows the hierarchy
 - **AND** inherited permissions are visually distinguished from direct permissions
 
-## MODIFIED Requirements
-
 ### Requirement: Model UI Configuration
 The system SHALL respect model-level UI configuration when generating CRUD interfaces, including permission-based visibility and access control. Each model can specify permissions for list, create, read, update, and delete actions in the Meta.permissions dictionary.
 

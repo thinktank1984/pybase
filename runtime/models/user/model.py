@@ -102,7 +102,20 @@ class User(AuthUser):
             roles = self.get_roles()
             
             for role in roles:
-                role_permissions = role.get_permissions()
+                # Handle both Model instances and Row objects
+                if hasattr(role, 'get_permissions') and callable(role.get_permissions):
+                    # Model instance or patched Row with method
+                    role_permissions = role.get_permissions()
+                else:
+                    # Row object without method - call Role model class method directly
+                    from ..role import Role
+                    role_id = role.id if hasattr(role, 'id') else role['id']
+                    role_obj = Role.where(lambda r: r.id == role_id).first()
+                    if role_obj:
+                        role_permissions = role_obj.get_permissions()
+                    else:
+                        role_permissions = []
+                
                 for perm in role_permissions:
                     permissions.add(perm.name)
             
@@ -114,6 +127,8 @@ class User(AuthUser):
             return permissions
         except Exception as e:
             print(f"Error getting permissions for user {self.id}: {e}")  # type: ignore[attr-defined]
+            import traceback
+            traceback.print_exc()
             return set()
     
     def has_permission(self, permission_name):

@@ -1,7 +1,8 @@
-# Permissions
+# permissions Specification
 
-## MODIFIED Requirements
-
+## Purpose
+TBD - created by archiving change add-user-role-system. Update Purpose after archive.
+## Requirements
 ### Requirement: Permission System Architecture
 The system SHALL provide a role-based permission system integrated with the Active Record pattern, allowing fine-grained access control through decorators and configuration. The permission system uses a many-to-many relationship between users, roles, and permissions, with roles acting as permission containers.
 
@@ -24,8 +25,6 @@ The system SHALL provide a role-based permission system integrated with the Acti
 - **WHEN** a method requires multiple permissions (AND logic)
 - **THEN** the user must have all specified permissions to execute
 - **AND** missing any one permission results in 403 error
-
-## ADDED Requirements
 
 ### Requirement: Auto-Generate Permissions from Models
 The system SHALL automatically generate standard CRUD permissions for models with auto-generation enabled.
