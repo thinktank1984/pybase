@@ -563,6 +563,8 @@ Type errors will show inline in your editor with hover information.
 
 **⚠️ IMPORTANT: Always use Docker for testing to ensure consistent environment.**
 
+**⚠️ ASSUMPTION: When running tests, assume Docker is already running and the runtime container is up. If not, start it with `docker compose -f docker/docker-compose.yaml up runtime -d` first.**
+
 ### Docker Testing (Recommended)
 
 ```bash
@@ -836,6 +838,8 @@ def _prepare_db(request):
 - **100% database operations** - Every CRUD operation tested for real
 
 ### Running Integration Tests
+
+**⚠️ ASSUMPTION: Docker is already running with the runtime container up. If not, start it first with `docker compose -f docker/docker-compose.yaml up runtime -d`**
 
 ```bash
 # Run all integration tests (real database, real HTTP)

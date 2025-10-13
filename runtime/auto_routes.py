@@ -28,7 +28,7 @@ import inspect
 import logging
 from emmett import App
 from emmett.orm import Database
-from runtime.auto_ui_generator import auto_ui
+from auto_ui_generator import auto_ui
 
 logger = logging.getLogger(__name__)
 
@@ -101,7 +101,7 @@ def _find_model_for_table(db: Database, table_name: str) -> Optional[type]:
                 return model
     
     # Fallback: search through Model subclasses
-    from runtime.base_model import BaseModel
+    from base_model import BaseModel
     for subclass in BaseModel.__subclasses__():
         if hasattr(subclass, 'tablename') and subclass.tablename == table_name:
             return subclass

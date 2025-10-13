@@ -42,7 +42,7 @@ class TestPrivateData:
 def test_product(app, db):
     """Create a test product in real database."""
     with db.connection():
-        from runtime.base_model import BaseModel
+        from base_model import BaseModel
         from emmett.orm import Field
         
         # Define test model dynamically
@@ -77,7 +77,7 @@ def test_product(app, db):
 def test_category(app, db):
     """Create a test category with custom URL prefix."""
     with db.connection():
-        from runtime.base_model import BaseModel
+        from base_model import BaseModel
         from emmett.orm import Field
         
         class TestCategory(BaseModel):
@@ -121,7 +121,7 @@ def test_auto_routes_generates_list_route(test_client, test_product, db):
     
     # Verify REAL database was queried
     with db.connection():
-        from runtime.base_model import BaseModel
+        from base_model import BaseModel
         products = BaseModel.db.test_products.all().select()
         assert len(products) >= 1
         assert any(p.name == 'Test Widget' for p in products)
@@ -165,7 +165,7 @@ def test_auto_routes_generates_create_routes(test_client, db):
     
     # 3. Verify REAL database state changed
     with db.connection():
-        from runtime.base_model import BaseModel
+        from base_model import BaseModel
         product = BaseModel.db.test_products.where(
             lambda p: p.name == 'New Product'
         ).first()
@@ -215,7 +215,7 @@ def test_auto_routes_generates_delete_routes(test_client, db):
     """
     # Create product to delete
     with db.connection():
-        from runtime.base_model import BaseModel
+        from base_model import BaseModel
         from emmett.orm import Field
         
         class TestProduct(BaseModel):
@@ -310,7 +310,7 @@ def test_auto_routes_generates_rest_create_endpoint(test_client, db):
     
     # Verify REAL database insertion
     with db.connection():
-        from runtime.base_model import BaseModel
+        from base_model import BaseModel
         product = BaseModel.db.test_products.where(
             lambda p: p.name == 'REST Product'
         ).first()
@@ -356,7 +356,7 @@ def test_auto_routes_generates_rest_delete_endpoint(test_client, db):
     """
     # Create product to delete
     with db.connection():
-        from runtime.base_model import BaseModel
+        from base_model import BaseModel
         from emmett.orm import Field
         
         class TestProduct(BaseModel):
@@ -431,7 +431,7 @@ def test_auto_routes_disabled_model_has_no_routes(test_client, db):
     """
     # Create model with auto_routes disabled
     with db.connection():
-        from runtime.base_model import BaseModel
+        from base_model import BaseModel
         from emmett.orm import Field
         
         class TestPrivateData(BaseModel):
@@ -462,7 +462,7 @@ def test_auto_routes_enforces_permissions_on_create(test_client, db):
     """
     # Create model with permission requirement
     with db.connection():
-        from runtime.base_model import BaseModel
+        from base_model import BaseModel
         from emmett.orm import Field
         
         def require_auth():
@@ -525,7 +525,7 @@ def test_auto_routes_handles_validation_errors(test_client, db):
     """
     # Create model with validation
     with db.connection():
-        from runtime.base_model import BaseModel
+        from base_model import BaseModel
         from emmett.orm import Field
         
         class TestProduct(BaseModel):
@@ -575,7 +575,7 @@ def test_models_without_auto_routes_still_work(app, db):
     """
     # Create model without auto_routes
     with db.connection():
-        from runtime.base_model import BaseModel
+        from base_model import BaseModel
         from emmett.orm import Field
         
         class LegacyModel(BaseModel):
@@ -617,7 +617,7 @@ def test_auto_routes_works_with_default_values(test_client, db):
     ✅ NO MOCKING - Tests default value integration.
     """
     with db.connection():
-        from runtime.base_model import BaseModel
+        from base_model import BaseModel
         from emmett.orm import Field
         from datetime import datetime
         
@@ -684,7 +684,7 @@ def test_complete_crud_workflow(test_client, db):
     
     # Verify creation in database
     with db.connection():
-        from runtime.base_model import BaseModel
+        from base_model import BaseModel
         product = BaseModel.db.test_products.where(
             lambda p: p.name == 'Workflow Product'
         ).first()
@@ -733,7 +733,7 @@ def test_model_discovery_finds_all_auto_routes_models(app, db):
     """
     # Create multiple models with auto_routes
     with db.connection():
-        from runtime.base_model import BaseModel
+        from base_model import BaseModel
         from emmett.orm import Field
         
         class TestModel1(BaseModel):
@@ -752,7 +752,7 @@ def test_model_discovery_finds_all_auto_routes_models(app, db):
             # No auto_routes - should NOT be discovered
         
         # Import auto_routes module and run discovery
-        from runtime.auto_routes import discover_auto_routes_models
+        from auto_routes import discover_auto_routes_models
         
         discovered = discover_auto_routes_models(db)
         
