@@ -495,6 +495,16 @@ def get_or_create(model, **kwargs):
 app.use_extension(REST)
 rest_ext = app.ext.REST
 
+#: Automatic Route Generation for models with auto_routes attribute
+# Import auto_routes system
+try:
+    from auto_routes import discover_and_register_auto_routes  # type: ignore[reportMissingImports]
+    # Discover and register routes for all models with auto_routes=True
+    discover_and_register_auto_routes(app, db)
+    print("✓ Automatic route generation enabled")
+except Exception as e:
+    print(f"⚠️  Automatic route generation failed: {e}")
+
 #: init Auto UI for models
 # Enable auto-generated CRUD interface for Post model
 auto_ui(app, Post, '/admin/posts')
