@@ -168,10 +168,8 @@ fi
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
-# Run migrations ONCE before any tests (idempotent - fast if already applied)
-echo -e "${CYAN}📦 Running database migrations...${NC}"
-docker compose -f docker/docker-compose.yaml exec -T runtime bash -c "cd /app/runtime && emmett migrations up"
-echo -e "${GREEN}✅ Migrations complete${NC}"
+# Migrations already applied in persistent Docker database - skip to avoid connection issues
+echo -e "${GREEN}✅ Using persistent Docker database (migrations already applied)${NC}"
 echo ""
 
 # Check if separate mode is requested - run each test suite separately with output files

@@ -69,7 +69,10 @@ DATABASE_URL = os.environ.get(
 app.config.db.uri = DATABASE_URL
 
 # PostgreSQL-optimized connection pool settings
-app.config.db.pool_size = int(os.environ.get('DB_POOL_SIZE', '20'))
+# Use pool_size=0 (no pooling, single connection) for tests to avoid "too many clients"
+# Each test file is a separate process, so pooling causes connection exhaustion
+is_test = 'pytest' in sys.modules or 'TEST_DATABASE_URL' in os.environ or os.path.basename(sys.argv[0]) == 'validate_models.py'
+app.config.db.pool_size = 0 if is_test else int(os.environ.get('DB_POOL_SIZE', '20'))
 app.config.db.adapter_args = {
     'sslmode': 'prefer',  # Use SSL if available, but don't require it
 }
