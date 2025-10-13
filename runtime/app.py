@@ -26,18 +26,22 @@ from models import (  # type: ignore[reportMissingImports]
 sentry_available = False  # Sentry extension has template conflicts with Emmett
 
 # Import Prometheus client for metrics
+PROMETHEUS_AVAILABLE = False
 try:
     from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
     prometheus_available = True
+    PROMETHEUS_AVAILABLE = True  # type: ignore[misc]
 except ImportError:
     prometheus_available = False
     print("Warning: prometheus-client not installed. Metrics collection disabled.")
 
 # Import Valkey for caching (optional)
+VALKEY_AVAILABLE = False
 try:
     from valkey import Valkey
     import pickle
     valkey_available = True
+    VALKEY_AVAILABLE = True  # type: ignore[misc]
 except ImportError:
     valkey_available = False
     print("Warning: valkey not installed. Valkey cache backend unavailable.")

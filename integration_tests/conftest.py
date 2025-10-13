@@ -25,38 +25,42 @@ def setup_test_environment():
     print("\n🔧 Setting up test database (session-level)...")
     import sqlite3
     from emmett.orm.migrations.utils import generate_runtime_migration
+    import subprocess
     
     db = app_module.db
     db_path = os.path.join(os.path.dirname(__file__), '..', 'runtime', 'databases', 'bloggy.db')
     db_dir = os.path.dirname(db_path)
+    runtime_dir = os.path.join(os.path.dirname(__file__), '..', 'runtime')
     
     # Ensure database directory exists
     os.makedirs(db_dir, exist_ok=True)
     
-    # Check if database needs to be created
-    needs_setup = not os.path.exists(db_path)
+    # Delete existing database to start fresh
+    if os.path.exists(db_path):
+        print("   🗑️  Removing existing database...")
+        os.remove(db_path)
     
-    if needs_setup:
-        print("   🔧 Creating fresh database...")
+    # Run migrations using emmett CLI to create all tables
+    print("   🔧 Running database migrations...")
+    try:
+        # Change to runtime directory and run migrations
+        result = subprocess.run(
+            ['emmett', 'migrations', 'up'],
+            cwd=runtime_dir,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        print("   ✅ Migrations completed successfully")
+    except subprocess.CalledProcessError as e:
+        print(f"   ⚠️  Migration command failed, trying runtime migration...")
+        print(f"      Error: {e.stderr}")
+        # Fallback to runtime migration if CLI fails
         with db.connection():
             migration = generate_runtime_migration(db)
             migration.up()
             db.commit()
-        print("   ✅ Database created")
-    else:
-        # Database exists, just verify tables exist
-        try:
-            with db.connection():
-                db.executesql("SELECT COUNT(*) FROM users LIMIT 1")
-                print("   ✅ Database already exists")
-        except:
-            # Tables don't exist, create them
-            print("   🔧 Creating database tables...")
-            with db.connection():
-                migration = generate_runtime_migration(db)
-                migration.up()
-                db.commit()
-            print("   ✅ Database tables created")
+        print("   ✅ Database created with runtime migration")
     
     yield
     
