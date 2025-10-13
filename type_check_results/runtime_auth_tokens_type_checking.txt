@@ -1,0 +1,5 @@
+time="2025-10-13T13:16:09+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+/app/runtime/auth/tokens.py
+  /app/runtime/auth/tokens.py:8:20 - warning: Import "urlsafe_b64encode" is not accessed (reportUnusedImport)
+  /app/runtime/auth/tokens.py:46:35 - warning: Unnecessary isinstance call; "str" is always an instance of "str" (reportUnnecessaryIsInstance)
+0 errors, 2 warnings, 0 informations

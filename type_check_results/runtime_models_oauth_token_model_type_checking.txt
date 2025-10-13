@@ -1,0 +1,13 @@
+time="2025-10-13T13:16:20+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+/app/runtime/models/oauth_token/model.py
+  /app/runtime/models/oauth_token/model.py:99:30 - error: Argument of type "Field" cannot be assigned to parameter "encrypted_token" of type "str" in function "decrypt_token"
+    "Field" is not assignable to "str" (reportArgumentType)
+  /app/runtime/models/oauth_token/model.py:112:30 - error: Argument of type "Field" cannot be assigned to parameter "encrypted_token" of type "str" in function "decrypt_token"
+    "Field" is not assignable to "str" (reportArgumentType)
+  /app/runtime/models/oauth_token/model.py:132:14 - error: Cannot access attribute "update_record" for class "OAuthToken*"
+    Attribute "update_record" is unknown (reportAttributeAccessIssue)
+  /app/runtime/models/oauth_token/model.py:152:14 - error: Cannot access attribute "update_record" for class "OAuthToken*"
+    Attribute "update_record" is unknown (reportAttributeAccessIssue)
+  /app/runtime/models/oauth_token/model.py:180:14 - error: Cannot access attribute "update_record" for class "OAuthToken*"
+    Attribute "update_record" is unknown (reportAttributeAccessIssue)
+5 errors, 0 warnings, 0 informations

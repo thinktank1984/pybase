@@ -1,0 +1,6 @@
+time="2025-10-13T13:16:25+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+/app/runtime/models/decorators.py
+  /app/runtime/models/decorators.py:7:20 - warning: Import "session" is not accessed (reportUnusedImport)
+  /app/runtime/models/decorators.py:7:36 - warning: Import "redirect" is not accessed (reportUnusedImport)
+  /app/runtime/models/decorators.py:7:46 - warning: Import "url" is not accessed (reportUnusedImport)
+0 errors, 3 warnings, 0 informations

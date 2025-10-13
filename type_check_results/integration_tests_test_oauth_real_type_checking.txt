@@ -1,0 +1,21 @@
+time="2025-10-13T13:16:31+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+/app/integration_tests/test_oauth_real.py
+  /app/integration_tests/test_oauth_real.py:55:8 - warning: "os" is imported more than once (reportDuplicateImport)
+  /app/integration_tests/test_oauth_real.py:58:24 - warning: Import "Field" is not accessed (reportUnusedImport)
+  /app/integration_tests/test_oauth_real.py:60:6 - warning: Import "app" could not be resolved (reportMissingImports)
+  /app/integration_tests/test_oauth_real.py:60:17 - warning: Import "app" is not accessed (reportUnusedImport)
+  /app/integration_tests/test_oauth_real.py:60:26 - warning: Import "User" is not accessed (reportUnusedImport)
+  /app/integration_tests/test_oauth_real.py:60:32 - warning: Import "OAuthAccount" is not accessed (reportUnusedImport)
+  /app/integration_tests/test_oauth_real.py:60:46 - warning: Import "OAuthToken" is not accessed (reportUnusedImport)
+  /app/integration_tests/test_oauth_real.py:61:6 - warning: Import "auth.tokens" could not be resolved (reportMissingImports)
+  /app/integration_tests/test_oauth_real.py:62:6 - warning: Import "auth.providers.base" could not be resolved (reportMissingImports)
+  /app/integration_tests/test_oauth_real.py:63:6 - warning: Import "auth.providers.google" could not be resolved (reportMissingImports)
+  /app/integration_tests/test_oauth_real.py:64:6 - warning: Import "auth.oauth_manager" could not be resolved (reportMissingImports)
+  /app/integration_tests/test_oauth_real.py:232:16 - warning: Import "auth.tokens" could not be resolved (reportMissingImports)
+  /app/integration_tests/test_oauth_real.py:254:16 - warning: Import "auth.tokens" could not be resolved (reportMissingImports)
+  /app/integration_tests/test_oauth_real.py:316:31 - warning: Variable "c" is not accessed (reportUnusedVariable)
+  /app/integration_tests/test_oauth_real.py:317:29 - warning: Variable "v" is not accessed (reportUnusedVariable)
+  /app/integration_tests/test_oauth_real.py:494:9 - warning: Variable "verifier" is not accessed (reportUnusedVariable)
+  /app/integration_tests/test_oauth_real.py:524:16 - warning: Import "auth.tokens" could not be resolved (reportMissingImports)
+  /app/integration_tests/test_oauth_real.py:601:9 - warning: Variable "verifier" is not accessed (reportUnusedVariable)
+0 errors, 18 warnings, 0 informations

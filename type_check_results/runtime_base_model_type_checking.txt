@@ -1,0 +1,40 @@
+time="2025-10-13T13:16:25+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+/app/runtime/base_model.py
+  /app/runtime/base_model.py:20:29 - warning: Import "response" is not accessed (reportUnusedImport)
+  /app/runtime/base_model.py:20:61 - warning: Import "current" is not accessed (reportUnusedImport)
+  /app/runtime/base_model.py:21:26 - warning: Import "Mailer" is not accessed (reportUnusedImport)
+  /app/runtime/base_model.py:22:8 - warning: Import "json" is not accessed (reportUnusedImport)
+  /app/runtime/base_model.py:95:14 - error: Cannot access attribute "save" for class "BaseModel*"
+    Attribute "save" is unknown (reportAttributeAccessIssue)
+  /app/runtime/base_model.py:96:28 - error: Cannot access attribute "id" for class "BaseModel*"
+    Attribute "id" is unknown (reportAttributeAccessIssue)
+  /app/runtime/base_model.py:105:14 - error: Cannot access attribute "update_record" for class "BaseModel*"
+    Attribute "update_record" is unknown (reportAttributeAccessIssue)
+  /app/runtime/base_model.py:106:28 - error: Cannot access attribute "id" for class "BaseModel*"
+    Attribute "id" is unknown (reportAttributeAccessIssue)
+  /app/runtime/base_model.py:110:14 - error: Cannot access attribute "delete_record" for class "BaseModel*"
+    Attribute "delete_record" is unknown (reportAttributeAccessIssue)
+  /app/runtime/base_model.py:291:13 - warning: Variable "message" is not accessed (reportUnusedVariable)
+  /app/runtime/base_model.py:382:53 - error: Cannot access attribute "id" for class "BaseModel*"
+    Attribute "id" is unknown (reportAttributeAccessIssue)
+  /app/runtime/base_model.py:384:51 - error: Cannot access attribute "id" for class "BaseModel*"
+    Attribute "id" is unknown (reportAttributeAccessIssue)
+  /app/runtime/base_model.py:386:53 - error: Cannot access attribute "id" for class "BaseModel*"
+    Attribute "id" is unknown (reportAttributeAccessIssue)
+  /app/runtime/base_model.py:390:55 - error: Cannot access attribute "id" for class "BaseModel*"
+    Attribute "id" is unknown (reportAttributeAccessIssue)
+  /app/runtime/base_model.py:431:17 - error: Cannot assign to attribute "_register_handler" for class "_Wrapped[..., Unknown, (self: Unknown, req: Unknown), Unknown]"
+    Attribute "_register_handler" is unknown (reportAttributeAccessIssue)
+  /app/runtime/base_model.py:456:17 - error: Cannot assign to attribute "_register_formatter" for class "_Wrapped[..., Unknown, (self: Unknown, data: Unknown), Unknown]"
+    Attribute "_register_formatter" is unknown (reportAttributeAccessIssue)
+  /app/runtime/base_model.py:482:17 - error: Cannot assign to attribute "_register_renderer" for class "_Wrapped[..., Unknown, (self: Unknown, **context: Unknown), Unknown]"
+    Attribute "_register_renderer" is unknown (reportAttributeAccessIssue)
+  /app/runtime/base_model.py:508:17 - error: Cannot assign to attribute "_register_api" for class "_Wrapped[..., Unknown, (self: Unknown, method: Unknown, data: Unknown), Unknown]"
+    Attribute "_register_api" is unknown (reportAttributeAccessIssue)
+  /app/runtime/base_model.py:534:17 - error: Cannot assign to attribute "_register_email" for class "_Wrapped[..., Unknown, (self: Unknown, to: Unknown, subject: Unknown, body: Unknown), Unknown]"
+    Attribute "_register_email" is unknown (reportAttributeAccessIssue)
+  /app/runtime/base_model.py:560:17 - error: Cannot assign to attribute "_register_session" for class "_Wrapped[..., Unknown, (self: Unknown, ...), Unknown]"
+    Attribute "_register_session" is unknown (reportAttributeAccessIssue)
+  /app/runtime/base_model.py:585:17 - error: Cannot assign to attribute "_register_route" for class "_Wrapped[..., Unknown, (self: Unknown, **params: Unknown), Unknown]"
+    Attribute "_register_route" is unknown (reportAttributeAccessIssue)
+16 errors, 5 warnings, 0 informations

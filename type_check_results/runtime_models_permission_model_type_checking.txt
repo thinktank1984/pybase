@@ -1,0 +1,9 @@
+time="2025-10-13T13:16:23+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+/app/runtime/models/permission/model.py
+  /app/runtime/models/permission/model.py:81:16 - error: No overloads for "match" match the provided arguments (reportCallIssue)
+  /app/runtime/models/permission/model.py:81:34 - error: Argument of type "Field | str" cannot be assigned to parameter "string" of type "str" in function "match"
+    Type "Field | str" is not assignable to type "str"
+      "Field" is not assignable to "str" (reportArgumentType)
+  /app/runtime/models/permission/model.py:197:57 - error: Cannot access attribute "id" for class "Permission*"
+    Attribute "id" is unknown (reportAttributeAccessIssue)
+3 errors, 0 warnings, 0 informations

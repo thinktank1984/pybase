@@ -1,0 +1,51 @@
+time="2025-10-13T13:16:26+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+/app/runtime/app.py
+  /app/runtime/app.py:22:5 - warning: Import "get_current_user" is not accessed (reportUnusedImport)
+  /app/runtime/app.py:22:23 - warning: Import "is_authenticated" is not accessed (reportUnusedImport)
+  /app/runtime/app.py:22:41 - warning: Import "get_or_404" is not accessed (reportUnusedImport)
+  /app/runtime/app.py:23:5 - warning: Import "requires_role" is not accessed (reportUnusedImport)
+  /app/runtime/app.py:23:20 - warning: Import "requires_any_role" is not accessed (reportUnusedImport)
+  /app/runtime/app.py:23:39 - warning: Import "requires_permission" is not accessed (reportUnusedImport)
+  /app/runtime/app.py:24:15 - warning: Import "ensure_roles_exist" is not accessed (reportUnusedImport)
+  /app/runtime/app.py:29:31 - warning: Import "Sentry" is not accessed (reportUnusedImport)
+  /app/runtime/app.py:32:5 - error: "SENTRY_AVAILABLE" is constant (because it is uppercase) and cannot be redefined (reportConstantRedefinition)
+  /app/runtime/app.py:40:5 - error: "PROMETHEUS_AVAILABLE" is constant (because it is uppercase) and cannot be redefined (reportConstantRedefinition)
+  /app/runtime/app.py:49:5 - error: "VALKEY_AVAILABLE" is constant (because it is uppercase) and cannot be redefined (reportConstantRedefinition)
+  /app/runtime/app.py:166:33 - error: Cannot access attribute "labels" for class "Collector"
+    Attribute "labels" is unknown (reportAttributeAccessIssue)
+  /app/runtime/app.py:167:43 - error: Cannot access attribute "labels" for class "Collector"
+    Attribute "labels" is unknown (reportAttributeAccessIssue)
+  /app/runtime/app.py:238:33 - error: Argument of type "ResponseT" cannot be assigned to parameter "data" of type "ReadableBuffer" in function "loads"
+    Type "ResponseT" is not assignable to type "ReadableBuffer"
+      "Awaitable[Any]" is incompatible with protocol "Buffer"
+        "__buffer__" is not present (reportArgumentType)
+  /app/runtime/app.py:288:48 - warning: "Awaitable[Any]" is not iterable
+    "__iter__" method not defined (reportGeneralTypeIssues)
+  /app/runtime/app.py:411:14 - warning: Import "models.utils" could not be resolved (reportMissingImports)
+  /app/runtime/app.py:420:14 - warning: Import "models.utils" could not be resolved (reportMissingImports)
+  /app/runtime/app.py:575:9 - error: Cannot assign to attribute "pipeline" for class "App"
+    Type "PrometheusMetricsPipe | None" is not assignable to type "Pipe"
+      "None" is not assignable to "Pipe" (reportAttributeAccessIssue)
+  /app/runtime/app.py:592:6 - warning: Import "auth" could not be resolved (reportMissingImports)
+  /app/runtime/app.py:593:6 - warning: Import "auth.tokens" could not be resolved (reportMissingImports)
+  /app/runtime/app.py:593:25 - warning: Import "encrypt_token" is not accessed (reportUnusedImport)
+  /app/runtime/app.py:594:6 - warning: Import "auth.rate_limit" could not be resolved (reportMissingImports)
+  /app/runtime/app.py:595:6 - warning: Import "auth.token_refresh" could not be resolved (reportMissingImports)
+  /app/runtime/app.py:619:10 - warning: Import "auth.providers.base" could not be resolved (reportMissingImports)
+  /app/runtime/app.py:654:57 - warning: Import "abort" is not accessed (reportUnusedImport)
+  /app/runtime/app.py:727:22 - warning: Import "auth.linking" could not be resolved (reportMissingImports)
+  /app/runtime/app.py:795:26 - warning: Import "auth.linking" could not be resolved (reportMissingImports)
+  /app/runtime/app.py:841:26 - warning: Import "auth.linking" could not be resolved (reportMissingImports)
+  /app/runtime/app.py:906:14 - warning: Import "auth.linking" could not be resolved (reportMissingImports)
+  /app/runtime/app.py:934:12 - error: Operator "in" not supported for types "str" and "sdict[Unknown, Unknown] | None"
+    Operator "in" not supported for types "str" and "None" (reportOperatorIssue)
+  /app/runtime/app.py:937:8 - error: Operator "in" not supported for types "Literal['oauth_link_mode']" and "sdict[Unknown, Unknown] | None"
+    Operator "in" not supported for types "Literal['oauth_link_mode']" and "None" (reportOperatorIssue)
+  /app/runtime/app.py:985:9 - error: Cannot assign to attribute "track_metrics" for class "App"
+    Attribute "track_metrics" is unknown (reportAttributeAccessIssue)
+  /app/runtime/app.py:995:14 - error: "json" is not a known attribute of module ".service" (reportAttributeAccessIssue)
+  /app/runtime/app.py:1001:14 - error: "json" is not a known attribute of module ".service" (reportAttributeAccessIssue)
+  /app/runtime/app.py:1012:6 - warning: Import "models" could not be resolved (reportMissingImports)
+  /app/runtime/app.py:1063:10 - error: "json" is not a known attribute of module ".service" (reportAttributeAccessIssue)
+  /app/runtime/app.py:1122:10 - error: "json" is not a known attribute of module ".service" (reportAttributeAccessIssue)
+14 errors, 23 warnings, 0 informations

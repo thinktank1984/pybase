@@ -1,0 +1,9 @@
+time="2025-10-13T13:16:17+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+/app/runtime/models/post/model.py
+  /app/runtime/models/post/model.py:107:10 - warning: Import "models.utils" could not be resolved (reportMissingImports)
+  /app/runtime/models/post/model.py:126:10 - warning: Import "models.comment" could not be resolved (reportMissingImports)
+  /app/runtime/models/post/model.py:127:10 - warning: Import "models.user" could not be resolved (reportMissingImports)
+  /app/runtime/models/post/model.py:128:44 - warning: Import "_url" is not accessed (reportUnusedImport)
+  /app/runtime/models/post/model.py:158:27 - error: Cannot access attribute "form" for class "type[Post]"
+    Attribute "form" is unknown (reportAttributeAccessIssue)
+1 error, 4 warnings, 0 informations

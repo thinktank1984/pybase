@@ -1,0 +1,13 @@
+time="2025-10-13T13:16:04+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+/app/runtime/playwright_helpers.py
+  /app/runtime/playwright_helpers.py:14:50 - warning: Import "Browser" is not accessed (reportUnusedImport)
+  /app/runtime/playwright_helpers.py:14:59 - warning: Import "Page" is not accessed (reportUnusedImport)
+  /app/runtime/playwright_helpers.py:14:65 - warning: Import "BrowserContext" is not accessed (reportUnusedImport)
+  /app/runtime/playwright_helpers.py:245:32 - error: Argument of type "str | None" cannot be assigned to parameter "selector" of type "str" in function "fill"
+    Type "str | None" is not assignable to type "str"
+      "None" is not assignable to "str" (reportArgumentType)
+  /app/runtime/playwright_helpers.py:433:39 - error: Expression of type "None" cannot be assigned to parameter of type "str"
+    "None" is not assignable to "str" (reportArgumentType)
+  /app/runtime/playwright_helpers.py:446:8 - warning: Condition will always evaluate to False since the types "str" and "None" have no overlap (reportUnnecessaryComparison)
+  /app/runtime/playwright_helpers.py:454:41 - warning: Import "sync_playwright" is not accessed (reportUnusedImport)
+2 errors, 5 warnings, 0 informations

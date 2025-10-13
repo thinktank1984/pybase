@@ -1,0 +1,5 @@
+time="2025-10-13T13:16:11+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+/app/runtime/auth/oauth_manager.py
+  /app/runtime/auth/oauth_manager.py:7:26 - warning: Import "Optional" is not accessed (reportUnusedImport)
+  /app/runtime/auth/oauth_manager.py:21:35 - warning: Expected class but received "(iterable: Iterable[object], /) -> bool" (reportGeneralTypeIssues)
+0 errors, 2 warnings, 0 informations

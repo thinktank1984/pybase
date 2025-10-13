@@ -1,0 +1,22 @@
+time="2025-10-13T13:16:33+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+/app/integration_tests/test_roles.py
+  /app/integration_tests/test_roles.py:38:14 - warning: Import "models" could not be resolved (reportMissingImports)
+  /app/integration_tests/test_roles.py:38:28 - warning: Import "Role" is not accessed (reportUnusedImport)
+  /app/integration_tests/test_roles.py:38:34 - warning: Import "Permission" is not accessed (reportUnusedImport)
+  /app/integration_tests/test_roles.py:38:46 - warning: Import "UserRole" is not accessed (reportUnusedImport)
+  /app/integration_tests/test_roles.py:38:56 - warning: Import "RolePermission" is not accessed (reportUnusedImport)
+  /app/integration_tests/test_roles.py:53:14 - warning: Import "models" could not be resolved (reportMissingImports)
+  /app/integration_tests/test_roles.py:54:13 - warning: Import "requires_role" is not accessed (reportUnusedImport)
+  /app/integration_tests/test_roles.py:54:28 - warning: Import "requires_any_role" is not accessed (reportUnusedImport)
+  /app/integration_tests/test_roles.py:54:47 - warning: Import "requires_all_roles" is not accessed (reportUnusedImport)
+  /app/integration_tests/test_roles.py:55:13 - warning: Import "requires_permission" is not accessed (reportUnusedImport)
+  /app/integration_tests/test_roles.py:55:34 - warning: Import "requires_any_permission" is not accessed (reportUnusedImport)
+  /app/integration_tests/test_roles.py:56:13 - warning: Import "check_permission" is not accessed (reportUnusedImport)
+  /app/integration_tests/test_roles.py:56:31 - warning: Import "check_role" is not accessed (reportUnusedImport)
+  /app/integration_tests/test_roles.py:75:14 - warning: Import "models" could not be resolved (reportMissingImports)
+  /app/integration_tests/test_roles.py:75:28 - warning: Import "seed_all" is not accessed (reportUnusedImport)
+  /app/integration_tests/test_roles.py:75:38 - warning: Import "seed_permissions" is not accessed (reportUnusedImport)
+  /app/integration_tests/test_roles.py:75:56 - warning: Import "seed_roles" is not accessed (reportUnusedImport)
+  /app/integration_tests/test_roles.py:89:14 - warning: Import "models" could not be resolved (reportMissingImports)
+  /app/integration_tests/test_roles.py:127:14 - warning: Import "models" could not be resolved (reportMissingImports)
+0 errors, 19 warnings, 0 informations
