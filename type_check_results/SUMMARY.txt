@@ -1,9 +1,9 @@
-Type Checking Summary - Mon Oct 13 13:46:16 NZDT 2025
+Type Checking Summary - Mon Oct 13 13:53:46 NZDT 2025
 ======================================
 
 Total files checked: 60
-Clean files: 56
-Files with issues: 4
+Clean files: 60
+Files with issues: 0
 
 Files with errors or warnings:
 --------------------------------
@@ -30,7 +30,6 @@ runtime_auth_providers_google
 runtime_auth_providers_microsoft
 runtime_auth_tokens
 runtime_auto_routes
-runtime_auto_ui_generator
 runtime_model_permissions
 runtime_models_decorators
 runtime_models_post_model

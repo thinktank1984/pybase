@@ -1,23 +1,20 @@
-time="2025-10-13T13:46:12+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+time="2025-10-13T13:53:42+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
 /app/integration_tests/test_auto_routes.py
-  /app/integration_tests/test_auto_routes.py:10:20 - warning: Import "url" is not accessed (reportUnusedImport)
-  /app/integration_tests/test_auto_routes.py:46:14 - warning: Import "runtime.base_model" could not be resolved (reportMissingImports)
-  /app/integration_tests/test_auto_routes.py:81:14 - warning: Import "runtime.base_model" could not be resolved (reportMissingImports)
-  /app/integration_tests/test_auto_routes.py:125:14 - warning: Import "runtime.base_model" could not be resolved (reportMissingImports)
-  /app/integration_tests/test_auto_routes.py:169:14 - warning: Import "runtime.base_model" could not be resolved (reportMissingImports)
-  /app/integration_tests/test_auto_routes.py:219:14 - warning: Import "runtime.base_model" could not be resolved (reportMissingImports)
-  /app/integration_tests/test_auto_routes.py:314:14 - warning: Import "runtime.base_model" could not be resolved (reportMissingImports)
-  /app/integration_tests/test_auto_routes.py:360:14 - warning: Import "runtime.base_model" could not be resolved (reportMissingImports)
-  /app/integration_tests/test_auto_routes.py:435:14 - warning: Import "runtime.base_model" could not be resolved (reportMissingImports)
-  /app/integration_tests/test_auto_routes.py:466:14 - warning: Import "runtime.base_model" could not be resolved (reportMissingImports)
-  /app/integration_tests/test_auto_routes.py:472:20 - error: Operator "in" not supported for types "Literal['user_id']" and "sdict[Unknown, Unknown] | None"
-    Operator "in" not supported for types "Literal['user_id']" and "None" (reportOperatorIssue)
-  /app/integration_tests/test_auto_routes.py:529:14 - warning: Import "runtime.base_model" could not be resolved (reportMissingImports)
-  /app/integration_tests/test_auto_routes.py:579:14 - warning: Import "runtime.base_model" could not be resolved (reportMissingImports)
-  /app/integration_tests/test_auto_routes.py:621:14 - warning: Import "runtime.base_model" could not be resolved (reportMissingImports)
-  /app/integration_tests/test_auto_routes.py:629:66 - warning: The method "utcnow" in class "datetime" is deprecated
+  /app/integration_tests/test_auto_routes.py:45:14 - warning: Import "runtime.base_model" could not be resolved (reportMissingImports)
+  /app/integration_tests/test_auto_routes.py:80:14 - warning: Import "runtime.base_model" could not be resolved (reportMissingImports)
+  /app/integration_tests/test_auto_routes.py:124:14 - warning: Import "runtime.base_model" could not be resolved (reportMissingImports)
+  /app/integration_tests/test_auto_routes.py:168:14 - warning: Import "runtime.base_model" could not be resolved (reportMissingImports)
+  /app/integration_tests/test_auto_routes.py:218:14 - warning: Import "runtime.base_model" could not be resolved (reportMissingImports)
+  /app/integration_tests/test_auto_routes.py:313:14 - warning: Import "runtime.base_model" could not be resolved (reportMissingImports)
+  /app/integration_tests/test_auto_routes.py:359:14 - warning: Import "runtime.base_model" could not be resolved (reportMissingImports)
+  /app/integration_tests/test_auto_routes.py:434:14 - warning: Import "runtime.base_model" could not be resolved (reportMissingImports)
+  /app/integration_tests/test_auto_routes.py:465:14 - warning: Import "runtime.base_model" could not be resolved (reportMissingImports)
+  /app/integration_tests/test_auto_routes.py:528:14 - warning: Import "runtime.base_model" could not be resolved (reportMissingImports)
+  /app/integration_tests/test_auto_routes.py:578:14 - warning: Import "runtime.base_model" could not be resolved (reportMissingImports)
+  /app/integration_tests/test_auto_routes.py:620:14 - warning: Import "runtime.base_model" could not be resolved (reportMissingImports)
+  /app/integration_tests/test_auto_routes.py:628:66 - warning: The method "utcnow" in class "datetime" is deprecated
     Use timezone-aware objects to represent datetimes in UTC; e.g. by calling .now(datetime.timezone.utc) (reportDeprecated)
-  /app/integration_tests/test_auto_routes.py:688:14 - warning: Import "runtime.base_model" could not be resolved (reportMissingImports)
-  /app/integration_tests/test_auto_routes.py:737:14 - warning: Import "runtime.base_model" could not be resolved (reportMissingImports)
-  /app/integration_tests/test_auto_routes.py:756:14 - warning: Import "runtime.auto_routes" could not be resolved (reportMissingImports)
-1 error, 17 warnings, 0 informations
+  /app/integration_tests/test_auto_routes.py:687:14 - warning: Import "runtime.base_model" could not be resolved (reportMissingImports)
+  /app/integration_tests/test_auto_routes.py:736:14 - warning: Import "runtime.base_model" could not be resolved (reportMissingImports)
+  /app/integration_tests/test_auto_routes.py:755:14 - warning: Import "runtime.auto_routes" could not be resolved (reportMissingImports)
+0 errors, 16 warnings, 0 informations

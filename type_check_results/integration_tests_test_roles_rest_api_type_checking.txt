@@ -1,9 +1,9 @@
-time="2025-10-13T13:46:15+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+time="2025-10-13T13:53:45+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
 /app/integration_tests/test_roles_rest_api.py
   /app/integration_tests/test_roles_rest_api.py:33:6 - warning: Import "app" could not be resolved (reportMissingImports)
   /app/integration_tests/test_roles_rest_api.py:33:50 - warning: Import "UserRole" is not accessed (reportUnusedImport)
   /app/integration_tests/test_roles_rest_api.py:33:60 - warning: Import "RolePermission" is not accessed (reportUnusedImport)
   /app/integration_tests/test_roles_rest_api.py:34:6 - warning: Import "models" could not be resolved (reportMissingImports)
-  /app/integration_tests/test_roles_rest_api.py:170:5 - warning: Variable "response" is not accessed (reportUnusedVariable)
-  /app/integration_tests/test_roles_rest_api.py:186:5 - warning: Variable "response" is not accessed (reportUnusedVariable)
+  /app/integration_tests/test_roles_rest_api.py:174:5 - warning: Variable "response" is not accessed (reportUnusedVariable)
+  /app/integration_tests/test_roles_rest_api.py:190:5 - warning: Variable "response" is not accessed (reportUnusedVariable)
 0 errors, 6 warnings, 0 informations

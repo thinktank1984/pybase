@@ -1,4 +1,4 @@
-time="2025-10-13T13:45:49+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+time="2025-10-13T13:53:19+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
 /app/runtime/models/user_role.py
   /app/runtime/models/user_role.py:108:18 - warning: Import "app" could not be resolved (reportMissingImports)
 0 errors, 1 warning, 0 informations

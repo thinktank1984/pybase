@@ -1,14 +1,15 @@
-time="2025-10-13T13:46:14+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+time="2025-10-13T13:53:44+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
 /app/integration_tests/tests.py
   /app/integration_tests/tests.py:40:8 - warning: Import "os" is not accessed (reportUnusedImport)
+  /app/integration_tests/tests.py:42:41 - warning: Import "generate_runtime_migration" is not accessed (reportUnusedImport)
   /app/integration_tests/tests.py:43:6 - warning: Import "app" could not be resolved (reportMissingImports)
   /app/integration_tests/tests.py:43:47 - warning: Import "auth" is not accessed (reportUnusedImport)
-  /app/integration_tests/tests.py:293:9 - warning: Variable "post_id" is not accessed (reportUnusedVariable)
-  /app/integration_tests/tests.py:296:9 - warning: Variable "post_id" is not accessed (reportUnusedVariable)
-  /app/integration_tests/tests.py:574:9 - warning: Variable "r" is not accessed (reportUnusedVariable)
-  /app/integration_tests/tests.py:644:10 - warning: Import "app" could not be resolved (reportMissingImports)
-  /app/integration_tests/tests.py:1229:10 - warning: Import "app" could not be resolved (reportMissingImports)
-  /app/integration_tests/tests.py:1271:10 - warning: Import "app" could not be resolved (reportMissingImports)
-  /app/integration_tests/tests.py:1478:9 - warning: Variable "user" is not accessed (reportUnusedVariable)
-  /app/integration_tests/tests.py:1571:25 - warning: Variable "e" is not accessed (reportUnusedVariable)
-0 errors, 11 warnings, 0 informations
+  /app/integration_tests/tests.py:275:9 - warning: Variable "post_id" is not accessed (reportUnusedVariable)
+  /app/integration_tests/tests.py:278:9 - warning: Variable "post_id" is not accessed (reportUnusedVariable)
+  /app/integration_tests/tests.py:556:9 - warning: Variable "r" is not accessed (reportUnusedVariable)
+  /app/integration_tests/tests.py:626:10 - warning: Import "app" could not be resolved (reportMissingImports)
+  /app/integration_tests/tests.py:1211:10 - warning: Import "app" could not be resolved (reportMissingImports)
+  /app/integration_tests/tests.py:1253:10 - warning: Import "app" could not be resolved (reportMissingImports)
+  /app/integration_tests/tests.py:1460:9 - warning: Variable "user" is not accessed (reportUnusedVariable)
+  /app/integration_tests/tests.py:1553:25 - warning: Variable "e" is not accessed (reportUnusedVariable)
+0 errors, 12 warnings, 0 informations

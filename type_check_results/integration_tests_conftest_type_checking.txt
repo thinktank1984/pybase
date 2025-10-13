@@ -1,6 +1,7 @@
-time="2025-10-13T13:46:06+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+time="2025-10-13T13:53:36+13:00" level=warning msg="/Users/ed.sharood2/code/pybase/docker/docker-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
 /app/integration_tests/conftest.py
   /app/integration_tests/conftest.py:14:8 - warning: Import "app" could not be resolved (reportMissingImports)
   /app/integration_tests/conftest.py:15:8 - warning: Import "models" could not be resolved (reportMissingImports)
   /app/integration_tests/conftest.py:15:8 - warning: Import "models" is not accessed (reportUnusedImport)
-0 errors, 3 warnings, 0 informations
+  /app/integration_tests/conftest.py:26:12 - warning: Import "sqlite3" is not accessed (reportUnusedImport)
+0 errors, 4 warnings, 0 informations
