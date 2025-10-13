@@ -499,11 +499,8 @@ def get_or_create(model, **kwargs):
 app.use_extension(REST)
 rest_ext = app.ext.REST
 
-#: Register REST API modules using the extension
-# The REST extension's module method creates a RESTModule
-roles_api = rest_ext.module(rest_ext, __name__, 'roles', Role, url_prefix='roles')  # type: ignore[attr-defined]
-permissions_api = rest_ext.module(rest_ext, __name__, 'permissions', Permission, url_prefix='permissions')  # type: ignore[attr-defined]
-print("✓ REST API modules registered for Role and Permission")
+# Note: Role REST API is now handled by auto_routes system (role model has auto_routes=True)
+# Permission REST API is still handled by setup_all()
 
 #: Automatic Route Generation for models with auto_routes attribute
 # Import auto_routes system

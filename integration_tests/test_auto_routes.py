@@ -100,22 +100,102 @@ class LegacyModel(BaseModel):
 # FIXTURES
 # ========================================================================
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='module', autouse=True)
 def register_test_models(app, db):
-    """Register test models with database (module-scoped)."""
-    # Models are already defined, just ensure tables exist
+    """Register test models with database (module-scoped, runs automatically)."""
+    # Define all test models first (outside connection context)
+    db.define_models(
+        TestProduct,
+        TestCategory,
+        TestArticle,
+        TestPrivateData,
+        TestValidated,
+        TestWithDefaults,
+        LegacyModel
+    )
+    
+    # Create tables using simple SQL
     with db.connection():
-        # Define all test models
-        db.define_models(
-            TestProduct,
-            TestCategory,
-            TestArticle,
-            TestPrivateData,
-            TestValidated,
-            TestWithDefaults,
-            LegacyModel
-        )
+        cursor = db._adapter.cursor
+        
+        # Create test_products table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS test_products (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                created_at TIMESTAMP,
+                updated_at TIMESTAMP,
+                name CHAR(512),
+                price DOUBLE,
+                description TEXT
+            )
+        ''')
+        
+        # Create test_categories table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS test_categories (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                created_at TIMESTAMP,
+                updated_at TIMESTAMP,
+                name CHAR(512)
+            )
+        ''')
+        
+        # Create test_articles table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS test_articles (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                created_at TIMESTAMP,
+                updated_at TIMESTAMP,
+                title CHAR(512),
+                content TEXT
+            )
+        ''')
+        
+        # Create test_private_data table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS test_private_data (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                created_at TIMESTAMP,
+                updated_at TIMESTAMP,
+                secret CHAR(512)
+            )
+        ''')
+        
+        # Create test_validated table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS test_validated (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                created_at TIMESTAMP,
+                updated_at TIMESTAMP,
+                name CHAR(512),
+                value INTEGER
+            )
+        ''')
+        
+        # Create test_with_defaults table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS test_with_defaults (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                created_at TIMESTAMP,
+                updated_at TIMESTAMP,
+                name CHAR(512),
+                status CHAR(512) DEFAULT 'active',
+                created_at_field TIMESTAMP
+            )
+        ''')
+        
+        # Create legacy_model table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS legacy_model (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                created_at TIMESTAMP,
+                updated_at TIMESTAMP,
+                name CHAR(512)
+            )
+        ''')
+        
         db.commit()
+        print("   ✓ All test model tables created")
     
     # Trigger auto_routes discovery and registration
     from auto_routes import discover_and_register_auto_routes

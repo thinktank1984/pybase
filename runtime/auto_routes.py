@@ -54,31 +54,43 @@ def discover_auto_routes_models(db: Database) -> List[type]:
     # Get all BaseModel subclasses
     all_models = BaseModel.__subclasses__()
     
+    print(f"DEBUG: Found {len(all_models)} BaseModel subclasses")
+    print(f"DEBUG: Models: {[m.__name__ for m in all_models]}")
+    
     if not all_models:
+        print("WARNING: No BaseModel subclasses found")
         logger.warning("No BaseModel subclasses found")
         return []
     
+    print(f"INFO: Scanning {len(all_models)} BaseModel subclasses for auto_routes...")
     logger.info(f"Scanning {len(all_models)} BaseModel subclasses for auto_routes...")
     
     # Iterate through all model classes
     for model_class in all_models:
+        print(f"DEBUG: Checking {model_class.__name__}")
+        
         # Check if model has auto_routes attribute
         if not hasattr(model_class, 'auto_routes'):
+            print(f"DEBUG: {model_class.__name__} - no auto_routes attribute")
             continue
         
         auto_routes_config = getattr(model_class, 'auto_routes')
+        print(f"DEBUG: {model_class.__name__} - auto_routes = {auto_routes_config}")
         
         # Skip if explicitly disabled
         if auto_routes_config is False:
+            print(f"INFO: Skipping {model_class.__name__} - auto_routes disabled")
             logger.info(f"Skipping {model_class.__name__} - auto_routes disabled")
             continue
         
         # Skip if model has manual setup() in module
         if _has_manual_setup(model_class):
+            print(f"INFO: Skipping {model_class.__name__} - has manual setup()")
             logger.info(f"Skipping {model_class.__name__} - has manual setup()")
             continue
         
         auto_routes_models.append(model_class)
+        print(f"✓ Discovered auto_routes model: {model_class.__name__}")
         logger.info(f"✓ Discovered auto_routes model: {model_class.__name__}")
     
     return auto_routes_models
@@ -243,18 +255,22 @@ def generate_routes_for_model(app: App, model_class: type, config: Dict[str, Any
     
     try:
         # Generate CRUD routes via auto_ui
+        print(f"INFO: Generating routes for {model_class.__name__} at {url_prefix}")
         logger.info(f"Generating routes for {model_class.__name__} at {url_prefix}")
         auto_ui(app, model_class, url_prefix, ui_config)
         
         # Generate REST API if enabled
         if config['rest_api']:
             rest_prefix = config['rest_prefix']
+            print(f"INFO: Generating REST API for {model_class.__name__} at {rest_prefix}")
             logger.info(f"Generating REST API for {model_class.__name__} at {rest_prefix}")
             _generate_rest_api(app, model_class, rest_prefix, enabled_actions)
         
+        print(f"✓ Successfully registered routes for {model_class.__name__}")
         logger.info(f"Successfully registered routes for {model_class.__name__}")
         
     except Exception as e:
+        print(f"ERROR: Failed to generate routes for {model_class.__name__}: {e}")
         logger.error(f"Failed to generate routes for {model_class.__name__}: {e}")
         raise
 
@@ -274,7 +290,7 @@ def _generate_rest_api(app: App, model_class: type, rest_prefix: str, enabled_ac
     
     # LIST endpoint: GET /api/model
     if 'list' in enabled_actions:
-        @app.route(f"{rest_prefix}", methods=['get'], name=f'{model_class.tablename}_api_list')
+        @app.route(f"{rest_prefix}", methods=['get'], output='json', name=f'{model_class.tablename}_api_list')
         async def api_list():
             with db.connection():
                 records = model_class.all().select()
@@ -285,7 +301,7 @@ def _generate_rest_api(app: App, model_class: type, rest_prefix: str, enabled_ac
     
     # DETAIL endpoint: GET /api/model/:id
     if 'detail' in enabled_actions:
-        @app.route(f"{rest_prefix}/<int:id>", methods=['get'], name=f'{model_class.tablename}_api_detail')
+        @app.route(f"{rest_prefix}/<int:id>", methods=['get'], output='json', name=f'{model_class.tablename}_api_detail')
         async def api_detail(id):
             with db.connection():
                 record = model_class.get(id)
@@ -298,7 +314,7 @@ def _generate_rest_api(app: App, model_class: type, rest_prefix: str, enabled_ac
     
     # CREATE endpoint: POST /api/model
     if 'create' in enabled_actions:
-        @app.route(f"{rest_prefix}", methods=['post'], name=f'{model_class.tablename}_api_create')
+        @app.route(f"{rest_prefix}", methods=['post'], output='json', name=f'{model_class.tablename}_api_create')
         async def api_create():
             from emmett import request
             with db.connection():
@@ -312,7 +328,7 @@ def _generate_rest_api(app: App, model_class: type, rest_prefix: str, enabled_ac
     
     # UPDATE endpoint: PUT /api/model/:id
     if 'update' in enabled_actions:
-        @app.route(f"{rest_prefix}/<int:id>", methods=['put'], name=f'{model_class.tablename}_api_update')
+        @app.route(f"{rest_prefix}/<int:id>", methods=['put'], output='json', name=f'{model_class.tablename}_api_update')
         async def api_update(id):
             from emmett import request
             with db.connection():
@@ -330,7 +346,7 @@ def _generate_rest_api(app: App, model_class: type, rest_prefix: str, enabled_ac
     
     # DELETE endpoint: DELETE /api/model/:id
     if 'delete' in enabled_actions:
-        @app.route(f"{rest_prefix}/<int:id>", methods=['delete'], name=f'{model_class.tablename}_api_delete')
+        @app.route(f"{rest_prefix}/<int:id>", methods=['delete'], output='json', name=f'{model_class.tablename}_api_delete')
         async def api_delete(id):
             with db.connection():
                 record = model_class.get(id)
@@ -358,15 +374,20 @@ def discover_and_register_auto_routes(app: App, db: Database) -> None:
         app: Emmett application instance
         db: Database instance
     """
+    print("INFO: Starting automatic route discovery...")
     logger.info("Starting automatic route discovery...")
     
     # Discover models with auto_routes
     models = discover_auto_routes_models(db)
     
+    print(f"INFO: Discovered {len(models)} models with auto_routes")
+    
     if not models:
+        print("INFO: No models with auto_routes found")
         logger.info("No models with auto_routes found")
         return
     
+    print(f"INFO: Found {len(models)} models with auto_routes enabled: {[m.__name__ for m in models]}")
     logger.info(f"Found {len(models)} models with auto_routes enabled")
     
     # Register routes for each model

@@ -89,10 +89,10 @@ def client():
     return app_module.app.test_client()
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope='session')
 def app():
     """
-    Provide the Emmett application instance for function scope.
+    Provide the Emmett application instance for session scope.
     
     Returns:
         App: Emmett application instance
@@ -100,10 +100,10 @@ def app():
     return app_module.app
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope='session')
 def db():
     """
-    Provide the database instance for function scope.
+    Provide the database instance for session scope.
     
     Returns:
         Database: Emmett database instance
