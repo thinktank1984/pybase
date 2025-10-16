@@ -602,47 +602,46 @@ run_chrome_tests() {
     # Use pytest with timeout to prevent hanging
     TEST_CMD="timeout 120 python3 -m pytest integration_tests/test_ui_chrome_real.py"
 
-        # Add verbosity
-        if [ "$VERBOSE" = "vv" ]; then
-            TEST_CMD="$TEST_CMD -vv"
-        elif [ "$VERBOSE" = true ]; then
-            TEST_CMD="$TEST_CMD -v"
-        fi
+    # Add verbosity
+    if [ "$VERBOSE" = "vv" ]; then
+        TEST_CMD="$TEST_CMD -vv"
+    elif [ "$VERBOSE" = true ]; then
+        TEST_CMD="$TEST_CMD -v"
+    fi
 
-        # Add stop on failure
-        if [ "$STOP_ON_FAILURE" = true ]; then
-            TEST_CMD="$TEST_CMD -x"
-        fi
+    # Add stop on failure
+    if [ "$STOP_ON_FAILURE" = true ]; then
+        TEST_CMD="$TEST_CMD -x"
+    fi
 
-        # Add test pattern
-        if [ -n "$TEST_PATTERN" ]; then
-            TEST_CMD="$TEST_CMD -k \"$TEST_PATTERN\""
-            echo -e "${CYAN}🔍 Running tests matching: $TEST_PATTERN${NC}"
-        fi
+    # Add test pattern
+    if [ -n "$TEST_PATTERN" ]; then
+        TEST_CMD="$TEST_CMD -k \"$TEST_PATTERN\""
+        echo -e "${CYAN}🔍 Running tests matching: $TEST_PATTERN${NC}"
+    fi
 
-        # Always add -s for Chrome tests (to see output)
-        TEST_CMD="$TEST_CMD -s"
+    # Always add -s for Chrome tests (to see output)
+    TEST_CMD="$TEST_CMD -s"
 
-        # Add extra pytest args
-        if [ -n "$PYTEST_EXTRA_ARGS" ]; then
-            TEST_CMD="$TEST_CMD $PYTEST_EXTRA_ARGS"
-        fi
+    # Add extra pytest args
+    if [ -n "$PYTEST_EXTRA_ARGS" ]; then
+        TEST_CMD="$TEST_CMD $PYTEST_EXTRA_ARGS"
+    fi
 
-        echo -e "${CYAN}📝 Host Command: $TEST_CMD${NC}"
+    echo -e "${CYAN}📝 Host Command: $TEST_CMD${NC}"
+    echo ""
+
+    cd "$PROJECT_ROOT"
+    if eval "$TEST_CMD"; then
         echo ""
-
-        cd "$PROJECT_ROOT"
-        if eval "$TEST_CMD"; then
-            echo ""
-            echo -e "${GREEN}✅ Chrome tests passed! (ran on HOST MACHINE)${NC}"
-            echo -e "${GREEN}📸 Screenshots saved to: runtime/screenshots/${NC}"
-            return 0
-        else
-            echo ""
-            echo -e "${RED}❌ Chrome tests failed (ran on HOST MACHINE)${NC}"
-            return 1
-        fi
-    }
+        echo -e "${GREEN}✅ Chrome tests passed! (ran on HOST MACHINE)${NC}"
+        echo -e "${GREEN}📸 Screenshots saved to: runtime/screenshots/${NC}"
+        return 0
+    else
+        echo ""
+        echo -e "${RED}❌ Chrome tests failed (ran on HOST MACHINE)${NC}"
+        return 1
+    fi
 }
 
 # Run tests based on mode

@@ -17,51 +17,8 @@ from typing import Optional, Any, Tuple
 from urllib.parse import urlparse
 from emmett.orm import Database
 # Import turso package as instructed
-try:
-    import turso
-    print("✅ Using turso package")
-except ImportError:
-    # Fallback implementation using sqlite3
-    print("⚠️  turso package not found, using sqlite3 fallback")
-
-    class MockTursoConnection:
-        def __init__(self, db_file):
-            import sqlite3
-            self.con = sqlite3.connect(db_file)
-
-        def __enter__(self):
-            return self
-
-        def __exit__(self, exc_type, exc_val, exc_tb):
-            self.con.close()
-
-        def cursor(self):
-            return MockCursor(self.con.cursor())
-
-        def commit(self):
-            self.con.commit()
-
-    class MockCursor:
-        def __init__(self, real_cursor):
-            self.cursor = real_cursor
-
-        def execute(self, sql, params=None):
-            if params:
-                return self.cursor.execute(sql, params)
-            return self.cursor.execute(sql)
-
-        def fetchone(self):
-            return self.cursor.fetchone()
-
-        def fetchall(self):
-            return self.cursor.fetchall()
-
-    class MockTurso:
-        @staticmethod
-        def connect(db_file):
-            return MockTursoConnection(db_file)
-
-    turso = MockTurso()
+import turso
+print("✅ Using turso package")
 
 
 class TursoDatabaseWrapper:
@@ -478,7 +435,7 @@ class DatabaseManager:
                 for username, email, role in sample_users:
                     cur.execute(
                         """
-                        INSERT OR IGNORE INTO users (username, email, role)
+                        INSERT INTO users (username, email, role)
                         VALUES (?, ?, ?)
                         """,
                         (username, email, role),

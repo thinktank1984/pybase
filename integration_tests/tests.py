@@ -40,7 +40,7 @@ import pytest
 import os
 
 from emmett.orm.migrations.utils import generate_runtime_migration
-from app import app, db, User, Post, Comment, auth, setup_admin
+from app import app, db, User, Post, Comment, setup_admin
 
 
 @pytest.fixture()
