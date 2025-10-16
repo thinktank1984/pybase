@@ -87,4 +87,4 @@ echo "🎯 Starting Gemini Code..."
 echo ""
 
 # Set API key and launch
-GEMINI_API_KEY="AIzaSyBLSp-lpMjgZKhFZM7KEi9q63dOUyQ_qlY" gemini --sandbox=disabled --yolo
+gemini --sandbox=disabled --yolo
