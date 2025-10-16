@@ -1,0 +1,8 @@
+{
+  "runtime/models/utils.py": {
+    "get_db": "Get database instance from current context or app module.\n\nWorks in both application runtime and test contexts.\n\nReturns:\n    Database instance",
+    "get_or_404": "Get model instance by ID or abort with 404.\n\nArgs:\n    model: Emmett Model class\n    record_id: Primary key value\n    \nReturns:\n    Model instance\n    \nRaises:\n    404 if not found",
+    "user_has_permission": "Check if user has a specific permission.\n\nArgs:\n    user_id (int): User ID\n    permission_name (str): Permission name (e.g., 'post.create')\n    \nReturns:\n    bool: True if user has the permission",
+    "user_can_access_resource": "Check if user can access a resource with a specific action.\nSupports ownership-based permissions.\n\nArgs:\n    user_id (int): User ID\n    resource (str): Resource name (e.g., 'post')\n    action (str): Action name (e.g., 'edit', 'delete')\n    instance: Optional resource instance to check ownership\n    scope (str): 'own', 'any', or 'both'\n    \nReturns:\n    bool: True if user can access the resource"
+  }
+}

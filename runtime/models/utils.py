@@ -7,14 +7,12 @@ from emmett import abort, current, session
 
 
 def get_db():
-    """
-    Get database instance from current context or app module.
-    
-    Works in both application runtime and test contexts.
-    
-    Returns:
-        Database instance
-    """
+    """Get database instance from current context or app module.
+
+Works in both application runtime and test contexts.
+
+Returns:
+    Database instance"""
     # Try importing from app module first (works best in tests)
     # Use getattr to get current value (not cached import) so tests can replace db
     try:
@@ -36,19 +34,17 @@ def get_db():
 
 
 def get_or_404(model, record_id):
-    """
-    Get model instance by ID or abort with 404.
+    """Get model instance by ID or abort with 404.
+
+Args:
+    model: Emmett Model class
+    record_id: Primary key value
     
-    Args:
-        model: Emmett Model class
-        record_id: Primary key value
-        
-    Returns:
-        Model instance
-        
-    Raises:
-        404 if not found
-    """
+Returns:
+    Model instance
+    
+Raises:
+    404 if not found"""
     # Get database instance from current context
     db = get_db()
     
@@ -217,16 +213,14 @@ def user_get_permissions(user_id, use_cache=True):
 
 
 def user_has_permission(user_id, permission_name):
-    """
-    Check if user has a specific permission.
+    """Check if user has a specific permission.
+
+Args:
+    user_id (int): User ID
+    permission_name (str): Permission name (e.g., 'post.create')
     
-    Args:
-        user_id (int): User ID
-        permission_name (str): Permission name (e.g., 'post.create')
-        
-    Returns:
-        bool: True if user has the permission
-    """
+Returns:
+    bool: True if user has the permission"""
     # Admin role has all permissions
     if user_has_role(user_id, 'admin'):
         return True
@@ -261,20 +255,18 @@ def user_has_any_permission(user_id, *permission_names):
 
 
 def user_can_access_resource(user_id, resource, action, instance=None, scope='any'):
-    """
-    Check if user can access a resource with a specific action.
-    Supports ownership-based permissions.
+    """Check if user can access a resource with a specific action.
+Supports ownership-based permissions.
+
+Args:
+    user_id (int): User ID
+    resource (str): Resource name (e.g., 'post')
+    action (str): Action name (e.g., 'edit', 'delete')
+    instance: Optional resource instance to check ownership
+    scope (str): 'own', 'any', or 'both'
     
-    Args:
-        user_id (int): User ID
-        resource (str): Resource name (e.g., 'post')
-        action (str): Action name (e.g., 'edit', 'delete')
-        instance: Optional resource instance to check ownership
-        scope (str): 'own', 'any', or 'both'
-        
-    Returns:
-        bool: True if user can access the resource
-    """
+Returns:
+    bool: True if user can access the resource"""
     # Admin role has all permissions
     if user_has_role(user_id, 'admin'):
         return True

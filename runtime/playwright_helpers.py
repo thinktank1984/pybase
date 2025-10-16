@@ -52,9 +52,24 @@ class ChromeTestHelper:
             self.headless = False
             print(f"   👁️  Running in HEADED mode (visible browser)")
         
+        # Browser arguments optimized for different environments
+        browser_args = ['--no-sandbox', '--disable-setuid-sandbox']
+
+        # Add GitHub Spaces compatible arguments
+        is_github_spaces = os.environ.get('GITHUB_ACTIONS') == 'true' or \
+                          os.environ.get('CODESPACES') == 'true'
+        if is_github_spaces:
+            browser_args.extend([
+                '--disable-dev-shm-usage',
+                '--disable-gpu',
+                '--disable-background-timer-throttling',
+                '--disable-backgrounding-occluded-windows',
+                '--disable-renderer-backgrounding'
+            ])
+
         self.browser = self.playwright.chromium.launch(
             headless=self.headless,
-            args=['--no-sandbox', '--disable-setuid-sandbox']
+            args=browser_args
         )
         
         self.context = self.browser.new_context(
