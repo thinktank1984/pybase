@@ -23,6 +23,91 @@ This file provides guidance to AI agents (Claude Code, Gemini, etc.) when workin
 
 ---
 
+## 🐳 CRITICAL: Docker is Always Running
+
+**⚠️ DO NOT START OR STOP DOCKER CONTAINERS ⚠️**
+
+This is a **CRITICAL RULE**:
+- ❌ **NEVER** run `docker compose up` or `docker compose down`
+- ❌ **NEVER** start or stop containers
+- ❌ **NEVER** restart containers from the host
+
+**✅ Docker containers are ALWAYS RUNNING:**
+- ✅ The `runtime` container is always up
+- ✅ The `postgres` container is always up
+- ✅ All services are persistent
+
+**✅ To restart code or services:**
+- ✅ Connect to the container: `docker compose -f docker/docker-compose.yaml exec runtime bash`
+- ✅ Restart processes inside the container
+- ✅ Kill processes with `pkill` if needed
+- ✅ Use `exec` commands to run operations inside running containers
+
+**Example - Restarting the application:**
+```bash
+# WRONG - Do not restart container
+docker compose -f docker/docker-compose.yaml restart runtime
+
+# CORRECT - Connect and restart process inside container
+docker compose -f docker/docker-compose.yaml exec runtime pkill -f "emmett serve"
+# Process will auto-restart via entrypoint or supervisor
+```
+
+**Example - Running tests:**
+```bash
+# CORRECT - Use exec with running container
+docker compose -f docker/docker-compose.yaml exec runtime pytest integration_tests/tests.py -v
+```
+
+**Why this matters:** Docker containers maintain persistent connections, database pools, and state. Restarting containers breaks these connections and wastes time.
+
+---
+
+## 🐘 CRITICAL: Never Drop the Database
+
+**⚠️ DO NOT DROP OR RECREATE DATABASES ⚠️**
+
+This is a **CRITICAL RULE**:
+- ❌ **NEVER** run `DROP DATABASE` in test setup
+- ❌ **NEVER** recreate databases between test runs
+- ❌ **NEVER** terminate database connections to drop databases
+
+**✅ Database is PERSISTENT:**
+- ✅ The `bloggy_test` database persists between test runs
+- ✅ Tables and schema persist (managed by migrations)
+- ✅ Clean up test DATA, not the database itself
+
+**✅ Correct approach:**
+- ✅ Check if database exists, create only if missing
+- ✅ Run migrations to ensure schema is up to date
+- ✅ Clean up test data (DELETE rows) in teardown
+- ✅ Preserve database structure and connections
+
+**Example - Test Setup:**
+```python
+# WRONG - Dropping and recreating database
+cursor.execute(f"DROP DATABASE IF EXISTS {db_name}")
+cursor.execute(f"CREATE DATABASE {db_name}")
+
+# CORRECT - Use existing database, create only if missing
+cursor.execute(f"SELECT 1 FROM pg_database WHERE datname = '{db_name}'")
+if not cursor.fetchone():
+    cursor.execute(f"CREATE DATABASE {db_name}")
+```
+
+**Example - Test Teardown:**
+```python
+# WRONG - Dropping database
+DROP DATABASE bloggy_test
+
+# CORRECT - Clean up test data only
+DELETE FROM users WHERE email LIKE '%@example.com%'
+```
+
+**Why this matters:** Persistent databases maintain connections, indexes, and state. Dropping databases breaks connections from the always-running Docker containers and wastes time recreating schema.
+
+---
+
 ## 🚨 CRITICAL POLICY: NO MOCKING ALLOWED 🚨
 
 **⚠️ USING MOCKS, STUBS, OR TEST DOUBLES IS ILLEGAL IN THIS REPOSITORY ⚠️**
@@ -40,7 +125,7 @@ This is a **ZERO-TOLERANCE POLICY**:
 - ✅ Real browser interactions with Chrome DevTools MCP
 - ✅ Real external service calls (or FAIL tests if unavailable)
 
-**If you write a test with mocks, the test is INVALID and must be rewritten.**
+**Why this matters:** Mocked tests pass but hide real bugs. Integration tests catch actual issues before production.
 
 ---
 
@@ -49,38 +134,16 @@ This is a **ZERO-TOLERANCE POLICY**:
 **⚠️ SKIPPING TESTS IS ILLEGAL IN THIS REPOSITORY ⚠️**
 
 This is a **ZERO-TOLERANCE POLICY**:
-- ❌ **FORBIDDEN**: `@pytest.mark.skip` decorator
-- ❌ **FORBIDDEN**: `@pytest.mark.skipif` decorator
+- ❌ **FORBIDDEN**: `@pytest.mark.skip` or `@pytest.mark.skipif` decorators
 - ❌ **FORBIDDEN**: `pytest.skip()` calls in tests or fixtures
-- ❌ **FORBIDDEN**: Conditional test execution that skips tests
 - ❌ **FORBIDDEN**: Commenting out tests to avoid failures
 
 **✅ TESTS MUST EITHER RUN OR FAIL:**
 - ✅ Use `pytest.fail()` with clear error message if dependencies unavailable
-- ✅ Make dependencies available in Docker environment
-- ✅ Tests fail with actionable error message explaining what's missing
-- ✅ Configure environment properly to run all tests
-- ✅ Remove tests that cannot be implemented properly
+- ✅ Configure Docker environment with all dependencies
+- ✅ Tests either run successfully or fail with actionable message
 
-**If a test is skipped, it is INVALID and must be fixed or removed.**
-
-### Why Skipping Is Illegal
-
-**Skipped tests create false confidence:**
-- ✗ Skipped tests hide broken functionality
-- ✗ Skipped tests accumulate and never get fixed
-- ✗ Skip conditions become outdated
-- ✗ Developers forget why tests were skipped
-- ✗ CI/CD shows green but functionality is untested
-
-**Failing tests force action:**
-- ✓ Failed tests demand immediate attention
-- ✓ Clear error messages guide setup/configuration
-- ✓ Forces proper environment setup in Docker
-- ✓ Ensures all dependencies are available
-- ✓ Tests either work or block deployment
-
-**Example of proper test dependency handling:**
+**Example:**
 ```python
 # ❌ WRONG - Skipping test (ILLEGAL)
 @pytest.mark.skipif(not HAS_CHROME, reason="Chrome not available")
@@ -91,38 +154,51 @@ def test_ui():
 @pytest.fixture
 def chrome():
     if not HAS_CHROME:
-        pytest.fail(
-            "Chrome MCP not available. Set HAS_CHROME_MCP=true. "
-            "Tests cannot be skipped - they must either run or fail."
-        )
+        pytest.fail("Chrome MCP not available. Configure Docker environment properly.")
     return get_chrome()
 ```
 
 ---
 
-See "Integration Testing Philosophy" section below for complete details.
+## 🚨 CRITICAL POLICY: NEVER DROP THE DATABASE 🚨
+
+**⚠️ DROPPING THE DATABASE IS STRICTLY FORBIDDEN ⚠️**
+
+This is a **ZERO-TOLERANCE POLICY**:
+- ❌ **FORBIDDEN**: `DROP DATABASE` commands
+- ❌ **FORBIDDEN**: `emmett migrations reset` or similar destructive operations
+- ❌ **FORBIDDEN**: Deleting database files or volumes
+- ❌ **FORBIDDEN**: Any operation that destroys existing data
+
+**✅ SAFE DATABASE OPERATIONS:**
+- ✅ Run migrations forward: `emmett migrations up`
+- ✅ Create new tables via migrations
+- ✅ Add columns via migrations
+- ✅ Clean up test data in tests (DELETE records, not DROP tables)
+- ✅ Truncate specific tables if needed (TRUNCATE, not DROP)
+
+**Why this matters:** The database contains persistent state and production data. Dropping it causes irreversible data loss and breaks the development environment. Use migrations to evolve the schema forward.
 
 ---
 
 ## ⚡ Quick Summary
 
-**This is an Emmett Framework application **
+**This is an Emmett Framework application**
 
-- ✅ **DO**: Use Docker for running and testing the application
-- ✅ **DO**: Work with Emmett patterns (app.py, routes, ORM models)
-- ✅ **DO**: Reference Emmett documentation in `/emmett_documentation/`
-- ✅ **DO**: Create application code in `runtime/` directory
-- ✅ **DO**: Use Emmett's pyDAL ORM for database operations
-- ✅ **DO**: Write REAL integration tests with actual database changes
-- ✅ **DO**: Test real UI with Chrome DevTools MCP (not Selenium)
-- ✅ **DO**: Build Tailwind CSS before running (`npm run build:css` in runtime/)
-- ✅ **DO**: Run type checking with `./run_type_check.sh` (Pyright)
-- ⚠️ **PREFERRED**: Always use Docker commands over local development scripts
-- 🚫 **ILLEGAL**: Using mocks, stubs, or test doubles in tests is FORBIDDEN
-- 🚫 **ILLEGAL**: Skipping tests with @pytest.mark.skip or pytest.skip() is FORBIDDEN
-- ❌ **NEVER**: Mock database calls, HTTP requests, or external services in tests
-- ❌ **NEVER**: Use unittest.mock, pytest-mock, or any mocking libraries
-- ❌ **NEVER**: Skip tests - tests must either run or fail with clear error messages
+**DO:**
+- ✅ Use Docker for running and testing (all dependencies pre-configured)
+- ✅ Work with Emmett patterns (app.py, routes, ORM models)
+- ✅ Reference Emmett documentation in `/emmett_documentation/`
+- ✅ Write REAL integration tests with actual database changes
+- ✅ Test real UI with Chrome DevTools MCP
+- ✅ Build Tailwind CSS before running (`npm run build:css` in runtime/)
+- ✅ Run type checking with `./run_type_check.sh` (Pyright)
+
+**NEVER:**
+- 🚫 Drop the database or run destructive database operations
+- 🚫 Mock database calls, HTTP requests, or external services
+- 🚫 Skip tests - they must either run or fail with clear messages
+- 🚫 Use unittest.mock, pytest-mock, or any mocking libraries
 
 ---
 
@@ -130,195 +206,79 @@ See "Integration Testing Philosophy" section below for complete details.
 
 The `emmett_documentation/` directory contains comprehensive documentation for the Emmett web framework.
 
-**Location**: `/emmett_documentation/`
+**Quick Reference**: See `emmett_documentation/documentation_summary.md` for a complete table of contents.
 
-**Quick Reference**: See `emmett_documentation/documentation_summary.md` for a complete table of contents with descriptions of all available documentation.
-
-**Key Documentation Areas:**
-
-1. **Getting Started**
-   - Installation, Quickstart, Tutorial
-   - Building a complete micro-blogging application example
-
-2. **Application Structure**
-   - Application and module organization patterns
-   - Routing with decorators and variable paths
-   - Best practices for scaling applications
-
-3. **Request/Response Handling**
-   - Request object (headers, cookies, body, files)
-   - Response customization (status, headers, streaming)
-   - Pipeline system for request processing
-
-4. **Templates and Output**
-   - Renoir templating engine
-   - HTML generation without templates
-   - Service decorators for JSON/XML APIs
-
-5. **Forms and Validation**
-   - Form class with Field objects
-   - ModelForm for database-backed forms
-   - Built-in validators (email, URL, numeric, custom)
-
-6. **Database and ORM**
-   - ORM overview (based on pyDAL)
-   - Database connections and configuration
-   - Models with field types and validation
-   - Relations (belongs_to, has_many, has_one)
-   - CRUD operations and queries
-   - Migrations with up/down methods
-   - Callbacks (before/after insert/update/delete)
-   - Scopes for reusable query filters
-   - Virtuals and computed attributes
-   - Advanced patterns (inheritance, polymorphism)
-
-7. **Authentication and Security**
-   - Auth module with login/logout/registration
-   - Permission systems and group management
-   - @requires decorator for protected routes
-
-8. **Sessions and State**
-   - Cookie-based, file-based, and Redis-backed sessions
-   - Session configuration and expiration
-
-9. **Real-Time Communication**
-   - WebSocket routing and handling
-   - Bidirectional messaging patterns
-
-10. **Internationalization**
-    - Multi-language support with T() translator
-    - Translation file organization
-
-11. **Performance**
-    - Caching strategies (RAM, Disk, Redis, Valkey)
-    - Cache decorators and manual operations
-
-12. **Utilities**
-    - Mailer for sending emails
-    - Extensions system for custom functionality
-
-13. **Development and Debugging**
-    - CLI commands and custom commands
-    - Logging configuration
-    - Testing with test client
-
-14. **Deployment**
-    - Production server configuration
-    - Docker deployment
-    - Upgrading between versions
-
-**When to Reference:**
-- When implementing ORM patterns, relationships, or migrations
-- When designing API structures or REST endpoints
-- When looking for authentication/authorization patterns
-- When implementing real-time features or WebSocket support
-- When setting up forms and validation logic
-- When organizing application structure and modules
-- When implementing caching or performance optimizations
-- When designing testing strategies
-
-**How to Use:**
-- Consult `documentation_summary.md` for an overview of all topics
-- Read specific documentation files in `docs/` or `docs/orm/` for detailed guidance
-- Follow Emmett patterns and conventions
+**Key areas**: ORM patterns, routing, authentication, forms, templates, WebSockets, caching, and deployment.
 
 ---
-
-## Project Overview
-
-This project contains an Emmett-based web application framework with example applications demonstrating Emmett's capabilities.
-
-**Key Features:**
-- Emmett web framework (2.5.0+)
-- pyDAL ORM for database operations
-- Renoir templating engine
-- Built-in authentication and authorization
-- WebSocket support
-- RESTful API capabilities
-- Docker deployment
 
 ## Project Structure
 
 ```
 runtime/                 # Main application directory
 ├── app.py              # Main Emmett application
+├── models/             # ORM models
 ├── migrations/         # Database migrations
 ├── templates/          # Renoir templates
-│   ├── layout.html    # Base template
-│   ├── index.html     # Home page
-│   └── auth/          # Authentication templates
 └── static/            # Static files (CSS, JS, images)
 
 integration_tests/     # Integration tests (NO MOCKING)
 ├── conftest.py        # Test configuration and fixtures
 ├── tests.py           # Main application tests
-├── test_oauth_real.py # OAuth integration tests
-├── test_roles_integration.py  # Role-based access control tests
-├── test_auto_ui.py    # Auto UI generation tests
-├── chrome_integration_tests.py  # Chrome DevTools tests
-└── test_ui_chrome_real.py      # Chrome UI tests
+└── test_*.py          # Specific test modules
 
 documentation/         # Project documentation
-├── agents.md          # This file - AI agent instructions
-├── README_UI_TESTING.md          # UI testing guide
-├── README_TAILWIND_BUILD.md      # Tailwind CSS build guide
-├── README_CHROME_TESTING.md      # Chrome DevTools testing guide
-├── CHROME_TEST_RESULTS.md        # Chrome test results
-├── TAILWIND_IMPLEMENTATION_SUMMARY.md  # Tailwind implementation details
-├── bugsink-setup.md              # Error tracking setup
-├── whitepaper.md                 # Project architecture whitepaper
-└── credentials.yaml              # Service credentials
-
 docker/                # Docker configuration
-├── docker-compose.yaml
-└── Dockerfile
-
-emmett_documentation/  # Emmett framework documentation
-└── docs/              # Detailed documentation
-
+emmett_documentation/  # Emmett framework docs
 hooks/                 # Git hooks for code quality
-├── pre-commit         # Model validation hook
-├── install.sh         # Hook installation script
-└── README.md          # Hook documentation
-
 setup/                 # Setup scripts
-└── setup.sh           # Environment setup
 ```
+
+---
 
 ## Development Commands
 
-### Using Docker (Recommended - Use This!)
+### Using Docker (Recommended)
 
-**⚠️ IMPORTANT: Always use Docker for running and testing. The Docker environment has all dependencies pre-configured including Gemini CLI, Python packages, and system libraries.**
+**⚠️ IMPORTANT: Always use Docker. It has all dependencies pre-configured.**
+
+**📋 WORKFLOW: Check if Docker is Running First**
+
+Before running Docker commands, check if containers are already running:
 
 ```bash
-# Rebuild container (after Dockerfile changes)
-docker compose -f docker/docker-compose.yaml build runtime
+# Check if runtime container is running
+docker compose -f docker/docker-compose.yaml ps runtime
 
-# Start the application
+# If runtime is NOT running, start it:
+docker compose -f docker/docker-compose.yaml up runtime -d
+
+# If runtime IS running, use exec commands directly
+```
+
+**Common Docker Commands:**
+
+```bash
+# Start the application (if not already running)
 docker compose -f docker/docker-compose.yaml up runtime
 
-# Run in detached mode
+# Run in detached mode (recommended for testing)
 docker compose -f docker/docker-compose.yaml up runtime -d
+
+# Run tests (ASSUMES Docker is already running - will fail if not)
+docker compose -f docker/docker-compose.yaml exec runtime pytest integration_tests/ -v
+
+# Run migrations (ASSUMES Docker is already running)
+docker compose -f docker/docker-compose.yaml exec runtime emmett migrations up
 
 # View logs
 docker compose -f docker/docker-compose.yaml logs -f runtime
 
-# Stop the service
+# Stop containers
 docker compose -f docker/docker-compose.yaml down
-
-# Run commands in container
-docker compose -f docker/docker-compose.yaml exec runtime emmett migrations up
-docker compose -f docker/docker-compose.yaml exec runtime pytest integration_tests/
-
-# Run tests in Docker
-docker compose -f docker/docker-compose.yaml exec runtime pytest integration_tests/ -v
-
-# Access Gemini CLI in container
-docker compose -f docker/docker-compose.yaml exec runtime gemini --version
 ```
 
-Application will be available at: **http://localhost:8081/**
+Application available at: **http://localhost:8081/**
 
 ### Local Development (Fallback Only)
 
@@ -326,56 +286,34 @@ Application will be available at: **http://localhost:8081/**
 # Run the application
 ./run_bloggy.sh
 
-# Or manually
-cd runtime
-uv run emmett develop
-
 # Run tests
 ./run_tests.sh
 
-# Or manually (from project root)
-uv run pytest integration_tests/
-
 # Database migrations
-cd runtime
-uv run emmett migrations generate
-uv run emmett migrations up
-uv run emmett migrations down
-
-# Setup admin user
-cd runtime
-uv run emmett setup
+cd runtime && uv run emmett migrations up
 ```
 
-### Git Hooks
+---
 
-Git hooks help maintain code quality by validating models before commits.
+## Git Hooks
+
+Git hooks validate models before commits.
 
 ```bash
 # Install git hooks (one-time setup)
 ./hooks/install.sh
 
-# Test pre-commit hook manually
-./hooks/pre-commit
-
 # Validate models directly
-cd runtime
-python validate_models.py --all
+cd runtime && python validate_models.py --all
 ```
 
-**What the pre-commit hook does:**
+**What the hook does:**
 - ✅ Runs automatically on `git commit`
 - ✅ Validates Emmett models for anti-patterns
-- ✅ **Blocks commits** with model errors (anti-patterns)
-- ✅ Allows commits with warnings (can be fixed later)
-- ✅ Only runs when model files are changed
+- ✅ **Blocks commits** with model errors
+- ✅ Allows commits with warnings
 
-**To bypass hook (not recommended):**
-```bash
-git commit --no-verify -m "WIP"
-```
-
-See `/hooks/README.md` for complete documentation.
+---
 
 ## Emmett Application Patterns
 
@@ -398,19 +336,10 @@ class Post(Model):
 ### Route Definition
 
 ```python
-from emmett import App, request
-
-app = App(__name__)
-
 @app.route('/')
 async def index():
     posts = Post.all().select()
     return {'posts': posts}
-
-@app.route('/post/<int:id>')
-async def show_post(id):
-    post = Post.get(id)
-    return {'post': post}
 ```
 
 ### Authentication
@@ -424,137 +353,26 @@ async def admin():
     return {}
 ```
 
-### Forms
-
-```python
-from emmett.orm import Field
-from emmett.tools import Form
-
-@app.route('/new', methods=['get', 'post'])
-async def new_post():
-    form = await Form.from_model(Post)
-    if form.accepted:
-        # form data is validated and saved
-        redirect(url('index'))
-    return {'form': form}
-```
+---
 
 ## Type Checking
 
-**⚠️ IMPORTANT: Type checking is enabled using Pyright for static analysis.**
-
-### Overview
-
-This project uses **Pyright** for static type checking to catch type-related bugs before runtime and improve IDE support.
-
-### Running Type Checks
+This project uses **Pyright** for static type checking.
 
 ```bash
-# Using the type check script (Recommended)
+# Run type checks
 ./run_type_check.sh
-
-# Or manually in Docker
-docker compose -f docker/docker-compose.yaml exec runtime pyright
 
 # Check specific files
 ./run_type_check.sh runtime/app.py runtime/models/
-
-# Run locally (if pyright installed)
-./run_type_check.sh --local
 ```
 
-### Configuration
+**Expected:** ~89 errors, ~150 warnings (mostly ORM-related, which is expected for pyDAL's dynamic features)
 
-Type checking is configured in `setup/pyrightconfig.json`:
-- **Mode**: `basic` (not too strict, focuses on actual bugs)
-- **Included**: `runtime/`, `integration_tests/`
-- **Excluded**: `migrations/`, `__pycache__`, `databases/`, `node_modules`
-
-### Working with pyDAL/Emmett Dynamic Features
-
-pyDAL and Emmett are dynamically-typed frameworks, so Pyright will report errors for:
-- ORM field access (e.g., `post.id`, `post.title`)
-- Dynamic methods (e.g., `.update_record()`, `.form`)
-- Request/response objects
-
-**This is expected.** Use these strategies:
-
-#### 1. Type Ignore for ORM Fields
-
-```python
-# ✅ CORRECT - Suppress ORM attribute errors
-post = Post.get(id)  # type: ignore[attr-defined]
-title = post.title  # type: ignore[attr-defined]
-```
-
-#### 2. Use `Any` for Dynamic Objects
-
-```python
-from typing import Any
-
-async def my_route() -> dict[str, Any]:
-    # Route handlers return dict with any values
-    return {'post': post, 'comments': comments}
-```
-
-#### 3. Type Annotations for Function Signatures
-
-```python
-# Add type hints to function parameters and returns
-async def create_post(title: str, text: str, user_id: int) -> dict[str, Any]:
-    post = Post.create(title=title, text=text, user=user_id)
-    return {'id': post.id}  # type: ignore[attr-defined]
-```
-
-### Expected Type Errors
-
-**Current Status**: ~89 errors, ~150 warnings
-
-Most errors are ORM-related and expected:
-- `Cannot access attribute "id"` - ORM fields
-- `Cannot access attribute "update_record"` - ORM methods  
-- `Cannot access attribute "form"` - Dynamic form generation
-- `Cannot access attribute "validation"` - ORM model attributes
-
-These errors are documented in the design and are acceptable for a dynamic framework. They can be silenced with `type: ignore` comments when needed.
-
-### Best Practices
-
-**✅ DO**:
-- Add type hints to new functions (`def func(x: int) -> str:`)
+**Best practices:**
 - Use `type: ignore[attr-defined]` for ORM field access
 - Use `dict[str, Any]` for route return types
-- Run type checks before committing code
-
-**❌ DON'T**:
-- Try to achieve 100% type coverage (not realistic for pyDAL)
-- Add type hints that break Emmett decorators
-- Ignore type errors without understanding why
-
-### Type Checking in CI/CD
-
-Type checking can be added to CI/CD as warnings (not blockers):
-
-```yaml
-# Example GitHub Actions
-- name: Type Check
-  run: ./run_type_check.sh
-  continue-on-error: true  # Don't fail build on type errors
-```
-
-### Tools Installed
-
-- **Pyright 1.1.406+**: Fast static type checker
-- **MonkeyType 23.3.0+**: Automatic type annotation inference (optional)
-
-### IDE Integration
-
-Pyright integrates automatically with:
-- **VS Code**: Uses Pylance (Pyright-based) by default
-- **PyCharm**: Configure to use Pyright as external tool
-- **vim/neovim**: Use `pyright-langserver`
-
-Type errors will show inline in your editor with hover information.
+- Add type hints to new functions
 
 ---
 
@@ -562,86 +380,65 @@ Type errors will show inline in your editor with hover information.
 
 **⚠️ IMPORTANT: Always use Docker for testing to ensure consistent environment.**
 
-**⚠️ ASSUMPTION: When running tests, assume Docker is already running and the runtime container is up. If not, start it with `docker compose -f docker/docker-compose.yaml up runtime -d` first.**
-
-### Docker Testing (Recommended)
+**🔍 CHECK DOCKER STATUS BEFORE RUNNING TESTS:**
 
 ```bash
-# Run all tests in Docker
-docker compose -f docker/docker-compose.yaml exec runtime pytest tests.py
+# Step 1: Check if Docker runtime is running
+docker compose -f docker/docker-compose.yaml ps runtime
 
-# Run with verbose output
-docker compose -f docker/docker-compose.yaml exec runtime pytest tests.py -v
+# Step 2: If NOT running, start it first
+docker compose -f docker/docker-compose.yaml up runtime -d
+
+# Step 3: Wait a few seconds for services to initialize
+sleep 5
+
+# Step 4: Now run tests
+docker compose -f docker/docker-compose.yaml exec runtime pytest integration_tests/ -v
+```
+
+**❌ COMMON ERROR:** Running `pytest` with `exec` when Docker is not running will fail with "service not running" error.
+
+**✅ SOLUTION:** Always start Docker with `up -d` before using `exec` commands.
+
+### Running Tests
+
+```bash
+# Run all tests in Docker (ASSUMES Docker is already running)
+docker compose -f docker/docker-compose.yaml exec runtime pytest integration_tests/ -v
 
 # Run with coverage
-docker compose -f docker/docker-compose.yaml exec runtime pytest tests.py --cov=runtime --cov-report=term-missing
+docker compose -f docker/docker-compose.yaml exec runtime pytest integration_tests/ --cov=runtime --cov-report=term-missing
 
 # Run specific test
-docker compose -f docker/docker-compose.yaml exec runtime pytest tests.py -k test_name
-
-# Run tests with detailed output
-docker compose -f docker/docker-compose.yaml exec runtime pytest tests.py -vv
+docker compose -f docker/docker-compose.yaml exec runtime pytest integration_tests/ -k test_name
 ```
 
-### Local Testing (Fallback Only)
-
-```bash
-# Run all tests locally
-./run_tests.sh
-
-# Run with verbose output
-./run_tests.sh -v
-
-# Run without coverage
-./run_tests.sh --no-coverage
-
-# Run specific test (from project root)
-uv run pytest integration_tests/ -k test_name
-```
-
-## Integration Testing Philosophy - NO MOCKING POLICY
-
-**🚨 CRITICAL REPOSITORY POLICY: MOCKING IS ILLEGAL 🚨**
+### Integration Testing Philosophy
 
 **This project uses REAL integration tests ONLY. Mocked unit tests are FORBIDDEN.**
 
-### Core Principles
+**Core Principles:**
 
-1. **NO MOCKING - EVER - THIS IS NON-NEGOTIABLE**
-   - ❌ **ILLEGAL** to mock database calls
-   - ❌ **ILLEGAL** to mock HTTP requests
-   - ❌ **ILLEGAL** to mock external services
-   - ❌ **ILLEGAL** to use test doubles, stubs, or mocks
-   - ❌ **ILLEGAL** to use `unittest.mock`, `pytest-mock`, or any mocking library
-   - ✅ **REQUIRED** to test against real database
-   - ✅ **REQUIRED** to test complete request/response cycle
-   - ✅ **REQUIRED** to verify actual database state changes
+1. **NO MOCKING - EVER**
+   - Test against real database
+   - Test complete request/response cycle
+   - Verify actual database state changes
 
-2. **NO SKIPPING TESTS - EVER - THIS IS NON-NEGOTIABLE**
-   - ❌ **ILLEGAL** to use `@pytest.mark.skip` or `@pytest.mark.skipif`
-   - ❌ **ILLEGAL** to call `pytest.skip()` in tests or fixtures
-   - ❌ **ILLEGAL** to conditionally skip tests based on environment
-   - ❌ **ILLEGAL** to comment out failing tests
-   - ✅ **REQUIRED** to use `pytest.fail()` with clear error message if dependencies missing
-   - ✅ **REQUIRED** to configure Docker environment with all dependencies
-   - ✅ **REQUIRED** tests either run successfully or fail with actionable message
+2. **NO SKIPPING TESTS - EVER**
+   - Tests must either run or fail with clear error messages
+   - Configure Docker environment with all dependencies
 
 3. **REAL DATABASE CHANGES**
-   - Tests must create, update, and delete real database records
-   - Use test database or isolated database for tests
+   - Tests create, update, and delete real database records
    - Verify database state before and after operations
-   - Test actual SQL queries, not simulated behavior
-   - Test database relationships and constraints for real
+   - Test actual SQL queries and constraints
 
 4. **REAL UI TESTING WITH CHROME DEVTOOLS**
    - Use MCP Chrome DevTools for UI integration tests
-   - Test actual browser interactions (clicks, form fills, navigation)
+   - Test actual browser interactions
    - Verify real DOM elements and page content
-   - Test JavaScript execution in real browser
-   - Capture screenshots and snapshots for validation
-   - Test actual network requests and responses
 
-### Integration Test Structure
+### Integration Test Example
 
 ```python
 # ✅ CORRECT - Real integration test
@@ -661,129 +458,13 @@ def test_create_post_integration(logged_client):
         post = Post.where(lambda p: p.title == 'Integration Test Post').first()
         assert post is not None
         assert post.text == 'Real content'
-        assert post.user == logged_client.user_id
     
-    # Cleanup (also real database operation)
+    # Cleanup
     with db.connection():
         post.delete_record()
-
-# ❌ WRONG - Mocked test (DO NOT DO THIS)
-def test_create_post_mocked(mock_db):  # ❌ NO MOCKS!
-    """This is NOT how we test"""
-    mock_db.create.return_value = Mock(id=1)  # ❌ NEVER MOCK
-    # ... rest of fake test
 ```
 
-### UI Testing with Chrome DevTools MCP
-
-```python
-# ✅ CORRECT - Real browser UI test
-async def test_login_ui_real_browser():
-    """Test login with real Chrome browser"""
-    from mcp_chrome_devtools import navigate_page, take_snapshot, fill, click
-    
-    # Navigate to real page
-    await navigate_page(url='http://localhost:8081/auth/login')
-    
-    # Take snapshot of real DOM
-    snapshot = await take_snapshot()
-    
-    # Find real form fields by UID from snapshot
-    email_field = find_element_by_label(snapshot, 'Email')
-    password_field = find_element_by_label(snapshot, 'Password')
-    
-    # Fill real form fields
-    await fill(uid=email_field.uid, value='doc@emmettbrown.com')
-    await fill(uid=password_field.uid, value='fluxcapacitor')
-    
-    # Click real submit button
-    submit_button = find_element_by_text(snapshot, 'Login')
-    await click(uid=submit_button.uid)
-    
-    # Verify real navigation happened
-    await wait_for(text='Welcome')
-    
-    # Verify real database session was created
-    with db.connection():
-        session = Session.where(lambda s: s.user_email == 'doc@emmettbrown.com').first()
-        assert session is not None
-
-# ❌ WRONG - Mocked UI test (DO NOT DO THIS)
-def test_login_ui_mocked(mock_browser):  # ❌ NO MOCKS!
-    """This is NOT how we test UI"""
-    mock_browser.navigate.return_value = True  # ❌ NEVER MOCK
-    # ... rest of fake test
-```
-
-### What to Test (Integration Level)
-
-#### ✅ DO Test:
-- **Complete HTTP request/response cycles**
-  - Route handlers with real requests
-  - Form submissions with real validation
-  - API endpoints with real serialization
-  - Redirects and status codes
-  
-- **Real Database Operations**
-  - Create: Insert records and verify in database
-  - Read: Query records and verify results
-  - Update: Modify records and verify changes
-  - Delete: Remove records and verify deletion
-  - Relationships: Test joins and foreign keys
-  - Constraints: Test uniqueness, required fields
-  
-- **Real Authentication Flows**
-  - Login with real password hashing
-  - Session creation and persistence
-  - Authorization checks with real permissions
-  - CSRF token generation and validation
-  
-- **Real UI Interactions**
-  - Page navigation in real browser
-  - Form filling with real input
-  - Button clicks with real events
-  - JavaScript execution
-  - CSS rendering and layout
-  - Network requests from browser
-
-#### ❌ DON'T Test (Use Integration, Not Mocks):
-- **Isolated function logic** → Test via real HTTP endpoint instead
-- **Database queries in isolation** → Test via complete route handlers
-- **Template rendering alone** → Test by requesting page and verifying HTML
-- **Form validation alone** → Test by submitting real forms
-
-### Test Data Management
-
-```python
-# ✅ CORRECT - Real test data with cleanup
-@pytest.fixture()
-def test_posts():
-    """Create real test posts in database"""
-    posts = []
-    with db.connection():
-        for i in range(3):
-            post = Post.create(
-                title=f'Test Post {i}',
-                text=f'Test content {i}',
-                user=1
-            )
-            posts.append(post)
-    
-    yield posts
-    
-    # Real cleanup
-    with db.connection():
-        for post in posts:
-            post.delete_record()
-
-# ❌ WRONG - Fake in-memory test data (DO NOT DO THIS)
-@pytest.fixture()
-def mock_posts():  # ❌ NO MOCKS!
-    """DO NOT create fake test data"""
-    return [Mock(id=1, title='Fake'), Mock(id=2, title='Fake')]  # ❌ NEVER
-```
-
-### Chrome DevTools MCP Tools Available
+### Chrome DevTools MCP Tools
 
 When testing UI, use these MCP tools:
 
@@ -791,118 +472,13 @@ When testing UI, use these MCP tools:
 - `take_snapshot()` - Get real DOM snapshot with UIDs
 - `click(uid)` - Click real element
 - `fill(uid, value)` - Fill real form field
-- `fill_form(elements)` - Fill multiple form fields
-- `hover(uid)` - Hover over real element
 - `take_screenshot(filePath)` - Capture real screenshot
 - `wait_for(text, timeout)` - Wait for real content
 - `list_network_requests()` - Get real network activity
-- `list_console_messages()` - Get real console logs
 
 See `documentation/README_UI_TESTING.md` for complete UI testing guide.
 
-### Test Database Isolation
-
-```python
-# Test database configuration
-@pytest.fixture(scope='module', autouse=True)
-def _prepare_db(request):
-    """Setup real test database"""
-    with db.connection():
-        # Run real migrations
-        migration = generate_runtime_migration(db)
-        migration.up()
-        
-        # Create real admin user
-        setup_admin()
-    
-    yield
-    
-    # Real teardown
-    with db.connection():
-        # Delete real data
-        User.all().delete()
-        Post.all().delete()
-        Comment.all().delete()
-        auth.delete_group('admin')
-        
-        # Rollback real migrations
-        migration.down()
-```
-
-### Coverage Requirements
-
-- **95%+ line coverage** - All code paths tested with real requests
-- **90%+ branch coverage** - All conditionals tested with real data
-- **100% endpoint coverage** - Every route tested with real HTTP
-- **100% database operations** - Every CRUD operation tested for real
-
-### Running Integration Tests
-
-**⚠️ ASSUMPTION: Docker is already running with the runtime container up. If not, start it first with `docker compose -f docker/docker-compose.yaml up runtime -d`**
-
-```bash
-# Run all integration tests (real database, real HTTP)
-docker compose -f docker/docker-compose.yaml exec runtime pytest integration_tests/
-
-# Run with coverage (measure real code execution)
-docker compose -f docker/docker-compose.yaml exec runtime pytest integration_tests/ --cov=runtime --cov-report=term-missing
-
-# Run specific integration test
-docker compose -f docker/docker-compose.yaml exec runtime pytest integration_tests/ -k test_api_posts_create
-
-# Run real Chrome UI tests
-./run_tests.sh --chrome
-```
-
-### Why Mocking Is Illegal In This Repository
-
-**This is repository policy, not a suggestion. Mocking is FORBIDDEN because:**
-
-**Mocking creates false confidence:**
-- ✗ Mocked tests pass but real code fails
-- ✗ Mocks don't catch integration issues
-- ✗ Mocks don't test actual database behavior
-- ✗ Mocks don't test real serialization/deserialization
-- ✗ Mocks don't test real error handling
-- ✗ Mocks become outdated when implementation changes
-
-**Integration tests provide real confidence:**
-- ✓ Tests fail when real code has bugs
-- ✓ Tests catch integration issues between components
-- ✓ Tests verify actual database behavior and constraints
-- ✓ Tests verify real API contracts
-- ✓ Tests verify real error handling
-- ✓ Tests verify actual user experience
-
-**Example of mock hiding bug:**
-```python
-# ❌ Mocked test passes but hides bug - THIS IS ILLEGAL IN THIS REPO
-def test_create_post_mocked(mock_db):
-    mock_db.create.return_value = Mock(id=1)  # ❌ Always succeeds
-    # Test passes but doesn't catch that Post.create() has a bug
-    # THIS TEST WOULD BE REJECTED IN CODE REVIEW
-    
-# ✅ Real test catches bug - THIS IS THE ONLY ACCEPTABLE APPROACH
-def test_create_post_integration(client):
-    response = client.post('/api/posts', data={'title': '', 'text': 'content'})
-    # Real test FAILS because title validation is broken
-    # We catch the bug before production!
-```
-
-**🚨 ENFORCEMENT: Any test using mocks must be rewritten as a real integration test.**
-
-### When Tests Are Slow
-
-If integration tests become slow:
-- ✅ Use module-scoped fixtures for expensive setup (database, admin user)
-- ✅ Use function-scoped fixtures for test-specific data
-- ✅ Parallelize with pytest-xdist if needed
-- ✅ Optimize database operations (bulk creates)
-- ✅ Use transaction rollbacks for faster cleanup
-- ❌ **ILLEGAL** to switch to mocking to make tests faster
-- ❌ **FORBIDDEN** to use mocks even if tests are slow
-
-**Speed is NEVER a reason to use mocks. Mocking is ILLEGAL regardless of test performance.**
+---
 
 ## Key Dependencies
 
@@ -910,26 +486,11 @@ If integration tests become slow:
 - **pyDAL**: ORM system
 - **Renoir**: Template engine
 - **pytest**: Testing framework
-- **coverage**: Test coverage
-- **granian**: ASGI server
+- **Pyright**: Type checking
 - **Chrome DevTools MCP**: UI testing (via MCP server)
 - **Bugsink**: Error tracking (Sentry-compatible)
 
-## Environment & Configuration
-
-Emmett applications use a simple configuration pattern:
-
-```python
-# In app.py
-from emmett import App
-
-app = App(__name__)
-app.config.url_default_namespace = "main"
-app.config.auth.single_template = True
-# ... more config
-```
-
-Environment-specific settings can be handled via environment variables or config files.
+---
 
 ## Architecture Notes
 
@@ -942,49 +503,14 @@ Emmett follows these patterns:
 5. **Renoir Templates**: Python-like template syntax
 6. **Built-in Tools**: Auth, sessions, caching, forms all included
 
-## Important Notes
+---
 
-- **🚨 NO MOCKING**: Using mocks, stubs, or test doubles is ILLEGAL in this repository - ONLY real integration tests are allowed
-- **🐳 USE DOCKER**: Always use Docker for running and testing - it has all dependencies pre-configured
-- The project uses Python 3.9+ (3.13+ recommended)
-- Emmett uses pyDAL for ORM 
-- Migrations are managed via `emmett migrations` command
-- Templates use Renoir syntax (similar to Django templates but with differences)
-- Authentication uses Emmett's built-in `Auth` module
-- WebSocket support is built-in
-- **Error Tracking**: Use Bugsink (http://localhost:8000) - Sentry-compatible API without extension conflicts
-- Docker environment includes:
-  - Gemini CLI for AI assistance
-  - All Python dependencies from requirements.txt
-  - System libraries (gcc, g++, Node.js)
-  - Consistent environment across all development machines
-  - Bugsink for error tracking (Sentry-compatible)
-  - Prometheus for metrics collection
-  - Grafana for visualization
-
-
-## Example Application
-
-The `runtime/` directory contains "Bloggy", a complete micro-blogging application demonstrating:
-- User authentication and registration
-- Admin-only content creation
-- Blog posts with comments
-- Form handling and validation
-- Template inheritance
-- Database relationships
-- REST API with OpenAPI/Swagger documentation
-- Prometheus metrics collection
-- Error tracking with Bugsink (Sentry-compatible)
-
-See `runtime/README.md` for detailed documentation on the example application.
-
-### Monitoring and Observability
+## Monitoring and Observability
 
 **Error Tracking (Bugsink):**
 - URL: http://localhost:8000
 - Credentials: admin:admin_password
-- Sentry-compatible API (use Sentry SDK, point to Bugsink DSN)
-- **Note**: Direct Sentry extension disabled due to Emmett template conflicts
+- Sentry-compatible API
 
 **Metrics (Prometheus):**
 - Application metrics: http://localhost:8081/metrics
@@ -995,27 +521,20 @@ See `runtime/README.md` for detailed documentation on the example application.
 - Interactive docs: http://localhost:8081/api/docs
 - OpenAPI spec: http://localhost:8081/api/openapi.json
 
-## Reference vs Implementation
-
-- **Emmett Documentation** (`/emmett_documentation/`): Reference material for Emmett framework
-- **Project Documentation** (`/documentation/`): Project-specific documentation, guides, and setup instructions
-- **Runtime Application** (`/runtime/`): Working implementation
-- **Setup Scripts** (`/setup/`): Environment setup helpers
-- **Docker Config** (`/docker/`): Container deployment
+---
 
 ## Documentation Structure
 
 All project documentation is organized in `/documentation/`:
 
-- **agents.md** - This file - AI agent instructions (also referenced in OpenSpec)
-- **README_UI_TESTING.md** - Complete guide for UI testing with Chrome DevTools MCP
-- **README_TAILWIND_BUILD.md** - Tailwind CSS setup and build process
-- **README_CHROME_TESTING.md** - Chrome DevTools integration testing patterns
-- **CHROME_TEST_RESULTS.md** - Test results and validation reports
-- **TAILWIND_IMPLEMENTATION_SUMMARY.md** - Detailed implementation notes
+- **agents.md** - This file - AI agent instructions
+- **README_UI_TESTING.md** - UI testing with Chrome DevTools MCP
+- **README_TAILWIND_BUILD.md** - Tailwind CSS setup
+- **README_CHROME_TESTING.md** - Chrome DevTools patterns
 - **bugsink-setup.md** - Error tracking configuration
-- **whitepaper.md** - Project architecture and design principles
-- **credentials.yaml** - Service credentials and configuration
+- **whitepaper.md** - Project architecture
+
+---
 
 ## Learn More
 

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 from emmett import App, session, url, redirect, abort, response, current  # type: ignore[reportUnusedImport]
-from emmett.orm import Database
 from emmett.tools import requires, service
 from emmett.tools.auth import Auth
 from emmett.tools import Mailer
@@ -12,6 +11,7 @@ from emmett_rest import REST
 import sys
 import os
 sys.path.insert(0, os.path.dirname(__file__))
+from database_manager import DatabaseManager, get_db_manager  # type: ignore[reportMissingImports]
 from openapi_generator import OpenAPIGenerator  # type: ignore[reportMissingImports]
 from auto_ui_generator import auto_ui  # type: ignore[reportMissingImports]
 
@@ -60,22 +60,13 @@ app.config.auth.registration_verification = False
 app.config.auth.hmac_key = "november.5.1955"
 
 #: database configuration
-# PostgreSQL connection with environment variable support
-# Note: pyDAL uses 'postgres://' not 'postgresql://'
+# Initialize DatabaseManager singleton for centralized database management
+db_manager = get_db_manager()
 DATABASE_URL = os.environ.get(
     'DATABASE_URL',
     'postgres://bloggy:bloggy_password@postgres:5432/bloggy'
 )
-app.config.db.uri = DATABASE_URL
-
-# PostgreSQL-optimized connection pool settings
-# Use pool_size=0 (no pooling, single connection) for tests to avoid "too many clients"
-# Each test file is a separate process, so pooling causes connection exhaustion
-is_test = 'pytest' in sys.modules or 'TEST_DATABASE_URL' in os.environ or os.path.basename(sys.argv[0]) == 'validate_models.py'
-app.config.db.pool_size = 0 if is_test else int(os.environ.get('DB_POOL_SIZE', '20'))
-app.config.db.adapter_args = {
-    'sslmode': 'prefer',  # Use SSL if available, but don't require it
-}
+db_manager.initialize(app, DATABASE_URL)
 
 #: inject OAuth providers into templates
 # Note: Disabled - @app.before_routes doesn't exist in this Emmett version
@@ -391,146 +382,69 @@ def get_current_session():
 
 
 #: init db, mailer and auth
-# Connection management is handled by DatabaseConnectionPipe in the pipeline
-db = Database(app)
+# Use DatabaseManager for all database operations
+# Expose db for backward compatibility
+db = db_manager.db
 mailer = Mailer(app)
 auth = Auth(app, db, user_model=User)
-db.define_models(Post, Comment, Role, Permission, UserRole, RolePermission, OAuthAccount, OAuthToken)
+db_manager.define_models(Post, Comment, Role, Permission, UserRole, RolePermission, OAuthAccount, OAuthToken)
 
-
-#: Custom pipeline component for explicit PostgreSQL connection management
-from emmett.pipeline import Pipe
-
-class DatabaseConnectionPipe(Pipe):
-    """
-    Pipeline component that explicitly wraps requests in database connection contexts.
-    
-    This is required for PostgreSQL to ensure all database queries (including those
-    in auth handlers) have access to a connection context.
-    """
-    async def open(self):
-        """Establish database connection at start of request"""
-        self._connection = db.connection()
-        await self._connection.__aenter__()
-    
-    async def close(self):
-        """Close database connection at end of request"""
-        if hasattr(self, '_connection'):
-            try:
-                await self._connection.__aexit__(None, None, None)
-            except (KeyError, AttributeError):
-                # Connection already closed or doesn't exist - this is fine
-                # Can happen in test contexts or if connection was closed elsewhere
-                pass
-
-# Create instance of the custom pipe
-db_connection_pipe = DatabaseConnectionPipe()
+# Create database connection pipe for request pipeline
+db_connection_pipe = db_manager.create_connection_pipe()
 
 
 #: Patch Row classes to add custom methods
 # This allows methods defined on Model classes to work on Row objects returned from queries
-def _patch_row_methods():
-    """Add custom methods to Row classes for models."""
-    
-    # Add get_permissions to RoleRow
-    def role_get_permissions(self):
-        """Get permissions for this role (works on Row objects)."""
-        try:
-            role_id = self.id if hasattr(self, 'id') else self['id']
-            rows = db(
-                (db.role_permissions.role == role_id) &
-                (db.role_permissions.permission == db.permissions.id)
-            ).select(db.permissions.ALL)
-            return [row for row in rows]
-        except Exception as e:
-            role_name = getattr(self, 'name', self.get('name', 'unknown')) if hasattr(self, 'get') else getattr(self, 'name', 'unknown')
-            print(f"Error getting permissions for role {role_name}: {e}")
-            return []
-    
-    # Add can_edit to PostRow
-    def post_can_edit(self, user):
-        """Check if user can edit this post (works on Row objects)."""
-        from models.utils import user_can_access_resource
-        if not user:
-            return False
-        user_id = user.id if hasattr(user, 'id') else user['id']
-        return user_can_access_resource(user_id, 'post', 'edit', self)
-    
-    # Add can_delete to PostRow  
-    def post_can_delete(self, user):
-        """Check if user can delete this post (works on Row objects)."""
-        from models.utils import user_can_access_resource
-        if not user:
-            return False
-        user_id = user.id if hasattr(user, 'id') else user['id']
-        return user_can_access_resource(user_id, 'post', 'delete', self)
-    
-    # Patch the Row classes
+def role_get_permissions(self):
+    """Get permissions for this role (works on Row objects)."""
     try:
-        if hasattr(db, 'roles') and hasattr(db.roles, '_rowclass'):
-            db.roles._rowclass.get_permissions = role_get_permissions
-        if hasattr(db, 'posts') and hasattr(db.posts, '_rowclass'):
-            db.posts._rowclass.can_edit = post_can_edit
-            db.posts._rowclass.can_delete = post_can_delete
+        role_id = self.id if hasattr(self, 'id') else self['id']
+        rows = db(
+            (db.role_permissions.role == role_id) &
+            (db.role_permissions.permission == db.permissions.id)
+        ).select(db.permissions.ALL)
+        return [row for row in rows]
     except Exception as e:
-        print(f"Warning: Could not patch Row methods: {e}")
+        role_name = getattr(self, 'name', self.get('name', 'unknown')) if hasattr(self, 'get') else getattr(self, 'name', 'unknown')
+        print(f"Error getting permissions for role {role_name}: {e}")
+        return []
 
-_patch_row_methods()
+def post_can_edit(self, user):
+    """Check if user can edit this post (works on Row objects)."""
+    from models.utils import user_can_access_resource
+    if not user:
+        return False
+    user_id = user.id if hasattr(user, 'id') else user['id']
+    return user_can_access_resource(user_id, 'post', 'edit', self)
+
+def post_can_delete(self, user):
+    """Check if user can delete this post (works on Row objects)."""
+    from models.utils import user_can_access_resource
+    if not user:
+        return False
+    user_id = user.id if hasattr(user, 'id') else user['id']
+    return user_can_access_resource(user_id, 'post', 'delete', self)
+
+# Use DatabaseManager to patch Row classes
+db_manager.patch_row_methods({
+    'roles': {'get_permissions': role_get_permissions},
+    'posts': {'can_edit': post_can_edit, 'can_delete': post_can_delete}
+})
 
 
 #: database helper functions (defined after db is initialized)
 # get_or_404 helper function moved to models/utils.py
+# safe_first and get_or_create are now provided by DatabaseManager
 
-
+# Backward compatibility wrappers
 def safe_first(query, default=None):
-    """
-    Safely get first result from query.
-    
-    Args:
-        query: Emmett query object or Set
-        default: Value to return if no results
-        
-    Returns:
-        First result or default value
-    """
-    try:
-        with db.connection():
-            # Check if query has select method (Set object)
-            if hasattr(query, 'select'):
-                result = query.select().first()
-            else:
-                result = query.first()
-            return result if result else default
-    except Exception as e:
-        print(f"Query error: {e}")
-        return default
+    """Safely get first result from query (delegates to DatabaseManager)."""
+    return db_manager.safe_first(query, default)
 
 
 def get_or_create(model, **kwargs):
-    """
-    Get existing record or create new one.
-    
-    Args:
-        model: Emmett Model class
-        **kwargs: Fields to match/create
-        
-    Returns:
-        (instance, created) tuple
-    """
-    with db.connection():
-        # Try to find existing
-        query = model.where(lambda m: all(
-            getattr(m, k) == v for k, v in kwargs.items()
-        ))
-        existing = safe_first(query)
-        
-        if existing:
-            return (existing, False)
-        
-        # Create new
-        instance = model.create(**kwargs)
-        db.commit()
-        return (instance, True)
+    """Get existing record or create new one (delegates to DatabaseManager)."""
+    return db_manager.get_or_create(model, **kwargs)
 
 
 #: init REST extension
@@ -561,7 +475,7 @@ auto_ui(app, Permission, '/admin/permissions')
 
 #: setup helping function
 def setup_admin():
-    with db.connection():
+    with db_manager.connection():
         # Check if user already exists
         existing_user = User.where(lambda u: u.email == "doc@emmettbrown.com").select().first()
         

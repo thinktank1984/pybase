@@ -21,6 +21,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'runtime'))
 # These will now initialize with TEST_DATABASE_URL
 import app as app_module
 import models
+from database_manager import get_db_manager
 
 
 @pytest.fixture(scope='session', autouse=True)
@@ -33,6 +34,9 @@ def setup_test_environment():
     print("\n🔧 Setting up test environment (session-level)...")
     import subprocess
     from emmett.orm.migrations.utils import generate_runtime_migration
+    
+    # Get DatabaseManager instance
+    db_manager = get_db_manager()
     
     # Get database configuration from environment
     test_db_url = os.environ.get(
@@ -47,13 +51,19 @@ def setup_test_environment():
     # This is necessary because define_models() was called when app.py was imported
     # (before the database existed), so the table metadata needs to be refreshed
     print("   🔄 Re-syncing pyDAL table metadata after migrations...")
-    app_module.db.define_models(
+    db_manager.define_models(
         models.Post, models.Comment, models.Role, models.Permission,
         models.UserRole, models.RolePermission, models.OAuthAccount, models.OAuthToken
     )
     
     # Re-patch Row methods after redefining models (creates new Row classes)
-    app_module._patch_row_methods()
+    db_manager.patch_row_methods({
+        'roles': {'get_permissions': app_module.role_get_permissions},
+        'posts': {
+            'can_edit': app_module.post_can_edit,
+            'can_delete': app_module.post_can_delete
+        }
+    })
     print("   ✅ Table metadata synchronized with PostgreSQL schema")
     
     yield
@@ -102,9 +112,20 @@ def db():
     Provide the database instance for session scope.
     
     Returns:
-        Database: Emmett database instance
+        Database: Emmett database instance (via DatabaseManager)
     """
-    return app_module.db
+    return get_db_manager().db
+
+
+@pytest.fixture(scope='session')
+def db_manager():
+    """
+    Provide the DatabaseManager instance for session scope.
+    
+    Returns:
+        DatabaseManager: DatabaseManager singleton instance
+    """
+    return get_db_manager()
 
 
 def ensure_db_connection(db_instance):
@@ -119,9 +140,13 @@ def ensure_db_connection(db_instance):
             user = User.create(email="test@test.com", password="test")
     
     Args:
-        db_instance: Database instance from fixture
+        db_instance: Database instance from fixture or DatabaseManager
         
     Returns:
         Context manager for database connection
     """
+    # Check if it's a DatabaseManager instance
+    if hasattr(db_instance, 'connection') and callable(db_instance.connection):
+        return db_instance.connection()
+    # Otherwise assume it's a Database instance
     return db_instance.connection()
