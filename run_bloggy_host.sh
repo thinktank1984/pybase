@@ -55,6 +55,7 @@ echo ""
 echo -e "${GREEN}✅ Setup complete! Starting development server...${NC}"
 echo ""
 echo "Access the application at: ${GREEN}http://localhost:8000${NC}"
+echo "In GitHub Codespaces: Use port forwarding to access the app"
 echo ""
 echo "Login with:"
 echo "  Email: ${YELLOW}doc@emmettbrown.com${NC}"
@@ -63,5 +64,5 @@ echo ""
 echo -e "${BLUE}Press Ctrl+C to stop the server${NC}"
 echo ""
 
-# Start the server
-uv run --python ../venv/bin/python emmett develop
+# Start the server - bind to all interfaces for GitHub Codespaces compatibility
+uv run --python ../venv/bin/python emmett develop --host 0.0.0.0

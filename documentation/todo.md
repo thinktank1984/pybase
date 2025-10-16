@@ -1,4 +1,4 @@
-Support Turso Database · GitHub https://github.com/tursodatabase
+/proposal Support Turso Database · GitHub https://github.com/tursodatabase
     for backend
     for frontend
     

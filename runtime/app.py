@@ -64,7 +64,7 @@ app.config.auth.hmac_key = "november.5.1955"
 db_manager = get_db_manager()
 DATABASE_URL = os.environ.get(
     'DATABASE_URL',
-    'postgres://bloggy:bloggy_password@postgres:5432/bloggy'
+    'sqlite://bloggy.db'
 )
 db_manager.initialize(app, DATABASE_URL)
 
@@ -1094,8 +1094,8 @@ async def api_root():
         'message': 'Bloggy REST API',
         'version': '1.0.0',
         'documentation': {
-            'swagger_ui': 'http://localhost:8081/api/docs',
-            'openapi_spec': 'http://localhost:8081/api/openapi.json'
+            'swagger_ui': 'http://localhost:8000/api/docs',
+            'openapi_spec': 'http://localhost:8000/api/openapi.json'
         },
         'endpoints': {
             'posts': '/api/posts',

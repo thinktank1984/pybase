@@ -99,12 +99,22 @@ class DatabaseManager:
         # Configure connection pooling based on environment
         is_test = 'pytest' in sys.modules or 'TEST_DATABASE_URL' in os.environ or \
                   os.path.basename(sys.argv[0]) == 'validate_models.py'
-        
-        # Use pool_size=0 (no pooling) for tests to avoid "too many clients"
-        app.config.db.pool_size = 0 if is_test else int(os.environ.get('DB_POOL_SIZE', '20'))
-        app.config.db.adapter_args = {
-            'sslmode': 'prefer',  # Use SSL if available, but don't require it
-        }
+
+        # Use pool_size=0 (no pooling) for tests and SQLite to avoid transaction issues
+        is_sqlite = database_url.startswith('sqlite:')
+        app.config.db.pool_size = 0 if is_test or is_sqlite else int(os.environ.get('DB_POOL_SIZE', '20'))
+
+        # SQLite-specific configuration to avoid transaction issues
+        if is_sqlite:
+            app.config.db.adapter_args = {
+                'journal_mode': 'WAL',  # Write-Ahead Logging for better concurrency
+                'synchronous': 'NORMAL',  # Less strict sync for development
+                'foreign_keys': 'ON',  # Enable foreign key constraints
+            }
+        else:
+            app.config.db.adapter_args = {
+                'sslmode': 'prefer',  # Use SSL if available, but don't require it
+            }
         
         # Initialize database
         self._db = Database(app)
