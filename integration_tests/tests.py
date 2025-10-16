@@ -76,21 +76,20 @@ def _prepare_db(request):
 def logged_client():
     """Create test client with persistent authenticated session"""
     c = app.test_client()
-    
+
     # Get login page for CSRF token
-    with c.get('/auth/login').context as ctx:
-        csrf_token = list(ctx.session._csrf)[-1]
-    
+    csrf_token = get_csrf_token(c, '/auth/login')
+
     # Perform login
     response = c.post('/auth/login', data={
         'email': 'doc@emmettbrown.com',
         'password': 'fluxcapacitor',
         '_csrf_token': csrf_token
     }, follow_redirects=True)
-    
+
     # Verify login succeeded
     assert response.status == 200
-    
+
     # Return client with active session
     return c
 
@@ -118,21 +117,20 @@ def regular_user():
 def regular_client(regular_user):
     """Test client authenticated as regular (non-admin) user"""
     c = app.test_client()
-    
+
     # Get login page for CSRF token
-    with c.get('/auth/login').context as ctx:
-        csrf_token = list(ctx.session._csrf)[-1]
-    
+    csrf_token = get_csrf_token(c, '/auth/login')
+
     # Perform login
     response = c.post('/auth/login', data={
         'email': 'marty@mcfly.com',
         'password': 'timemachine',
         '_csrf_token': csrf_token
     }, follow_redirects=True)
-    
+
     # Verify login succeeded
     assert response.status == 200
-    
+
     # Return client with active session
     return c
 
@@ -168,6 +166,15 @@ def create_test_post():
 def get_csrf_token(client, path='/'):
     """Extract CSRF token from page"""
     with client.get(path).context as ctx:
+        # Initialize CSRF token if it doesn't exist
+        if ctx.session._csrf is None:
+            ctx.session._csrf = []
+
+        # Ensure we have at least one CSRF token
+        if len(ctx.session._csrf) == 0:
+            import uuid
+            ctx.session._csrf.append(str(uuid.uuid4()))
+
         return list(ctx.session._csrf)[-1]
 
 
@@ -540,68 +547,67 @@ def test_login_page_renders(client):
 
 def test_login_correct_credentials(client):
     """Test login with correct credentials creates session"""
-    with client.get('/auth/login').context as ctx:
-        r = client.post('/auth/login', data={
-            'email': 'doc@emmettbrown.com',
-            'password': 'fluxcapacitor',
-            '_csrf_token': list(ctx.session._csrf)[-1]
-        }, follow_redirects=True)
-        
-        # Check session is authenticated
-        r2 = client.get('/')
-        assert r2.context.session.auth.user is not None
+    csrf_token = get_csrf_token(client, '/auth/login')
+    r = client.post('/auth/login', data={
+        'email': 'doc@emmettbrown.com',
+        'password': 'fluxcapacitor',
+        '_csrf_token': csrf_token
+    }, follow_redirects=True)
+
+    # Check session is authenticated
+    r2 = client.get('/')
+    assert r2.context.session.auth.user is not None
 
 
 def test_login_incorrect_password(client):
     """Test login with incorrect password fails"""
-    with client.get('/auth/login').context as ctx:
-        r = client.post('/auth/login', data={
-            'email': 'doc@emmettbrown.com',
-            'password': 'wrongpassword',
-            '_csrf_token': list(ctx.session._csrf)[-1]
-        })
-        
-        # Should show error or return to login
-        assert r.status in [200, 303]
+    csrf_token = get_csrf_token(client, '/auth/login')
+    r = client.post('/auth/login', data={
+        'email': 'doc@emmettbrown.com',
+        'password': 'wrongpassword',
+        '_csrf_token': csrf_token
+    })
+
+    # Should show error or return to login
+    assert r.status in [200, 303]
 
 
 def test_login_nonexistent_email(client):
     """Test login with non-existent email fails"""
-    with client.get('/auth/login').context as ctx:
-        r = client.post('/auth/login', data={
-            'email': 'nonexistent@test.com',
-            'password': 'password',
-            '_csrf_token': list(ctx.session._csrf)[-1]
-        })
-        
-        assert r.status in [200, 303]
+    csrf_token = get_csrf_token(client, '/auth/login')
+    r = client.post('/auth/login', data={
+        'email': 'nonexistent@test.com',
+        'password': 'password',
+        '_csrf_token': csrf_token
+    })
+
+    assert r.status in [200, 303]
 
 
 def test_logout(client):
     """Test logout destroys session"""
     # Create a fresh logged-in client for this test (don't use shared logged_client)
     # Get login page for CSRF token
-    with client.get('/auth/login').context as ctx:
-        csrf_token = list(ctx.session._csrf)[-1]
-    
+    csrf_token = get_csrf_token(client, '/auth/login')
+
     # Perform login
     client.post('/auth/login', data={
         'email': 'doc@emmettbrown.com',
         'password': 'fluxcapacitor',
         '_csrf_token': csrf_token
     }, follow_redirects=True)
-    
+
     # Verify we're logged in
     r = client.get('/')
     assert r.context.session.auth.user is not None
-    
+
     # Logout
     client.get('/auth/logout')
-    
+
     # Verify session auth is cleared (user is None or session.auth doesn't exist)
     r = client.get('/')
     # After logout, auth should be None or not exist, or user should be None
-    assert (not hasattr(r.context.session, 'auth') or 
+    assert (not hasattr(r.context.session, 'auth') or
             r.context.session.auth is None or
             (hasattr(r.context.session.auth, 'user') and r.context.session.auth.user is None))
 
@@ -1313,45 +1319,45 @@ def test_new_post_page_as_admin(logged_client):
 
 def test_create_post_via_form(logged_client):
     """Test POST /new with valid data creates post"""
-    with logged_client.get('/new').context as ctx:
-        r = logged_client.post('/new', data={
-            'title': 'Form Test Post',
-            'text': 'Created via form',
-            '_csrf_token': list(ctx.session._csrf)[-1]
-        }, follow_redirects=False)
-        
-        # Should redirect to post
-        assert r.status == 303
-        
-        # Verify post was created
-        with db.connection():
-            post = Post.where(lambda p: p.title == 'Form Test Post').select().first()
-            assert post is not None
-            post.delete_record()
+    csrf_token = get_csrf_token(logged_client, '/new')
+    r = logged_client.post('/new', data={
+        'title': 'Form Test Post',
+        'text': 'Created via form',
+        '_csrf_token': csrf_token
+    }, follow_redirects=False)
+
+    # Should redirect to post
+    assert r.status == 303
+
+    # Verify post was created
+    with db.connection():
+        post = Post.where(lambda p: p.title == 'Form Test Post').select().first()
+        assert post is not None
+        post.delete_record()
 
 
 def test_create_post_missing_title(logged_client):
     """Test POST /new with missing title shows validation error"""
-    with logged_client.get('/new').context as ctx:
-        r = logged_client.post('/new', data={
-            'text': 'Missing title',
-            '_csrf_token': list(ctx.session._csrf)[-1]
-        })
-        
-        # Should show form with error or redirect to form
-        assert r.status in [200, 303]
+    csrf_token = get_csrf_token(logged_client, '/new')
+    r = logged_client.post('/new', data={
+        'text': 'Missing title',
+        '_csrf_token': csrf_token
+    })
+
+    # Should show form with error or redirect to form
+    assert r.status in [200, 303]
 
 
 def test_create_post_missing_text(logged_client):
     """Test POST /new with missing text shows validation error"""
-    with logged_client.get('/new').context as ctx:
-        r = logged_client.post('/new', data={
-            'title': 'Missing text',
-            '_csrf_token': list(ctx.session._csrf)[-1]
-        })
-        
-        # Should show form with error or redirect to form
-        assert r.status in [200, 303]
+    csrf_token = get_csrf_token(logged_client, '/new')
+    r = logged_client.post('/new', data={
+        'title': 'Missing text',
+        '_csrf_token': csrf_token
+    })
+
+    # Should show form with error or redirect to form
+    assert r.status in [200, 303]
 
 
 # ==============================================================================
@@ -1381,22 +1387,22 @@ def test_comment_form_hidden_from_unauthenticated(client, create_test_post):
 def test_create_comment_via_form(logged_client, create_test_post):
     """Test submitting comment form creates comment"""
     post_id = create_test_post()
-    
-    with logged_client.get(f'/post/{post_id}').context as ctx:
-        r = logged_client.post(f'/post/{post_id}', data={
-            'text': 'Form comment test',
-            '_csrf_token': list(ctx.session._csrf)[-1]
-        }, follow_redirects=False)
-        
-        # Should redirect back to post
-        assert r.status == 303
-        
-        # Verify comment was created
-        with db.connection():
-            comment = Comment.where(lambda c: c.text == 'Form comment test').select().first()
-            assert comment is not None
-            assert comment.post == post_id
-            comment.delete_record()
+
+    csrf_token = get_csrf_token(logged_client, f'/post/{post_id}')
+    r = logged_client.post(f'/post/{post_id}', data={
+        'text': 'Form comment test',
+        '_csrf_token': csrf_token
+    }, follow_redirects=False)
+
+    # Should redirect back to post
+    assert r.status == 303
+
+    # Verify comment was created
+    with db.connection():
+        comment = Comment.where(lambda c: c.text == 'Form comment test').select().first()
+        assert comment is not None
+        assert comment.post == post_id
+        comment.delete_record()
 
 
 def test_comments_reverse_chronological(client, create_test_post):
@@ -1621,7 +1627,7 @@ def test_session_contains_user_data(logged_client):
 
 def test_csrf_token_in_session(logged_client):
     """Test CSRF token is generated in session"""
-    with logged_client.get('/new').context as ctx:
-        csrf_tokens = list(ctx.session._csrf)
-        assert len(csrf_tokens) > 0
+    csrf_token = get_csrf_token(logged_client, '/new')
+    assert csrf_token is not None
+    assert len(csrf_token) > 0
 

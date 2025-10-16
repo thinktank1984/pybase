@@ -892,8 +892,8 @@ async def auth_login():
     from emmett import request, response
     if request.method == 'POST':
         from emmett import session, redirect, url
-        email = request.body_params.get('email')
-        password = request.body_params.get('password')
+        email = (await request.body_params).get('email')
+        password = (await request.body_params).get('password')
 
         # Simple authentication check
         if email == 'doc@emmettbrown.com' and password == 'fluxcapacitor':
