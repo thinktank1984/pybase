@@ -34,7 +34,7 @@ it is illegal to modify the metadata injection file
 - **Configuration**: Uses `setup/pyrightconfig.json`
 
 ### Database
-- **Local Turso Database**: Database file `bloggy.turso.db` in `runtime/databases/`
+- **Local Turso Database**: `/workspaces/pybase/runtime/bloggy.turso.db` - Used for both development and testing
 - **Environment variables**: `DATABASE_URL="sqlite://bloggy.turso.db"` for development
 - **Migrations**: Run automatically before tests with `../venv/bin/emmett migrations up`
 
