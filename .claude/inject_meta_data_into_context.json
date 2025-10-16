@@ -1,4 +1,18 @@
 {
+  "_description": {
+    "purpose": "Centralized docstring definitions for automated documentation management",
+    "usage": {
+      "how_it_works": "This file defines docstrings that are automatically injected into Python functions via the insert_docstrings.py script",
+      "hook_integration": "The UserPromptSubmit hook in .claude/settings.json runs the script on every user query to keep docstrings synchronized",
+      "file_structure": {
+        "keys": "File paths (relative to project root) containing functions to document",
+        "values": "Objects mapping function/method names to their docstrings",
+        "class_methods": "Use 'ClassName.method' syntax for methods within classes"
+      },
+      "adding_functions": "To add new functions, edit this file with 'filename': {'function_name': 'docstring content'}",
+      "synchronization": "Changes to this file will be automatically applied to target Python files on the next user query"
+    }
+  },
   "runtime/models/utils.py": {
     "get_db": "Get database instance from current context or app module.\n\nWorks in both application runtime and test contexts.\n\nReturns:\n    Database instance",
     "get_or_404": "Get model instance by ID or abort with 404.\n\nArgs:\n    model: Emmett Model class\n    record_id: Primary key value\n    \nReturns:\n    Model instance\n    \nRaises:\n    404 if not found",
