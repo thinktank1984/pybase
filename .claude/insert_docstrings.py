@@ -108,9 +108,11 @@ def update_file(source_path: Path, doc_map: dict[str, str]):
 
 
 def main():
-    meta_path = Path("meta_data.json")
+    script_dir = Path(__file__).parent
+    meta_path = script_dir / "inject_meta_data_into_context.json"
+    project_root = script_dir.parent
     if not meta_path.exists():
-        sys.exit("❌ meta_data.json not found in current directory.")
+        sys.exit("❌ inject_meta_data_into_context.json not found in .claude directory.")
 
     with open(meta_path, encoding="utf-8") as f:
         meta = json.load(f)
@@ -119,7 +121,9 @@ def main():
         sys.exit("❌ meta_data.json must be a dict mapping file paths → functions.")
 
     for file_path, funcs in meta.items():
-        update_file(Path(file_path), funcs)
+        # Convert relative paths to absolute paths from project root
+        full_path = project_root / file_path if not Path(file_path).is_absolute() else Path(file_path)
+        update_file(full_path, funcs)
 
 
 if __name__ == "__main__":
