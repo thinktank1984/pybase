@@ -105,6 +105,7 @@ psycopg2-binary>=2.9.0  # PostgreSQL adapter for pyDAL (primary database)
 pymysql>=1.1.0          # MySQL adapter (optional)
 redis>=5.0.0            # Redis client
 valkey>=5.0.0           # Valkey client (Redis-compatible, open-source alternative)
+libsql-client>=0.5.0    # Turso Database client (libsql/SQLite-compatible)
 
 # ============================================================================
 # API Enhancements

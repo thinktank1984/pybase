@@ -42,6 +42,7 @@ no inmemeory tests
 - **Emmett Framework**: Python web framework similar to Flask/Django
 - **Database**: SQLite for development, PostgreSQL in Docker
 - **ORM**: Emmett's built-in ORM with model validation
+- **Design Pattern**: Active Record pattern - models encapsulate both data and behavior
 
 ### Key Components
 
@@ -63,6 +64,27 @@ no inmemeory tests
 - `runtime/auto_ui_generator.py`: Automatic UI generation from models
 - `runtime/openapi_generator.py`: OpenAPI specification generation
 - `runtime/emmett_rest/`: REST framework implementation
+
+### Auto-Generated Forms and Pages
+Forms and pages are automatically generated from database models using the **Active Record pattern**:
+
+**How it works:**
+1. **Model introspection**: The `auto_ui_generator.py` analyzes model fields, relationships, and validation rules
+2. **Dynamic form generation**: Creates appropriate form inputs based on field types (text, email, password, select, etc.)
+3. **CRUD page generation**: Automatically creates Create, Read, Update, Delete pages for each model
+4. **Template rendering**: Uses Emmett templates with Tailwind CSS for responsive UI
+
+**Generation process:**
+- Models define fields, relationships, and validation rules
+- `auto_ui` decorator automatically registers UI routes
+- Forms are generated dynamically with proper validation
+- Pages are created using templates in `runtime/templates/`
+- REST API endpoints are created alongside UI pages
+
+**Key files:**
+- `runtime/auto_ui_generator.py`: Core UI generation logic
+- `runtime/templates/`: HTML templates for auto-generated pages
+- Model files in `runtime/models/`: Define the structure and validation rules
 
 #### Frontend
 - Templates in `runtime/templates/`

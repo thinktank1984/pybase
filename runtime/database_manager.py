@@ -11,7 +11,10 @@ This module provides a singleton class that manages all database-related concern
 
 import os
 import sys
+import re
+import time
 from typing import Optional, Any, Tuple
+from urllib.parse import urlparse
 from emmett.orm import Database
 
 
@@ -47,6 +50,8 @@ class DatabaseManager:
         self._db: Optional[Database] = None
         self._app: Optional[Any] = None
         self._connection_pipe: Optional[Any] = None
+        self._db_type: str = 'unknown'
+        self._turso_client: Optional[Any] = None
     
     @classmethod
     def get_instance(cls) -> 'DatabaseManager':
@@ -86,13 +91,25 @@ class DatabaseManager:
             return self._db  # type: ignore[return-value]
         
         self._app = app
-        
-        # Configure database URL
+
+        # Configure database URL with Turso support
         if database_url is None:
+            # Check for Turso-specific environment variable first
             database_url = os.environ.get(
-                'DATABASE_URL',
-                'sqlite://bloggy.db'
+                'TURSO_DATABASE_URL',
+                os.environ.get(
+                    'DATABASE_URL',
+                    'sqlite://bloggy.db'
+                )
             )
+
+        # Detect database type
+        self._db_type = self._detect_database_type(database_url)
+        print(f"🔍 Detected database type: {self._db_type}")
+
+        # For Turso, we need special handling
+        if self._db_type == 'turso':
+            return self._initialize_turso(app, database_url)
         
         app.config.db.uri = database_url
         
@@ -150,6 +167,15 @@ class DatabaseManager:
     def is_initialized(self) -> bool:
         """Check if the database manager is initialized."""
         return self._initialized
+
+    @property
+    def database_type(self) -> str:
+        """Get the detected database type."""
+        return self._db_type
+
+    def is_turso(self) -> bool:
+        """Check if using Turso database."""
+        return self._db_type == 'turso'
     
     def define_models(self, *models):
         """
@@ -346,11 +372,149 @@ class DatabaseManager:
         return self._db(*args, **kwargs)
 
 
+  def _detect_database_type(self, database_url: str) -> str:
+        """
+        Detect database type from URL pattern.
+
+        Args:
+            database_url: Database connection URL
+
+        Returns:
+            str: Database type ('turso', 'sqlite', 'postgres', 'mysql', 'unknown')
+        """
+        if database_url.startswith('libsql://') or database_url.startswith('https://') and 'turso' in database_url:
+            return 'turso'
+        elif database_url.startswith('sqlite:'):
+            return 'sqlite'
+        elif database_url.startswith('postgres://') or database_url.startswith('postgresql://'):
+            return 'postgres'
+        elif database_url.startswith('mysql://'):
+            return 'mysql'
+        else:
+            return 'unknown'
+
+    def _initialize_turso(self, app: Any, database_url: str) -> Database:
+        """
+        Initialize Turso database connection.
+
+        Args:
+            app: Emmett application instance
+            database_url: Turso database URL
+
+        Returns:
+            Database: Initialized database instance
+        """
+        try:
+            # Import libsql-client
+            import libsql_client
+        except ImportError:
+            raise ImportError(
+                "libsql-client is required for Turso database support. "
+                "Install it with: pip install libsql-client"
+            )
+
+        try:
+            # Parse Turso URL and extract authentication token
+            parsed_url = urlparse(database_url)
+            host = parsed_url.hostname or parsed_url.netloc
+            auth_token = None
+
+            # Get auth token from URL fragment or environment
+            if parsed_url.fragment:
+                auth_token = parsed_url.fragment
+            else:
+                auth_token = os.environ.get('TURSO_AUTH_TOKEN')
+
+            if not auth_token:
+                print("⚠️  Warning: No Turso auth token found. Set TURSO_AUTH_TOKEN environment variable.")
+
+            # Create Turso client with retry logic
+            self._turso_client = self._create_turso_client_with_retry(host, auth_token)
+
+            # Configure Emmett to use SQLite-compatible settings
+            # Turso is SQLite-compatible, so we can use pyDAL with SQLite adapter
+            sqlite_fallback_url = f"sqlite:memory?turso_host={host}"
+            if auth_token:
+                sqlite_fallback_url += f"&turso_token={auth_token}"
+
+            app.config.db.uri = sqlite_fallback_url
+
+            # Configure connection pooling for Turso (network-based)
+            is_test = 'pytest' in sys.modules or 'TEST_DATABASE_URL' in os.environ
+            app.config.db.pool_size = 1 if is_test else int(os.environ.get('DB_POOL_SIZE', '10'))
+
+            # Turso-specific configuration
+            app.config.db.adapter_args = {
+                'journal_mode': 'WAL',  # Better for concurrent access
+                'synchronous': 'NORMAL',  # Balance between performance and safety
+                'foreign_keys': 'ON',  # Enable foreign key constraints
+                'timeout': 30,  # Connection timeout
+            }
+
+            # Initialize database with standard pyDAL
+            self._db = Database(app)
+
+            print(f"✅ Turso DatabaseManager initialized: {host}")
+            print(f"   Pool size: {app.config.db.pool_size} (test mode: {is_test})")
+            print(f"   Auth token: {'✓' if auth_token else '✗'}")
+
+            self._initialized = True
+            return self._db
+
+        except Exception as e:
+            print(f"❌ Failed to initialize Turso database: {e}")
+            # Fallback to SQLite
+            print("🔄 Falling back to SQLite database...")
+            app.config.db.uri = 'sqlite://bloggy_turso_fallback.db'
+            return self.initialize(app, app.config.db.uri)
+
+    def _create_turso_client_with_retry(self, host: str, auth_token: Optional[str], max_retries: int = 3) -> Any:
+        """
+        Create Turso client with retry logic.
+
+        Args:
+            host: Turso database host
+            auth_token: Authentication token
+            max_retries: Maximum number of retry attempts
+
+        Returns:
+            Turso client instance
+        """
+        import libsql_client
+
+        for attempt in range(max_retries):
+            try:
+                if auth_token:
+                    client = libsql_client.create_client_sync(
+                        url=f"https://{host}",
+                        auth_token=auth_token
+                    )
+                else:
+                    client = libsql_client.create_client_sync(
+                        url=f"https://{host}"
+                    )
+
+                # Test connection
+                client.execute("SELECT 1")
+                print(f"✅ Turso client connected (attempt {attempt + 1})")
+                return client
+
+            except Exception as e:
+                if attempt == max_retries - 1:
+                    raise Exception(f"Failed to connect to Turso after {max_retries} attempts: {e}")
+
+                wait_time = 2 ** attempt  # Exponential backoff
+                print(f"⚠️  Turso connection failed (attempt {attempt + 1}), retrying in {wait_time}s: {e}")
+                time.sleep(wait_time)
+
+        raise Exception("Failed to create Turso client")
+
+
 # Convenience function for getting the singleton instance
 def get_db_manager() -> DatabaseManager:
     """
     Get the DatabaseManager singleton instance.
-    
+
     Returns:
         DatabaseManager: The singleton instance
     """
