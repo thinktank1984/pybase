@@ -482,17 +482,17 @@ class DatabaseManager:
     def patch_row_methods(self, patches: dict):
         """
         Apply custom methods to Row classes for models.
-        
+
         This allows methods defined on Model classes to work on Row objects
         returned from queries.
-        
+
         Args:
             patches: Dictionary mapping table names to method dictionaries
                      Example: {'roles': {'get_permissions': func}, 'posts': {'can_edit': func}}
         """
         if self._db is None:
             raise RuntimeError("Database not initialized")
-        
+
         try:
             for table_name, methods in patches.items():
                 table = getattr(self._db, table_name, None)
