@@ -127,7 +127,7 @@ This implementation follows an **active-record pattern** where:
    from emmett.tools.auth import Auth, AuthUser
 
    app = App(__name__)
-   app.config.db.uri = "postgresql://user:password@localhost:5432/dbname"
+   app.config.db.uri = "sqlite:///database.db"
    
    class User(AuthUser):
        pass
@@ -290,7 +290,7 @@ from emmett.sessions import SessionManager
 
 # Initialize app
 app = App(__name__)
-app.config.db.uri = "postgresql://bloggy:password@localhost:5432/bloggy"
+app.config.db.uri = "sqlite:///bloggy.db"
 app.config.auth.hmac_key = "your-secret-key"
 app.config.auth.single_template = True
 

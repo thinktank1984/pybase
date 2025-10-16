@@ -8,10 +8,15 @@ import sys
 import os
 
 # Set test database URL BEFORE importing app so it initializes with test database
-TEST_DATABASE_URL = os.environ.get(
-    'TEST_DATABASE_URL',
-    'postgres://bloggy:bloggy_password@postgres:5432/bloggy_test'
-)
+# Use environment variable if set, otherwise use default (prioritize SQLite for host testing)
+if 'TEST_DATABASE_URL' in os.environ:
+    TEST_DATABASE_URL = os.environ['TEST_DATABASE_URL']
+elif 'DATABASE_URL' in os.environ:
+    TEST_DATABASE_URL = os.environ['DATABASE_URL']
+else:
+    # Default to SQLite for host testing, fallback to PostgreSQL for Docker
+    TEST_DATABASE_URL = 'sqlite://bloggy.db'
+
 os.environ['DATABASE_URL'] = TEST_DATABASE_URL
 
 # Add runtime to path
@@ -39,13 +44,21 @@ def setup_test_environment():
     db_manager = get_db_manager()
     
     # Get database configuration from environment
-    test_db_url = os.environ.get(
-        'TEST_DATABASE_URL',
-        'postgres://bloggy:bloggy_password@postgres:5432/bloggy_test'
-    )
+    if 'TEST_DATABASE_URL' in os.environ:
+        test_db_url = os.environ['TEST_DATABASE_URL']
+    elif 'DATABASE_URL' in os.environ:
+        test_db_url = os.environ['DATABASE_URL']
+    else:
+        # Default to SQLite for host testing, fallback to PostgreSQL for Docker
+        test_db_url = 'sqlite://bloggy.db'
     
-    print(f"   ✅ Using persistent test database from Docker")
-    print("   ✅ Database schema maintained by Docker (migrations already applied)")
+    # Update print statements based on database type
+    if test_db_url.startswith('sqlite'):
+        print(f"   ✅ Using SQLite database: {test_db_url}")
+        print("   ✅ Database schema managed by host migrations")
+    else:
+        print(f"   ✅ Using persistent test database: {test_db_url}")
+        print("   ✅ Database schema maintained by Docker (migrations already applied)")
     
     # CRITICAL: Re-define models after migrations to sync pyDAL table metadata
     # This is necessary because define_models() was called when app.py was imported
@@ -64,7 +77,11 @@ def setup_test_environment():
             'can_delete': app_module.post_can_delete
         }
     })
-    print("   ✅ Table metadata synchronized with PostgreSQL schema")
+    # Update metadata sync message based on database type
+    if test_db_url.startswith('sqlite'):
+        print("   ✅ Table metadata synchronized with SQLite schema")
+    else:
+        print("   ✅ Table metadata synchronized with PostgreSQL schema")
     
     yield
     

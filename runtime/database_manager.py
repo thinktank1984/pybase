@@ -100,9 +100,15 @@ class DatabaseManager:
         is_test = 'pytest' in sys.modules or 'TEST_DATABASE_URL' in os.environ or \
                   os.path.basename(sys.argv[0]) == 'validate_models.py'
 
-        # Use pool_size=0 (no pooling) for tests and SQLite to avoid transaction issues
+        # Use pool_size=1 for tests to allow basic connection management
+        # Use pool_size=0 for non-test SQLite to avoid transaction issues
         is_sqlite = database_url.startswith('sqlite:')
-        app.config.db.pool_size = 0 if is_test or is_sqlite else int(os.environ.get('DB_POOL_SIZE', '20'))
+        if is_test and is_sqlite:
+            app.config.db.pool_size = 1  # Allow minimal pooling for test SQLite
+        elif is_test:
+            app.config.db.pool_size = 1  # Allow minimal pooling for other test databases
+        else:
+            app.config.db.pool_size = 0 if is_sqlite else int(os.environ.get('DB_POOL_SIZE', '20'))
 
         # SQLite-specific configuration to avoid transaction issues
         if is_sqlite:

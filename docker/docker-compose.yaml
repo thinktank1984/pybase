@@ -47,8 +47,8 @@ services:
       CREATE_SUPERUSER: "admin:admin_password"
       PORT: 8000
 
-      # Database (PostgreSQL)
-      DATABASE_URL: "postgresql://bugsink:bugsink_password@bugsink_db:5432/bugsink"
+      # Database (SQLite)
+      DATABASE_URL: "sqlite:///bugsink.db"
 
       # Optional: public URL if behind proxy
       BASE_URL: "http://localhost:8000"
@@ -131,8 +131,8 @@ services:
       - PYTHONUNBUFFERED=1
       - EMMETT_ENV=development
       # Database configuration
-      - DATABASE_URL=postgres://bloggy:bloggy_password@postgres:5432/bloggy
-      - TEST_DATABASE_URL=postgres://bloggy:bloggy_password@postgres:5432/bloggy_test
+      - DATABASE_URL=sqlite:///bloggy.db
+      - TEST_DATABASE_URL=sqlite:///bloggy_test.db
       - DB_POOL_SIZE=20
       # Valkey cache configuration (optional - enable with VALKEY_ENABLED=true)
       - VALKEY_ENABLED=false
@@ -145,9 +145,7 @@ services:
     working_dir: /app/runtime
     entrypoint: ["/bin/bash", "/app/docker/entrypoint.sh"]
     command: ["emmett", "serve", "--host", "0.0.0.0", "--port", "8081"]
-    depends_on:
-      postgres:
-        condition: service_healthy
+    # No database dependency needed for SQLite
       valkey:
         condition: service_healthy
 
