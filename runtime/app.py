@@ -427,6 +427,7 @@ def post_can_delete(self, user):
 
 # Use DatabaseManager to patch Row classes
 db_manager.patch_row_methods({
+    'users': {'has_permission': lambda user, permission_name: user_has_permission(user.id, permission_name)},
     'roles': {'get_permissions': role_get_permissions},
     'posts': {'can_edit': post_can_edit, 'can_delete': post_can_delete}
 })

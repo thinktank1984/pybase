@@ -172,8 +172,18 @@ if [ ! -d "runtime" ]; then
 fi
 
 # Set environment variables for SQLite database for local development
-export DATABASE_URL="sqlite://bloggy_test.db"
-export TEST_DATABASE_URL="sqlite://bloggy_test.db"
+# Use same database as run_bloggy_host.sh
+export DATABASE_URL="sqlite://bloggy.db"
+export TEST_DATABASE_URL="sqlite://bloggy.db"
+
+# Run database migrations before tests
+echo -e "${CYAN}🔄 Running database migrations...${NC}"
+if ! (cd runtime && DATABASE_URL="sqlite://bloggy.db" ../venv/bin/emmett migrations up); then
+    echo -e "${RED}❌ Database migration failed${NC}"
+    exit 1
+fi
+echo -e "${GREEN}✅ Database migrations completed${NC}"
+echo ""
 
 # Check if pytest is available in virtual environment
 if [ ! -f "./venv/bin/pytest" ]; then
@@ -194,52 +204,87 @@ if [ "$SEPARATE_MODE" = true ]; then
     # Timestamp for this run
     TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 
+    # Track overall test failures
+    OVERALL_SUCCESS=0
+
     echo -e "${YELLOW}[1/8]${NC} Running tests.py (main integration tests)..."
-    ./venv/bin/pytest integration_tests/tests.py -v --tb=short \
-        > "${OUTPUT_DIR}/01_tests_${TIMESTAMP}.txt" 2>&1 || true
-    echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/01_tests_${TIMESTAMP}.txt"
+    if ./venv/bin/pytest integration_tests/tests.py -v --tb=short \
+        > "${OUTPUT_DIR}/01_tests_${TIMESTAMP}.txt" 2>&1; then
+        echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/01_tests_${TIMESTAMP}.txt"
+    else
+        echo -e "${RED}✗${NC} Tests failed - Output saved to ${OUTPUT_DIR}/01_tests_${TIMESTAMP}.txt"
+        OVERALL_SUCCESS=1
+    fi
     echo ""
 
     echo -e "${YELLOW}[2/8]${NC} Running test_oauth_real.py (OAuth integration tests)..."
-    ./venv/bin/pytest integration_tests/test_oauth_real.py -v --tb=short \
-        > "${OUTPUT_DIR}/02_oauth_${TIMESTAMP}.txt" 2>&1 || true
-    echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/02_oauth_${TIMESTAMP}.txt"
+    if ./venv/bin/pytest integration_tests/test_oauth_real.py -v --tb=short \
+        > "${OUTPUT_DIR}/02_oauth_${TIMESTAMP}.txt" 2>&1; then
+        echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/02_oauth_${TIMESTAMP}.txt"
+    else
+        echo -e "${RED}✗${NC} Tests failed - Output saved to ${OUTPUT_DIR}/02_oauth_${TIMESTAMP}.txt"
+        OVERALL_SUCCESS=1
+    fi
     echo ""
 
     echo -e "${YELLOW}[3/8]${NC} Running test_roles_integration.py (roles & permissions tests)..."
-    ./venv/bin/pytest integration_tests/test_roles_integration.py -v --tb=short \
-        > "${OUTPUT_DIR}/03_roles_integration_${TIMESTAMP}.txt" 2>&1 || true
-    echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/03_roles_integration_${TIMESTAMP}.txt"
+    if ./venv/bin/pytest integration_tests/test_roles_integration.py -v --tb=short \
+        > "${OUTPUT_DIR}/03_roles_integration_${TIMESTAMP}.txt" 2>&1; then
+        echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/03_roles_integration_${TIMESTAMP}.txt"
+    else
+        echo -e "${RED}✗${NC} Tests failed - Output saved to ${OUTPUT_DIR}/03_roles_integration_${TIMESTAMP}.txt"
+        OVERALL_SUCCESS=1
+    fi
     echo ""
 
     echo -e "${YELLOW}[4/8]${NC} Running test_auto_ui.py (auto UI generation tests)..."
-    ./venv/bin/pytest integration_tests/test_auto_ui.py -v --tb=short \
-        > "${OUTPUT_DIR}/04_auto_ui_${TIMESTAMP}.txt" 2>&1 || true
-    echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/04_auto_ui_${TIMESTAMP}.txt"
+    if ./venv/bin/pytest integration_tests/test_auto_ui.py -v --tb=short \
+        > "${OUTPUT_DIR}/04_auto_ui_${TIMESTAMP}.txt" 2>&1; then
+        echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/04_auto_ui_${TIMESTAMP}.txt"
+    else
+        echo -e "${RED}✗${NC} Tests failed - Output saved to ${OUTPUT_DIR}/04_auto_ui_${TIMESTAMP}.txt"
+        OVERALL_SUCCESS=1
+    fi
     echo ""
 
     echo -e "${YELLOW}[5/8]${NC} Running test_ui_chrome_real.py (Chrome UI tests)..."
-    ./venv/bin/pytest integration_tests/test_ui_chrome_real.py -v --tb=short \
-        > "${OUTPUT_DIR}/05_chrome_ui_${TIMESTAMP}.txt" 2>&1 || true
-    echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/05_chrome_ui_${TIMESTAMP}.txt"
+    if ./venv/bin/pytest integration_tests/test_ui_chrome_real.py -v --tb=short \
+        > "${OUTPUT_DIR}/05_chrome_ui_${TIMESTAMP}.txt" 2>&1; then
+        echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/05_chrome_ui_${TIMESTAMP}.txt"
+    else
+        echo -e "${RED}✗${NC} Tests failed - Output saved to ${OUTPUT_DIR}/05_chrome_ui_${TIMESTAMP}.txt"
+        OVERALL_SUCCESS=1
+    fi
     echo ""
 
     echo -e "${YELLOW}[6/8]${NC} Running test_roles_rest_api.py (roles REST API tests)..."
-    ./venv/bin/pytest integration_tests/test_roles_rest_api.py -v --tb=short \
-        > "${OUTPUT_DIR}/06_roles_rest_api_${TIMESTAMP}.txt" 2>&1 || true
-    echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/06_roles_rest_api_${TIMESTAMP}.txt"
+    if ./venv/bin/pytest integration_tests/test_roles_rest_api.py -v --tb=short \
+        > "${OUTPUT_DIR}/06_roles_rest_api_${TIMESTAMP}.txt" 2>&1; then
+        echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/06_roles_rest_api_${TIMESTAMP}.txt"
+    else
+        echo -e "${RED}✗${NC} Tests failed - Output saved to ${OUTPUT_DIR}/06_roles_rest_api_${TIMESTAMP}.txt"
+        OVERALL_SUCCESS=1
+    fi
     echo ""
 
     echo -e "${YELLOW}[7/8]${NC} Running test_roles.py (basic role tests)..."
-    ./venv/bin/pytest integration_tests/test_roles.py -v --tb=short \
-        > "${OUTPUT_DIR}/07_roles_${TIMESTAMP}.txt" 2>&1 || true
-    echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/07_roles_${TIMESTAMP}.txt"
+    if ./venv/bin/pytest integration_tests/test_roles.py -v --tb=short \
+        > "${OUTPUT_DIR}/07_roles_${TIMESTAMP}.txt" 2>&1; then
+        echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/07_roles_${TIMESTAMP}.txt"
+    else
+        echo -e "${RED}✗${NC} Tests failed - Output saved to ${OUTPUT_DIR}/07_roles_${TIMESTAMP}.txt"
+        OVERALL_SUCCESS=1
+    fi
     echo ""
 
     echo -e "${YELLOW}[8/8]${NC} Running test_oauth_real_user.py (OAuth real user tests)..."
-    ./venv/bin/pytest integration_tests/test_oauth_real_user.py -v --tb=short \
-        > "${OUTPUT_DIR}/08_oauth_real_user_${TIMESTAMP}.txt" 2>&1 || true
-    echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/08_oauth_real_user_${TIMESTAMP}.txt"
+    if ./venv/bin/pytest integration_tests/test_oauth_real_user.py -v --tb=short \
+        > "${OUTPUT_DIR}/08_oauth_real_user_${TIMESTAMP}.txt" 2>&1; then
+        echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/08_oauth_real_user_${TIMESTAMP}.txt"
+    else
+        echo -e "${RED}✗${NC} Tests failed - Output saved to ${OUTPUT_DIR}/08_oauth_real_user_${TIMESTAMP}.txt"
+        OVERALL_SUCCESS=1
+    fi
     echo ""
 
     echo "=========================================="
@@ -317,7 +362,14 @@ if [ "$SEPARATE_MODE" = true ]; then
     echo "  cat ${OUTPUT_DIR}/08_oauth_real_user_${TIMESTAMP}.txt"
     echo ""
 
-    exit 0
+    # Exit with failure code if any tests failed
+    if [ "$OVERALL_SUCCESS" -eq 0 ]; then
+        echo -e "${GREEN}✅ All test suites passed successfully!${NC}"
+        exit 0
+    else
+        echo -e "${RED}❌ One or more test suites failed!${NC}"
+        exit 1
+    fi
 fi
 
 PROJECT_ROOT=$(pwd)

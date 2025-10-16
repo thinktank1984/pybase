@@ -175,6 +175,15 @@ fi
 export DATABASE_URL="sqlite://bloggy_test.db"
 export TEST_DATABASE_URL="sqlite://bloggy_test.db"
 
+# Run database migrations before tests
+echo -e "${CYAN}🔄 Running database migrations...${NC}"
+if ! (cd runtime && DATABASE_URL="sqlite://bloggy_test.db" ../venv/bin/emmett migrations up); then
+    echo -e "${RED}❌ Database migration failed${NC}"
+    exit 1
+fi
+echo -e "${GREEN}✅ Database migrations completed${NC}"
+echo ""
+
 # Check if pytest is available in virtual environment
 if [ ! -f "./venv/bin/pytest" ]; then
     echo -e "${RED}❌ pytest is required but not installed in virtual environment.${NC}"
@@ -193,11 +202,18 @@ if [ "$SEPARATE_MODE" = true ]; then
     
     # Timestamp for this run
     TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+
+    # Track overall test failures
+    OVERALL_SUCCESS=0
     
     echo -e "${YELLOW}[1/8]${NC} Running tests.py (main integration tests)..."
-    ./venv/bin/pytest integration_tests/tests.py -v --tb=short \
-        > "${OUTPUT_DIR}/01_tests_${TIMESTAMP}.txt" 2>&1 || true
-    echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/01_tests_${TIMESTAMP}.txt"
+    if ./venv/bin/pytest integration_tests/tests.py -v --tb=short \
+        > "${OUTPUT_DIR}/01_tests_${TIMESTAMP}.txt" 2>&1; then
+        echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/01_tests_${TIMESTAMP}.txt"
+    else
+        echo -e "${RED}✗${NC} Tests failed - Output saved to ${OUTPUT_DIR}/01_tests_${TIMESTAMP}.txt"
+        OVERALL_SUCCESS=1
+    fi
     echo ""
 
     echo -e "${YELLOW}[2/8]${NC} Running test_oauth_real.py (OAuth integration tests)..."
@@ -250,23 +266,51 @@ if [ "$SEPARATE_MODE" = true ]; then
     # Generate summary by checking each output file
     echo "Test Results:"
     echo ""
-    
+
     for file in "${OUTPUT_DIR}"/*_${TIMESTAMP}.txt; do
         if [ -f "$file" ]; then
             filename=$(basename "$file")
-            
-            # Extract test counts from pytest output (macOS compatible)
-            if grep -q "passed" "$file"; then
-                # Get the summary line from pytest output
-                summary=$(grep -E "[0-9]+ passed" "$file" | tail -1)
-                
-                if echo "$summary" | grep -q "failed"; then
-                    echo -e "${RED}✗${NC} $filename: $summary"
-                elif echo "$summary" | grep -q "error"; then
-                    echo -e "${RED}✗${NC} $filename: $summary"
+
+            # Check if pytest ran at all
+            if grep -q "test session starts" "$file"; then
+                # Get the final summary line from pytest output
+                summary=$(grep -E "=+ [0-9]+ .* in [0-9.]+s =+" "$file" | tail -1)
+
+                if [ -n "$summary" ]; then
+                    # Extract key information from summary
+                    if echo "$summary" | grep -q "failed"; then
+                        echo -e "${RED}✗${NC} $filename: $summary"
+                    elif echo "$summary" | grep -q "error"; then
+                        echo -e "${RED}✗${NC} $filename: $summary"
+                    elif echo "$summary" | grep -q "passed"; then
+                        echo -e "${GREEN}✓${NC} $filename: $summary"
+                    else
+                        echo -e "${YELLOW}⚠${NC} $filename: $summary"
+                    fi
                 else
-                    echo -e "${GREEN}✓${NC} $filename: $summary"
+                    # Look for alternative summary formats
+                    alt_summary=$(grep -E "[0-9]+ (passed|failed|error)" "$file" | tail -1)
+                    if [ -n "$alt_summary" ]; then
+                        if echo "$alt_summary" | grep -E "(failed|error)"; then
+                            echo -e "${RED}✗${NC} $filename: $alt_summary"
+                        else
+                            echo -e "${GREEN}✓${NC} $filename: $alt_summary"
+                        fi
+                    else
+                        echo -e "${YELLOW}⚠${NC} $filename: Tests ran but no summary found"
+                    fi
                 fi
+            elif grep -q "No module named" "$file"; then
+                # Import error
+                error_line=$(grep "No module named" "$file" | head -1)
+                echo -e "${RED}✗${NC} $filename: Import error - $error_line"
+            elif grep -q "collected 0 items" "$file"; then
+                # No tests found
+                echo -e "${YELLOW}⚠${NC} $filename: No tests collected"
+            elif grep -q "ERROR" "$file"; then
+                # General error during test collection/setup
+                error_line=$(grep "ERROR:" "$file" | head -1)
+                echo -e "${RED}✗${NC} $filename: Error - $error_line"
             else
                 echo -e "${RED}✗${NC} $filename: No test results found"
             fi
@@ -288,8 +332,15 @@ if [ "$SEPARATE_MODE" = true ]; then
     echo "  cat ${OUTPUT_DIR}/07_roles_${TIMESTAMP}.txt"
     echo "  cat ${OUTPUT_DIR}/08_oauth_real_user_${TIMESTAMP}.txt"
     echo ""
-    
-    exit 0
+
+    # Exit with failure code if any tests failed
+    if [ "$OVERALL_SUCCESS" -eq 0 ]; then
+        echo -e "${GREEN}✅ All test suites passed successfully!${NC}"
+        exit 0
+    else
+        echo -e "${RED}❌ One or more test suites failed!${NC}"
+        exit 1
+    fi
 fi
 
 PROJECT_ROOT=$(pwd)

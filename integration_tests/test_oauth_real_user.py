@@ -86,11 +86,11 @@ def _prepare_db():
             # Delete OAuth data for test user
             db.executesql(
                 "DELETE FROM oauth_tokens WHERE oauth_account IN "
-                "(SELECT id FROM oauth_accounts WHERE email = %s)",
+                "(SELECT id FROM oauth_accounts WHERE email = ?)",
                 [TEST_USER_EMAIL]
             )
-            db.executesql("DELETE FROM oauth_accounts WHERE email = %s", [TEST_USER_EMAIL])
-            db.executesql("DELETE FROM users WHERE email = %s", [TEST_USER_EMAIL])
+            db.executesql("DELETE FROM oauth_accounts WHERE email = ?", [TEST_USER_EMAIL])
+            db.executesql("DELETE FROM users WHERE email = ?", [TEST_USER_EMAIL])
             db.commit()
             print("   ✅ Test data cleaned up")
     except Exception as e:
@@ -108,7 +108,7 @@ def real_user():
         with db.connection():
             # Check if user already exists
             existing = db.executesql(
-                "SELECT id FROM users WHERE email = %s LIMIT 1",
+                "SELECT id FROM users WHERE email = ? LIMIT 1",
                 [TEST_USER_EMAIL]
             )
             
@@ -192,7 +192,7 @@ class TestRealUserOAuth:
         """Test that we can create user with real email in database"""
         with db.connection():
             user = db.executesql(
-                "SELECT id, email, first_name FROM users WHERE id = %s",
+                "SELECT id, email, first_name FROM users WHERE id = ?",
                 [real_user]
             )
             
@@ -280,7 +280,7 @@ class TestRealUserOAuth:
         """
         with db.connection():
             # Clean up any existing OAuth accounts for this user first
-            db.executesql("DELETE FROM oauth_accounts WHERE \"user\" = %s", [int(real_user)])
+            db.executesql("DELETE FROM oauth_accounts WHERE \"user\" = ?", [int(real_user)])
             db.commit()
             
             # Link Google
@@ -301,7 +301,7 @@ class TestRealUserOAuth:
             
             # Verify both accounts linked to same user
             user_accounts = db.executesql(
-                "SELECT id, provider FROM oauth_accounts WHERE \"user\" = %s",
+                "SELECT id, provider FROM oauth_accounts WHERE \"user\" = ?",
                 [int(real_user)]
             )
             
@@ -313,7 +313,7 @@ class TestRealUserOAuth:
             print(f"   ✅ Multiple providers linked: {providers}")
             
             # Cleanup
-            db.executesql("DELETE FROM oauth_accounts WHERE id IN (%s, %s)", [google_id, github_id])
+            db.executesql("DELETE FROM oauth_accounts WHERE id IN (?, ?)", [google_id, github_id])
             db.commit()
     
     def test_oauth_account_retrieval_by_email(self, real_user):
@@ -332,7 +332,7 @@ class TestRealUserOAuth:
             
             # Find account by email
             accounts = db.executesql(
-                "SELECT id, provider, email FROM oauth_accounts WHERE email = %s",
+                "SELECT id, provider, email FROM oauth_accounts WHERE email = ?",
                 [TEST_USER_EMAIL]
             )
             

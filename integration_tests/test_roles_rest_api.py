@@ -98,8 +98,8 @@ def admin_user():
     if user_id is not None:
         try:
             with db.connection():
-                db.executesql("DELETE FROM user_roles WHERE user = %s", [int(user_id)])
-                db.executesql("DELETE FROM users WHERE id = %s", [int(user_id)])
+                db.executesql("DELETE FROM user_roles WHERE user = ?", [int(user_id)])
+                db.executesql("DELETE FROM users WHERE id = ?", [int(user_id)])
                 db.commit()
         except Exception as e:
             print(f"Warning during admin_user cleanup: {e}")
@@ -127,8 +127,8 @@ def regular_user():
     if user_id is not None:
         try:
             with db.connection():
-                db.executesql("DELETE FROM user_roles WHERE user = %s", [int(user_id)])
-                db.executesql("DELETE FROM users WHERE id = %s", [int(user_id)])
+                db.executesql("DELETE FROM user_roles WHERE user = ?", [int(user_id)])
+                db.executesql("DELETE FROM users WHERE id = ?", [int(user_id)])
                 db.commit()
         except Exception as e:
             print(f"Warning during regular_user cleanup: {e}")
@@ -229,7 +229,7 @@ def test_rest_api_create_role(logged_admin_client):
     if response.status == 500:
         pytest.fail(
             "Database error occurred. "
-            "The REST API endpoint should handle database operations correctly with PostgreSQL. "
+            "The REST API endpoint should handle database operations correctly with SQLite. "
             "Check application logs for details."
         )
     
