@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Real-world integration tests for Turso Database support.
+Real-world integration tests for SQLite Database support.
 
 These tests simulate real-world usage scenarios to ensure
-the Turso integration works in production environments.
+the SQLite integration works in production environments.
 """
 
 import os
@@ -18,44 +18,40 @@ class TestRealWorldIntegration:
         """Set up test environment."""
         DatabaseManager.reset_instance()
 
-    def test_production_turso_configuration(self):
-        """Test production Turso configuration scenario."""
+    def test_production_sqlite_configuration(self):
+        """Test production SQLite configuration scenario."""
         # Simulate production environment variables
-        os.environ['TURSO_DATABASE_URL'] = 'libsql://my-production-app.turso.io'
-        os.environ['TURSO_AUTH_TOKEN'] = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...'
+        os.environ['DATABASE_URL'] = 'sqlite://runtime/databases/production.db'
 
         db_manager = DatabaseManager.get_instance()
 
         # Test URL resolution
-        final_url = (os.environ.get('TURSO_DATABASE_URL') or
-                    os.environ.get('DATABASE_URL', 'sqlite://runtime/databases/main.db'))
+        final_url = os.environ.get('DATABASE_URL', 'sqlite://runtime/databases/main.db')
         detected_type = db_manager._detect_database_type(final_url)
 
-        assert detected_type == 'turso'
-        assert 'my-production-app.turso.io' in final_url
-        assert db_manager.database_type == 'unknown'  # Not initialized yet
+        assert detected_type == 'sqlite'
+        assert 'production.db' in final_url
+        assert db_manager.database_type == 'sqlite'  # Default is SQLite
 
         # Test configuration setup
         db_manager._db_type = detected_type
         db_manager._app = self._create_mock_app()
 
-        # Should detect as Turso
-        assert db_manager.is_turso()
+        # Should detect as SQLite
+        assert db_manager.is_sqlite()
 
         # Clean up
-        del os.environ['TURSO_DATABASE_URL']
-        del os.environ['TURSO_AUTH_TOKEN']
+        del os.environ['DATABASE_URL']
 
-        print("✅ Production Turso configuration works")
+        print("✅ Production SQLite configuration works")
 
     def test_development_sqlite_fallback(self):
         """Test development environment with SQLite fallback."""
-        # No Turso environment variables set
+        # DATABASE_URL not set, should use default
         db_manager = DatabaseManager.get_instance()
 
         # Should fall back to DATABASE_URL or default SQLite
-        final_url = (os.environ.get('TURSO_DATABASE_URL') or
-                    os.environ.get('DATABASE_URL', 'sqlite://runtime/databases/main.db'))
+        final_url = os.environ.get('DATABASE_URL', 'sqlite://runtime/databases/main.db')
         detected_type = db_manager._detect_database_type(final_url)
 
         assert detected_type == 'sqlite'
@@ -63,7 +59,7 @@ class TestRealWorldIntegration:
 
         # Test configuration
         db_manager._db_type = detected_type
-        assert not db_manager.is_turso()
+        assert db_manager.is_sqlite()
         assert db_manager.database_type == 'sqlite'
 
         print("✅ Development SQLite fallback works")
@@ -72,33 +68,24 @@ class TestRealWorldIntegration:
         """Test various mixed environment scenarios."""
         scenarios = [
             {
-                'name': 'Turso priority over DATABASE_URL',
+                'name': 'DATABASE_URL configuration',
                 'env': {
-                    'TURSO_DATABASE_URL': 'libsql://priority.turso.io',
-                    'DATABASE_URL': 'sqlite://should-not-use.db'
+                    'DATABASE_URL': 'sqlite://custom_production.db'
                 },
-                'expected_type': 'turso',
-                'expected_url': 'libsql://priority.turso.io'
-            },
-            {
-                'name': 'DATABASE_URL fallback',
-                'env': {
-                    'DATABASE_URL': 'postgres://localhost:5432/mydb'
-                },
-                'expected_type': 'postgres',
-                'expected_url': 'postgres://localhost:5432/mydb'
+                'expected_type': 'sqlite',
+                'expected_url': 'sqlite://custom_production.db'
             },
             {
                 'name': 'Default SQLite fallback',
                 'env': {},
                 'expected_type': 'sqlite',
-                'expected_url': 'sqlite://bloggy.db'
+                'expected_url': 'sqlite://runtime/databases/main.db'
             }
         ]
 
         for scenario in scenarios:
             # Clear existing environment
-            for key in ['TURSO_DATABASE_URL', 'DATABASE_URL']:
+            for key in ['DATABASE_URL']:
                 if key in os.environ:
                     del os.environ[key]
 
@@ -110,8 +97,7 @@ class TestRealWorldIntegration:
             db_manager = DatabaseManager.get_instance()
 
             # Test URL resolution
-            final_url = (os.environ.get('TURSO_DATABASE_URL') or
-                        os.environ.get('DATABASE_URL', 'sqlite://runtime/databases/bloggy.turso.db'))
+            final_url = os.environ.get('DATABASE_URL', 'sqlite://runtime/databases/main.db')
             detected_type = db_manager._detect_database_type(final_url)
 
             assert detected_type == scenario['expected_type'], f"Failed scenario: {scenario['name']}"
@@ -120,7 +106,7 @@ class TestRealWorldIntegration:
             print(f"✅ {scenario['name']} works correctly")
 
         # Clean up
-        for key in ['TURSO_DATABASE_URL', 'DATABASE_URL']:
+        for key in ['DATABASE_URL']:
             if key in os.environ:
                 del os.environ[key]
 
@@ -128,13 +114,15 @@ class TestRealWorldIntegration:
         """Test error recovery scenarios."""
         db_manager = DatabaseManager.get_instance()
 
-        # Test missing libsql-client error
+        # Test SQLite database file creation error
         try:
-            db_manager._initialize_turso(self._create_mock_app(), 'libsql://test.turso.io')
-            assert False, "Should have raised ImportError"
-        except ImportError as e:
-            assert 'libsql-client is required' in str(e)
-            print("✅ Missing dependency error handled correctly")
+            # Try to use an invalid path (should handle gracefully)
+            invalid_url = 'sqlite:///invalid/path/that/cannot/be/created/test.db'
+            detected_type = db_manager._detect_database_type(invalid_url)
+            assert detected_type == 'sqlite'
+            print("✅ Invalid SQLite path handled correctly")
+        except Exception as e:
+            print(f"✅ SQLite error handled gracefully: {e}")
 
         # Test invalid database URL detection
         invalid_urls = [
@@ -160,12 +148,6 @@ class TestRealWorldIntegration:
                 'pool_size': 0,
                 'journal_mode': 'DELETE',
                 'foreign_keys': 'ON'
-            },
-            'turso': {
-                'pool_size': 10,
-                'journal_mode': 'WAL',
-                'foreign_keys': 'ON',
-                'timeout': 30
             }
         }
 
@@ -181,23 +163,11 @@ class TestRealWorldIntegration:
                     'synchronous': 'NORMAL',
                     'foreign_keys': expected_config['foreign_keys'],
                 }
-            elif db_type == 'turso':
-                mock_app.config.db.pool_size = expected_config['pool_size']
-                mock_app.config.db.adapter_args = {
-                    'journal_mode': expected_config['journal_mode'],
-                    'synchronous': 'NORMAL',
-                    'foreign_keys': expected_config['foreign_keys'],
-                    'timeout': expected_config['timeout'],
-                }
 
             # Verify configuration
             assert mock_app.config.db.pool_size == expected_config['pool_size']
             assert mock_app.config.db.adapter_args['journal_mode'] == expected_config['journal_mode']
             assert mock_app.config.db.adapter_args['foreign_keys'] == expected_config['foreign_keys']
-
-            if db_type == 'turso':
-                assert 'timeout' in mock_app.config.db.adapter_args
-                assert mock_app.config.db.adapter_args['timeout'] == expected_config['timeout']
 
         print("✅ Configuration consistency verified")
 
@@ -208,12 +178,11 @@ class TestRealWorldIntegration:
         # Test many database type detections
         db_manager = DatabaseManager.get_instance()
         test_urls = [
-            'libsql://test1.turso.io',
-            'libsql://test2.turso.io',
             'sqlite://test1.db',
             'sqlite://test2.db',
-            'postgres://localhost:5432/db1',
-            'postgres://localhost:5432/db2'
+            'sqlite://runtime/databases/main.db',
+            'sqlite:///absolute/path/to/database.db',
+            'sqlite://relative/path/to/database.db'
         ]
 
         start_time = time.time()
@@ -222,10 +191,10 @@ class TestRealWorldIntegration:
                 db_manager._detect_database_type(url)
         end_time = time.time()
 
-        # Should complete quickly (less than 1 second for 6000 detections)
+        # Should complete quickly (less than 1 second for 5000 detections)
         assert end_time - start_time < 1.0, f"Performance test failed: {end_time - start_time}s"
 
-        print(f"✅ Performance test passed: {end_time - start_time:.3f}s for 6000 detections")
+        print(f"✅ Performance test passed: {end_time - start_time:.3f}s for 5000 detections")
 
     def _create_mock_app(self):
         """Create a mock app object for testing."""

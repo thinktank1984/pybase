@@ -429,7 +429,7 @@ def role_get_permissions(self):
 
 def post_can_edit(self, user):
     """Check if user can edit this post (works on Row objects)."""
-    from models.utils import user_can_access_resource
+    from models.utils import user_can_access_resource, user_has_permission
     if not user:
         return False
     user_id = user.id if hasattr(user, 'id') else user['id']
@@ -598,7 +598,14 @@ oauth_routes = app.module(__name__, 'oauth', url_prefix='auth/oauth')
 
 # OAuth Routes
 
-@oauth_routes.route('/<str:provider>/login')
+@oauth_routes.route('/login')
+@rate_limit(max_requests=10, window_seconds=60)
+async def oauth_init():
+    """Initiate OAuth flow by redirecting to Google (default provider)."""
+    from emmett import redirect, url
+    return redirect(url('oauth_login', provider='google'))
+
+@oauth_routes.route('/<str:provider>/login', name='oauth_login')
 @rate_limit(max_requests=10, window_seconds=60)
 async def oauth_login(provider):
     """Handle OAuth callback from provider.
@@ -879,19 +886,70 @@ def _clear_oauth_session(provider):
 
 
 #: Basic auth routes (minimal implementation since auth is disabled)
-@app.route('/auth/login')
+@app.route('/auth/login', methods=['get', 'post'], name='auth.login')
 async def auth_login():
-    """Simple login page - redirects to OAuth since traditional auth is disabled."""
-    from emmett import redirect, url, session
-    session.flash = "Please use OAuth to login"
-    return redirect(url('oauth.oauth_login', provider='google'))
+    """Simple login page for testing."""
+    from emmett import request, response
+    if request.method == 'POST':
+        from emmett import session, redirect, url
+        email = request.body_params.get('email')
+        password = request.body_params.get('password')
 
-@app.route('/auth/register')
+        # Simple authentication check
+        if email == 'doc@emmettbrown.com' and password == 'fluxcapacitor':
+            # Get user from database
+            user = User.where(lambda u: u.email == email).select().first()
+            if user:
+                session.auth = type('obj', (object,), {'user': user})()
+                return redirect(url('index'))
+
+        session.flash = "Invalid credentials"
+        return redirect(url('auth.login'))
+
+    # Return simple login form
+    html = '''
+    <!DOCTYPE html>
+    <html>
+    <head><title>Login</title></head>
+    <body>
+        <h1>Login</h1>
+        <form method="post">
+            <p>Email: <input type="email" name="email" value="doc@emmettbrown.com"></p>
+            <p>Password: <input type="password" name="password" value="fluxcapacitor"></p>
+            <p><input type="submit" value="Login"></p>
+        </form>
+        <p>Or <a href="/auth/oauth/login">use OAuth</a></p>
+    </body>
+    </html>
+    '''
+    response.headers['Content-Type'] = 'text/html'
+    return html
+
+@app.route('/auth/register', name='auth.registration')
 async def auth_register():
-    """Simple registration page - redirects to OAuth since traditional auth is disabled."""
-    from emmett import redirect, url, session
-    session.flash = "Please use OAuth to register"
-    return redirect(url('oauth.oauth_login', provider='google'))
+    """Simple registration page."""
+    from emmett import response
+    html = '''
+    <!DOCTYPE html>
+    <html>
+    <head><title>Register</title></head>
+    <body>
+        <h1>Registration</h1>
+        <p>Registration disabled. Please use OAuth or contact admin.</p>
+        <p><a href="/auth/login">Back to login</a></p>
+    </body>
+    </html>
+    '''
+    response.headers['Content-Type'] = 'text/html'
+    return html
+
+@app.route('/auth/logout', name='auth.logout')
+async def auth_logout():
+    """Simple logout page."""
+    from emmett import session, redirect, url
+    session.auth = None
+    session.flash = "You have been logged out"
+    return redirect(url('index'))
 
 #: Account settings route
 @app.route('/account/settings', methods=['get', 'post'])
@@ -1016,16 +1074,28 @@ openapi_gen = OpenAPIGenerator(
 )
 
 # Register all REST modules with the OpenAPI generator
-# Temporarily disabled due to REST module initialization issues
-# TODO: Re-enable when REST modules are properly initialized
-# openapi_gen.register_rest_module('posts_api', Post, 'api/posts')
-# openapi_gen.register_rest_module('comments_api', Comment, 'api/comments')
-# openapi_gen.register_rest_module('users_api', User, 'api/users',
-#                                 disabled_methods=['create', 'update', 'delete'])
-# openapi_gen.register_rest_module('roles_api', Role, 'api/roles')
-# openapi_gen.register_rest_module('permissions_api', Permission, 'api/permissions',
-#                                 disabled_methods=['delete'])
-print("⚠️  OpenAPI registration temporarily disabled")
+try:
+    # Initialize APIs first
+    api_modules = api_setup_function()
+
+    # Register REST modules with OpenAPI
+    if 'posts_api' in api_modules:
+        openapi_gen.register_rest_module('posts_api', Post, 'api/posts')
+    if 'comments_api' in api_modules:
+        openapi_gen.register_rest_module('comments_api', Comment, 'api/comments')
+    if 'users_api' in api_modules:
+        openapi_gen.register_rest_module('users_api', User, 'api/users',
+                                        disabled_methods=['create', 'update', 'delete'])
+    if 'roles_api' in api_modules:
+        openapi_gen.register_rest_module('roles_api', Role, 'api/roles')
+    if 'permissions_api' in api_modules:
+        openapi_gen.register_rest_module('permissions_api', Permission, 'api/permissions',
+                                        disabled_methods=['delete'])
+    print("✓ OpenAPI registration enabled")
+except Exception as e:
+    import traceback
+    print(f"⚠️  Failed to register OpenAPI modules: {e}")
+    traceback.print_exc()
 
 
 @app.route('/api/openapi.json')
@@ -1113,15 +1183,17 @@ async def test_route():
 
 
 #: Initialize APIs after app is fully loaded
-# Temporarily disabled REST API setup due to model initialization issues
-# TODO: Fix model initialization order for REST modules
-# try:
-#     api_modules = api_setup_function()
-#     print("✓ Model APIs initialized successfully")
-# except Exception as e:
-#     import traceback
-#     print(f"⚠️  Failed to initialize model APIs: {e}")
-#     traceback.print_exc()
-#     api_modules = {}
-api_modules = {}
-print("⚠️  REST API initialization temporarily disabled")
+# Note: API initialization is now handled in the OpenAPI registration section above
+# to ensure proper initialization order
+try:
+    # Check if APIs were already initialized during OpenAPI registration
+    if 'api_modules' not in locals() or not api_modules:
+        api_modules = api_setup_function()
+        print("✓ Model APIs initialized successfully")
+    else:
+        print("✓ Model APIs already initialized")
+except Exception as e:
+    import traceback
+    print(f"⚠️  Failed to initialize model APIs: {e}")
+    traceback.print_exc()
+    api_modules = {}

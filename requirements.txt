@@ -4,7 +4,7 @@
 emmett>=2.5.0
 
 # Database
-pyturso
+# Using native SQLite - no external dependencies required
 
 # Testing
 pytest>=7.0.0

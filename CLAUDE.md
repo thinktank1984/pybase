@@ -132,5 +132,4 @@ setup/                   # Setup and configuration files
 - Type checking uses Pyright with configuration in `setup/pyrightconfig.json`
 - The application supports both Docker and local development modes
 - Model validation runs automatically on startup to check for anti-patterns
-- mem
 - never remove functionaly without explicit instruction from the user

@@ -259,9 +259,9 @@ class DatabaseManager:
         """Get the database type (SQLite)."""
         return self._db_type
 
-    def is_turso(self) -> bool:
-        """Check if using Turso database."""
-        return False  # Now using native SQLite
+    def is_sqlite(self) -> bool:
+        """Check if using SQLite database."""
+        return True  # Using native SQLite
     
     def define_models(self, *models):
         """

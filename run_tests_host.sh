@@ -182,9 +182,9 @@ if [ ! -d "runtime" ]; then
 fi
 
 # Set environment variables for SQLite database for local development
-# Use same database as run_bloggy_host.sh
-export DATABASE_URL="sqlite://runtime/databases/main.db"
-export TEST_DATABASE_URL="sqlite://runtime/databases/main.db"
+# Use absolute paths to ensure consistency between migrations and tests
+export DATABASE_URL="sqlite:///workspaces/pybase/runtime/databases/main.db"
+export TEST_DATABASE_URL="sqlite:///workspaces/pybase/runtime/databases/main.db"
 
 # Run database migrations before tests
 echo -e "${CYAN}🔄 Running database migrations...${NC}"

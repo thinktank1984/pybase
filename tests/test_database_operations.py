@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Integration tests for database operations with Turso support.
+Integration tests for database operations with SQLite.
 
 These tests verify that database operations work correctly
-with both SQLite and Turso configurations.
+with SQLite configuration.
 """
 
 import pytest
@@ -57,68 +57,62 @@ class TestDatabaseOperations:
 
         # Verify configuration
         assert db_manager.database_type == 'sqlite'
-        assert not db_manager.is_turso()
+        assert db_manager.is_sqlite()
         assert app.config.db.uri == 'sqlite://test_operations.db'
         assert app.config.db.pool_size == 0
         assert app.config.db.adapter_args['foreign_keys'] == 'ON'
 
         print("✅ SQLite configuration successful")
 
-    def test_turso_url_detection_without_initialization(self):
-        """Test Turso URL detection without actual database initialization."""
+    def test_sqlite_url_detection_without_initialization(self):
+        """Test SQLite URL detection without actual database initialization."""
         db_manager = DatabaseManager()
 
-        # Test various Turso URL formats
-        turso_urls = [
-            'libsql://my-app.turso.io',
-            'libsql://prod-db.turso.io',
-            'https://my-app.turso.io',
-            'https://production.turso.io'
+        # Test various SQLite URL formats
+        sqlite_urls = [
+            'sqlite://test.db',
+            'sqlite://runtime/databases/main.db',
+            'sqlite:///absolute/path/to/database.db',
+            'sqlite://relative/path/to/database.db'
         ]
 
-        for url in turso_urls:
+        for url in sqlite_urls:
             db_type = db_manager._detect_database_type(url)
-            assert db_type == 'turso', f"URL {url} should be detected as turso, got {db_type}"
+            assert db_type == 'sqlite', f"URL {url} should be detected as sqlite, got {db_type}"
 
-        print("✅ All Turso URL formats detected correctly")
+        print("✅ All SQLite URL formats detected correctly")
 
     def test_database_type_property_consistency(self):
         """Test that database_type property is consistent across operations."""
         db_manager = DatabaseManager()
 
-        # Initially should be unknown
-        assert db_manager.database_type == 'unknown'
-        assert not db_manager.is_turso()
+        # Initially should be sqlite
+        assert db_manager.database_type == 'sqlite'
+        assert db_manager.is_sqlite()
 
         # Test setting different database types
-        for db_type in ['sqlite', 'turso', 'postgres', 'mysql', 'unknown']:
+        for db_type in ['sqlite', 'postgres', 'mysql', 'unknown']:
             db_manager._db_type = db_type
             assert db_manager.database_type == db_type
-            assert db_manager.is_turso() == (db_type == 'turso')
+            assert db_manager.is_sqlite() == (db_type == 'sqlite')
 
         print("✅ Database type property consistency verified")
 
     def test_environment_variable_priority(self):
-        """Test that TURSO_DATABASE_URL takes priority over DATABASE_URL."""
-        # Set both environment variables
-        os.environ['TURSO_DATABASE_URL'] = 'libsql://turso-priority.turso.io'
-        os.environ['DATABASE_URL'] = 'sqlite://fallback.db'
+        """Test that DATABASE_URL is used correctly."""
+        # Set environment variable
+        os.environ['DATABASE_URL'] = 'sqlite://test_priority.db'
 
         db_manager = DatabaseManager()
 
         # Test URL resolution logic
-        turso_url = os.environ.get('TURSO_DATABASE_URL')
         database_url = os.environ.get('DATABASE_URL', 'sqlite://runtime/databases/main.db')
+        detected_type = db_manager._detect_database_type(database_url)
 
-        # Should use Turso URL when available
-        expected_url = turso_url or database_url
-        detected_type = db_manager._detect_database_type(expected_url)
-
-        assert detected_type == 'turso'
-        assert expected_url == 'libsql://turso-priority.turso.io'
+        assert detected_type == 'sqlite'
+        assert database_url == 'sqlite://test_priority.db'
 
         # Clean up
-        del os.environ['TURSO_DATABASE_URL']
         del os.environ['DATABASE_URL']
 
         print("✅ Environment variable priority test passed")
@@ -174,15 +168,6 @@ class TestDatabaseOperations:
                     'synchronous': 'NORMAL',
                     'foreign_keys': 'ON',
                 }
-            },
-            'turso': {
-                'pool_size': 10,
-                'adapter_args': {
-                    'journal_mode': 'WAL',
-                    'synchronous': 'NORMAL',
-                    'foreign_keys': 'ON',
-                    'timeout': 30,
-                }
             }
         }
 
@@ -210,17 +195,11 @@ class TestDatabaseOperations:
             if db_type == 'sqlite':
                 app.config.db.pool_size = expected_config['pool_size']
                 app.config.db.adapter_args = expected_config['adapter_args']
-            elif db_type == 'turso':
-                app.config.db.pool_size = expected_config['pool_size']
-                app.config.db.adapter_args = expected_config['adapter_args']
 
             # Verify configuration
             assert app.config.db.pool_size == expected_config['pool_size']
             assert app.config.db.adapter_args['journal_mode'] == expected_config['adapter_args']['journal_mode']
             assert app.config.db.adapter_args['foreign_keys'] == 'ON'
-
-            if db_type == 'turso':
-                assert 'timeout' in app.config.db.adapter_args
 
         print("✅ Connection configuration differences verified")
 

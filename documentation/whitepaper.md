@@ -290,7 +290,7 @@ from emmett.sessions import SessionManager
 
 # Initialize app
 app = App(__name__)
-app.config.db.uri = "sqlite:///runtime/databases/bloggy.turso.db"
+app.config.db.uri = "sqlite:///runtime/databases/main.db"
 app.config.auth.hmac_key = "your-secret-key"
 app.config.auth.single_template = True
 
