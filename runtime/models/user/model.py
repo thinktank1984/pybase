@@ -3,19 +3,19 @@
 User model with authentication utilities and API.
 """
 
-from emmett.orm import has_many, Field
-from emmett.tools.auth import AuthUser
+from emmett.orm import has_many, Field, Model
 from emmett import current, session
 
 
-class User(AuthUser):
-    """User model extending Emmett's AuthUser with role-based permissions."""
+class User(Model):
+    """User model with role-based permissions."""
 
     # Field definitions matching the migration
     email = Field(validation={'is': 'email', 'presence': True})
     password = Field(validation={'length': {'min': 6}})
     first_name = Field(validation={'presence': True})
     last_name = Field(validation={'presence': True})
+    username = Field()  # Username field for OAuth users
     registration_key = Field()
     reset_password_key = Field()
     registration_id = Field()
@@ -40,7 +40,8 @@ class User(AuthUser):
         'first_name': (True, False),
         'last_name': (True, False)
     }
-    
+
+      
     def get_roles(self):
         """
         Get all roles assigned to this user.

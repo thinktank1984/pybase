@@ -62,10 +62,10 @@ if _oauth_available:
 def setup_all(app):
     """
     Setup routes and REST APIs for all models.
-    
+
     Args:
         app: Emmett application instance
-        
+
     Returns:
         dict: Dictionary of API modules by name
     """
@@ -74,7 +74,7 @@ def setup_all(app):
     from .user import setup as user_setup
     from .role.api import setup_rest_api as role_api_setup
     from .permission.api import setup_rest_api as permission_api_setup
-    
+
     # Setup each model (routes and APIs)
     apis = {
         'posts_api': post_setup(app),
@@ -83,5 +83,5 @@ def setup_all(app):
         'roles_api': role_api_setup(app),
         'permissions_api': permission_api_setup(app)
     }
-    
+
     return apis

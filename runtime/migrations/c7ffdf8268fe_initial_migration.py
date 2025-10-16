@@ -26,6 +26,7 @@ class Migration(migrations.Migration):
             migrations.Column('registration_id', 'string', default='', length=512),
             migrations.Column('first_name', 'string', notnull=True, length=128),
             migrations.Column('last_name', 'string', notnull=True, length=128),
+            migrations.Column('username', 'string', length=255),
             primary_keys=['id'])
         self.create_index('users_widx__email_unique', 'users', ['email'], expressions=[], unique=True)
         self.create_table(

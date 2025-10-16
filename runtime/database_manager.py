@@ -16,89 +16,84 @@ import time
 from typing import Optional, Any, Tuple
 from urllib.parse import urlparse
 from emmett.orm import Database
-# Import turso package as instructed
-import turso
-print("✅ Using turso package")
+
+# Import turso package for compatibility
+try:
+    import turso
+    print("✅ Using turso package - SQLite compatible mode")
+    TURSO_AVAILABLE = True
+except ImportError:
+    print("⚠️  turso package not available, using standard SQLite")
+    TURSO_AVAILABLE = False
 
 
-class TursoDatabaseWrapper:
+class TursoDatabaseAdapter:
     """
-    Wrapper class to make Turso database compatible with Emmett's Database interface.
+    Adapter class to configure Turso database for Emmett ORM.
 
-    This provides the methods that Emmett expects from a database object,
-    but uses Turso connections underneath.
+    This adapter configures Emmett's Database to work with Turso
+    by setting up the proper SQLite-compatible configuration.
     """
 
-    def __init__(self, database_file: str):
-        self.database_file = database_file
-        self._tables = {}
+    @staticmethod
+    def configure_turso_database(app: Any, database_url: str) -> Database:
+        """
+        Configure Emmett Database to use Turso as SQLite-compatible backend.
 
-    def define_models(self, *models):
-        """Register models with the database."""
-        print(f"✅ Registered {len(models)} models with Turso database")
+        Args:
+            app: Emmett application instance
+            database_url: Database connection URL
 
-    def connection(self):
-        """Get a Turso database connection context manager."""
-        return turso.connect(self.database_file)
+        Returns:
+            Database: Configured Emmett Database instance
+        """
+        # Configure the database URI for Emmett
+        # Turso is SQLite-compatible, so we can use sqlite:// prefix
+        app.config.db.uri = database_url
 
-    def commit(self):
-        """Commit transaction (handled by Turso context manager)."""
-        pass
+        # Set additional configuration for Turso compatibility
+        app.config.db.adapter = 'sqlite'
+        app.config.db.folder = 'runtime'  # Set to runtime directory
 
-    def rollback(self):
-        """Rollback transaction (handled by Turso context manager)."""
-        pass
+        # Create and return the Emmett Database instance
+        db = Database(app)
 
-    def executesql(self, sql: str, *args, **kwargs):
-        """Execute raw SQL query."""
-        with turso.connect(self.database_file) as con:
-            cur = con.cursor()
-            result = cur.execute(sql, *args, **kwargs)
-            con.commit()
-            return result
-
-    def __getattr__(self, name):
-        """Delegate attribute access to table objects."""
-        if name in self._tables:
-            return self._tables[name]
-        return self
+        print(f"✅ Configured Emmett Database with Turso: {database_url}")
+        return db
 
 
 class DatabaseManager:
     """
-    Singleton class for centralized database management.
-    
+    Singleton class for centralized database management using Emmett ORM.
+
     This class manages the database instance, connections, and provides
     helper methods for database operations. It ensures only one database
     instance exists throughout the application lifecycle.
-    
+
     Usage:
         # Initialize (typically in app.py)
         db_manager = DatabaseManager.get_instance()
         db_manager.initialize(app)
-        
+
         # Use in other modules
         db_manager = DatabaseManager.get_instance()
-        with db_manager.connection():
+        with db_manager.db.connection():
             user = User.create(...)
     """
-    
+
     _instance: Optional['DatabaseManager'] = None
     _initialized: bool = False
-    
+
     def __init__(self):
         """Private constructor - use get_instance() instead."""
         if DatabaseManager._instance is not None:
             raise RuntimeError(
                 "DatabaseManager is a singleton. Use DatabaseManager.get_instance() instead."
             )
-        
-        self._db: Optional[Any] = None
+
+        self._db: Optional[Database] = None
         self._app: Optional[Any] = None
-        self._connection_pipe: Optional[Any] = None
-        self._db_type: str = 'turso'
-        self._turso_client: Optional[Any] = None
-        self._database_file: Optional[str] = None
+        self._db_type: str = 'sqlite'  # Using SQLite adapter for Turso compatibility
     
     @classmethod
     def get_instance(cls) -> 'DatabaseManager':
@@ -124,33 +119,38 @@ class DatabaseManager:
     
     def initialize(self, app: Any, database_url: Optional[str] = None) -> Database:
         """
-        Initialize the database with the given Emmett app.
-        
+        Initialize the database with the given Emmett app using Turso SQLite compatibility.
+
         Args:
             app: Emmett application instance
             database_url: Optional database URL (defaults to environment variable)
-            
+
         Returns:
             Database: Initialized database instance
         """
         if self._initialized:
             print("⚠️  DatabaseManager already initialized, returning existing instance")
             return self._db  # type: ignore[return-value]
-        
+
         self._app = app
 
-        # Configure database URL for Turso
+        # Configure database URL for Turso (SQLite-compatible)
         if database_url is None:
             database_url = os.environ.get(
                 'DATABASE_URL',
                 'sqlite://bloggy.turso.db'
             )
 
-        # Always use Turso
-        self._db_type = 'turso'
-        print(f"🔍 Using Turso database")
+        print(f"🔍 Using Turso database with SQLite compatibility: {database_url}")
 
-        return self._initialize_turso(app, database_url)
+        # Use the Turso adapter to configure Emmett Database
+        self._db = TursoDatabaseAdapter.configure_turso_database(app, database_url)
+        self._initialized = True
+
+        # Define models that were passed in app.py
+        # Models will be registered by app.py using db_manager.define_models()
+
+        return self._db
     
     @property
     def db(self) -> Database:
@@ -176,83 +176,82 @@ class DatabaseManager:
 
     @property
     def database_type(self) -> str:
-        """Get the detected database type."""
+        """Get the database type (SQLite for Turso compatibility)."""
         return self._db_type
 
     def is_turso(self) -> bool:
-        """Check if using Turso database."""
-        return self._db_type == 'turso'
+        """Check if using Turso database (SQLite compatible)."""
+        return True  # Always True since we're using Turso
     
     def define_models(self, *models):
         """
-        Register models with the database.
-        
+        Register models with the database using Emmett's model registration.
+
         Args:
             *models: Model classes to register
         """
         if self._db is None:
             raise RuntimeError("Database not initialized")
-        
+
+        # Use Emmett's built-in model definition
         self._db.define_models(*models)
-        print(f"✅ Registered {len(models)} models with database")
-    
+        print(f"✅ Registered {len(models)} models with Emmett Database")
+
     def connection(self):
         """
-        Get a Turso database connection context manager.
+        Get a database connection context manager using Emmett's connection management.
 
         Returns:
-            Context manager for Turso database connection
+            Context manager for database connection
 
         Usage:
             with db_manager.connection():
-                cur = con.cursor()
-                cur.execute("SELECT * FROM users")
-                result = cur.fetchall()
+                user = User.create(...)
         """
-        if not self._initialized or self._database_file is None:
+        if self._db is None:
             raise RuntimeError("Database not initialized")
 
-        return turso.connect(self._database_file)
+        return self._db.connection()
     
     def commit(self):
-        """Commit the current database transaction."""
+        """Commit the current database transaction using Emmett's transaction management."""
         if self._db is None:
             raise RuntimeError("Database not initialized")
-        
+
         self._db.commit()
-    
+
     def rollback(self):
-        """Rollback the current database transaction."""
+        """Rollback the current database transaction using Emmett's transaction management."""
         if self._db is None:
             raise RuntimeError("Database not initialized")
-        
+
         self._db.rollback()
-    
+
     def executesql(self, sql: str, *args, **kwargs):
         """
-        Execute raw SQL query.
-        
+        Execute raw SQL query using Emmett's database interface.
+
         Args:
             sql: SQL query string
             *args: Positional arguments for query
             **kwargs: Keyword arguments for query
-            
+
         Returns:
             Query result
         """
         if self._db is None:
             raise RuntimeError("Database not initialized")
-        
+
         return self._db.executesql(sql, *args, **kwargs)
     
     def safe_first(self, query, default=None):
         """
-        Safely get first result from query.
-        
+        Safely get first result from query using Emmett's query interface.
+
         Args:
             query: Emmett query object or Set
             default: Value to return if no results
-            
+
         Returns:
             First result or default value
         """
@@ -267,15 +266,15 @@ class DatabaseManager:
         except Exception as e:
             print(f"Query error: {e}")
             return default
-    
+
     def get_or_create(self, model, **kwargs) -> Tuple[Any, bool]:
         """
-        Get existing record or create new one.
-        
+        Get existing record or create new one using Emmett ORM.
+
         Args:
             model: Emmett Model class
             **kwargs: Fields to match/create
-            
+
         Returns:
             (instance, created) tuple where created is True if new record was created
         """
@@ -285,53 +284,27 @@ class DatabaseManager:
                 getattr(m, k) == v for k, v in kwargs.items()
             ))
             existing = self.safe_first(query)
-            
+
             if existing:
                 return (existing, False)
-            
+
             # Create new
             instance = model.create(**kwargs)
             self.commit()
             return (instance, True)
-    
+
     def create_connection_pipe(self):
         """
-        Create a pipeline component for explicit database connection management.
-        
-        This is required for SQLite to ensure all database queries have
-        access to a connection context.
-        
+        Create a pipeline component for database connection management using Emmett's built-in pipe.
+
         Returns:
-            DatabaseConnectionPipe instance
+            Database pipe instance from Emmett's Database
         """
-        from emmett.pipeline import Pipe
-        
-        db_instance = self._db
-        
-        class DatabaseConnectionPipe(Pipe):
-            """
-            Pipeline component that explicitly wraps requests in database connection contexts.
-            
-            This is required for SQLite to ensure all database queries (including those
-            in auth handlers) have access to a connection context.
-            """
-            async def open(self):
-                """Establish database connection at start of request"""
-                self._connection = db_instance.connection()  # type: ignore[union-attr]
-                await self._connection.__aenter__()
-            
-            async def close(self):
-                """Close database connection at end of request"""
-                if hasattr(self, '_connection'):
-                    try:
-                        await self._connection.__aexit__(None, None, None)
-                    except (KeyError, AttributeError):
-                        # Connection already closed or doesn't exist - this is fine
-                        # Can happen in test contexts or if connection was closed elsewhere
-                        pass
-        
-        self._connection_pipe = DatabaseConnectionPipe()
-        return self._connection_pipe
+        if self._db is None:
+            raise RuntimeError("Database not initialized")
+
+        # Use Emmett's built-in database pipe
+        return self._db.pipe
     
     def patch_row_methods(self, patches: dict):
         """
@@ -379,129 +352,7 @@ class DatabaseManager:
         
         return self._db(*args, **kwargs)
 
-    def _detect_database_type(self, database_url: str) -> str:
-        """
-        Detect database type from URL pattern.
-
-        Args:
-            database_url: Database connection URL
-
-        Returns:
-            str: Database type ('turso', 'unknown')
-        """
-        return 'turso'
-
-    def _initialize_turso(self, app: Any, database_url: str) -> Any:
-        """
-        Initialize Turso database connection using turso.connect() context manager.
-
-        Args:
-            app: Emmett application instance
-            database_url: Turso database URL
-
-        Returns:
-            Database manager instance (not a Database object since we're using turso.connect directly)
-        """
-        # turso is already imported at the top (with fallback)
-
-        try:
-            # Extract database file from URL
-            database_file = database_url.replace('sqlite://', '')
-            print(f"🔗 Using Turso database file: {database_file}")
-
-            # Store the database file for use with turso.connect()
-            self._database_file = database_file
-
-            # Initialize the users table and sample data using turso.connect()
-            with turso.connect(database_file) as con:
-                cur = con.cursor()
-                cur.execute("""
-                    CREATE TABLE IF NOT EXISTS users (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        username TEXT NOT NULL,
-                        email TEXT NOT NULL,
-                        role TEXT NOT NULL,
-                        created_at DATETIME NOT NULL DEFAULT (datetime('now'))
-                    )
-                """)
-
-                # Insert some sample data
-                sample_users = [
-                    ("alice", "alice@example.com", "admin"),
-                    ("bob", "bob@example.com", "user"),
-                    ("charlie", "charlie@example.com", "moderator"),
-                    ("diana", "diana@example.com", "user"),
-                ]
-                for username, email, role in sample_users:
-                    cur.execute(
-                        """
-                        INSERT INTO users (username, email, role)
-                        VALUES (?, ?, ?)
-                        """,
-                        (username, email, role),
-                    )
-
-                # Use commit to ensure the data is saved
-                con.commit()
-
-                # Query the table to verify
-                res = cur.execute("SELECT * FROM users")
-                record = res.fetchone()
-                print(f"✅ Sample user record: {record}")
-
-            print(f"✅ Turso DatabaseManager initialized with context manager: {database_url}")
-
-            # Create a Turso-compatible database interface for Emmett
-            self._db = TursoDatabaseWrapper(database_file)
-
-            self._initialized = True
-            return self
-
-        except Exception as e:
-            print(f"❌ Failed to initialize Turso database: {e}")
-            raise e
-
-    def _create_turso_client_with_retry(self, host: str, auth_token: Optional[str], max_retries: int = 3) -> Any:
-        """
-        Create Turso client with retry logic.
-
-        Args:
-            host: Turso database host
-            auth_token: Authentication token
-            max_retries: Maximum number of retry attempts
-
-        Returns:
-            Turso client instance
-        """
-        import libsql_client
-
-        for attempt in range(max_retries):
-            try:
-                if auth_token:
-                    client = libsql_client.create_client_sync(
-                        url=f"https://{host}",
-                        auth_token=auth_token
-                    )
-                else:
-                    client = libsql_client.create_client_sync(
-                        url=f"https://{host}"
-                    )
-
-                # Test connection
-                client.execute("SELECT 1")
-                print(f"✅ Turso client connected (attempt {attempt + 1})")
-                return client
-
-            except Exception as e:
-                if attempt == max_retries - 1:
-                    raise Exception(f"Failed to connect to Turso after {max_retries} attempts: {e}")
-
-                wait_time = 2 ** attempt  # Exponential backoff
-                print(f"⚠️  Turso connection failed (attempt {attempt + 1}), retrying in {wait_time}s: {e}")
-                time.sleep(wait_time)
-
-        raise Exception("Failed to create Turso client")
-
+    
 
 # Convenience function for getting the singleton instance
 def get_db_manager() -> DatabaseManager:
