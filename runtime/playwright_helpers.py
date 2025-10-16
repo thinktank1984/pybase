@@ -17,7 +17,7 @@ from playwright.sync_api import sync_playwright
 class ChromeTestHelper:
     """Helper class for REAL Chrome browser testing using Playwright"""
     
-    def __init__(self, base_url: str = "http://localhost:8081", headless: bool = True):
+    def __init__(self, base_url: str = "http://localhost:8000", headless: bool = True):
         self.base_url = base_url
         self.headless = headless
         self.screenshot_dir = os.path.join(os.path.dirname(__file__), 'screenshots')
@@ -445,7 +445,7 @@ def get_chrome_helper(base_url: str = None) -> ChromeTestHelper:  # type: ignore
         Exception: If Playwright is not available (NO SKIPPING - tests must fail)
     """
     if base_url is None:
-        base_url = os.environ.get('BLOGGY_URL', 'http://localhost:8081')  # type: ignore[assignment]
+        base_url = os.environ.get('BLOGGY_URL', 'http://localhost:8000')  # type: ignore[assignment]
     
     # Check if CHROME_HEADED environment variable is set
     headless = os.environ.get('CHROME_HEADED', 'false').lower() != 'true'

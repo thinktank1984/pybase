@@ -117,22 +117,43 @@ class DatabaseManager:
         is_test = 'pytest' in sys.modules or 'TEST_DATABASE_URL' in os.environ or \
                   os.path.basename(sys.argv[0]) == 'validate_models.py'
 
+        # Detect GitHub Spaces environment
+        is_github_spaces = os.environ.get('GITHUB_ACTIONS') == 'true' or \
+                          os.environ.get('CODESPACES') == 'true'
+
         # Configure connection pooling based on environment
         is_sqlite = database_url.startswith('sqlite:')
         if is_sqlite:
-            # Use small pool for SQLite to avoid locking issues in tests
-            app.config.db.pool_size = 1 if is_test else 5
+            # Use connection pooling optimized for the environment
+            if is_github_spaces:
+                # GitHub Spaces needs larger pools due to containerized environment
+                app.config.db.pool_size = 3 if is_test else 10
+            else:
+                # Local development - smaller pools to avoid locking issues
+                app.config.db.pool_size = 1 if is_test else 5
         else:
             app.config.db.pool_size = 1 if is_test else int(os.environ.get('DB_POOL_SIZE', '20'))
 
         # SQLite-specific configuration to avoid transaction issues
         if is_sqlite:
-            app.config.db.adapter_args = {
-                'journal_mode': 'WAL',  # WAL mode for better concurrent access
-                'synchronous': 'NORMAL',  # Normal sync for performance
-                'foreign_keys': 'ON',  # Enable foreign key constraints
-                'timeout': 30,  # Connection timeout to avoid hanging
-            }
+            # Configure adapter args based on environment
+            if is_github_spaces:
+                adapter_args = {
+                    'journal_mode': 'WAL',  # WAL mode for better concurrent access
+                    'synchronous': 'NORMAL',  # Normal sync for performance in containers
+                    'foreign_keys': 'ON',  # Enable foreign key constraints
+                    'timeout': 60,  # Longer timeout for containerized environments
+                    'cache_size': 2000,  # Larger cache for better performance
+                    'temp_store': 'MEMORY',  # Store temporary tables in memory
+                }
+            else:
+                adapter_args = {
+                    'journal_mode': 'WAL',  # WAL mode for better concurrent access
+                    'synchronous': 'NORMAL',  # Normal sync for performance
+                    'foreign_keys': 'ON',  # Enable foreign key constraints
+                    'timeout': 30,  # Connection timeout to avoid hanging
+                }
+            app.config.db.adapter_args = adapter_args
         else:
             app.config.db.adapter_args = {
                 'sslmode': 'prefer',  # Use SSL if available, but don't require it

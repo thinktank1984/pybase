@@ -25,7 +25,7 @@ to test the Bloggy application UI and functionality.
 
 Prerequisites:
 - Chrome browser running (visible or headless)
-- Application running on http://localhost:8081
+- Application running on http://localhost:8000
 - MCP Chrome DevTools available in environment
 
 Run with: 
@@ -262,7 +262,7 @@ def main():
     print()
     print("Prerequisites:")
     print("  • Chrome browser running")
-    print("  • App running on http://localhost:8081")
+    print("  • App running on http://localhost:8000")
     print("  • MCP Chrome DevTools available")
     print()
     

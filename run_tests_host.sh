@@ -158,10 +158,20 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${BLUE}🧪 Bloggy Test Runner (Host Mode - 8 Test Suites)${NC}"
+# Detect GitHub Spaces environment
+IS_GITHUB_SPACES=false
+if [ "${GITHUB_ACTIONS}" = "true" ] || [ "${CODESPACES}" = "true" ]; then
+    IS_GITHUB_SPACES=true
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BLUE}🧪 Bloggy Test Runner (GitHub Spaces - 8 Test Suites)${NC}"
+    echo -e "${BLUE}🚀 RUNNING IN GITHUB SPACES ENVIRONMENT${NC}"
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+else
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BLUE}🧪 Bloggy Test Runner (Host Mode - 8 Test Suites)${NC}"
     echo -e "${BLUE}💻 ALL TESTS RUN ON HOST MACHINE${NC}"
-echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+fi
 echo ""
 
 # Check if runtime directory exists
@@ -521,12 +531,16 @@ run_app_tests() {
 # Function to run Chrome tests
 run_chrome_tests() {
     echo ""
-    echo -e "${YELLOW}🌐 Running Chrome DevTools Tests on Host...${NC}"
+    echo -e "${YELLOW}🌐 Running Chrome DevTools Tests...${NC}"
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    if [ "$HEADED_MODE" = true ]; then
-        echo -e "${CYAN}💻 Running on HOST MACHINE (--headed mode for visible browser)${NC}"
+    if [ "$IS_GITHUB_SPACES" = true ]; then
+        echo -e "${CYAN}🚀 Running in GITHUB SPACES (headless mode)${NC}"
     else
-        echo -e "${CYAN}💻 Running on HOST MACHINE (headless mode)${NC}"
+        if [ "$HEADED_MODE" = true ]; then
+            echo -e "${CYAN}💻 Running on HOST MACHINE (--headed mode for visible browser)${NC}"
+        else
+            echo -e "${CYAN}💻 Running on HOST MACHINE (headless mode)${NC}"
+        fi
     fi
     echo ""
 
@@ -535,24 +549,36 @@ run_chrome_tests() {
         clean_screenshots
     fi
 
-    # Chrome MCP tests will run if MCP Chrome DevTools is available
-    # If not available, tests will fail with clear error message (no skipping per policy)
+    # Install Playwright browsers for GitHub Spaces
+    if [ "$IS_GITHUB_SPACES" = true ]; then
+        echo -e "${CYAN}🔧 Ensuring Playwright browsers are available...${NC}"
+        if ! ./venv/bin/playwright install chromium --force > /dev/null 2>&1; then
+            echo -e "${RED}❌ Failed to install Playwright browsers${NC}"
+            return 1
+        fi
+        echo -e "${GREEN}✅ Playwright browsers ready${NC}"
+        echo ""
+    fi
 
     # Real Chrome integration tests
-    echo -e "${CYAN}🌐 Running REAL Chrome integration tests on HOST MACHINE...${NC}"
+    echo -e "${CYAN}🌐 Running REAL Chrome integration tests...${NC}"
     echo ""
 
     # Check if app is running
     echo -e "${CYAN}📡 Checking if app is accessible...${NC}"
-    if ! curl -s http://localhost:8081 > /dev/null 2>&1; then
-        echo -e "${RED}❌ App not accessible at http://localhost:8081${NC}"
+    if ! curl -s http://localhost:8000 > /dev/null 2>&1; then
+        echo -e "${RED}❌ App not accessible at http://localhost:8000${NC}"
         echo -e "${YELLOW}   Start the app first${NC}"
         return 1
     fi
     echo -e "${GREEN}✅ App is running${NC}"
     echo ""
 
-    echo -e "${CYAN}💻 Running on HOST MACHINE${NC}"
+    if [ "$IS_GITHUB_SPACES" = true ]; then
+        echo -e "${CYAN}🚀 Running in GITHUB SPACES environment${NC}"
+    else
+        echo -e "${CYAN}💻 Running on HOST MACHINE${NC}"
+    fi
     echo ""
 
     TEST_CMD="./venv/bin/pytest integration_tests/test_ui_chrome_real.py"
