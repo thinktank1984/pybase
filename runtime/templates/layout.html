@@ -22,8 +22,11 @@
                     </a>
                     <div class="flex items-center space-x-4">
                     {{if not current.session.auth:}}
-                        <a href="{{=url('auth.login')}}" class="px-4 py-2 text-sm font-medium text-white bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg transition-all duration-200">
+                        <a href="{{=url('auth.login')}}" class="px-4 py-2 text-sm font-medium text-blue-600 bg-white hover:bg-gray-100 rounded-lg transition-colors duration-200 border border-blue-200">
                             Log In
+                        </a>
+                        <a href="{{=url('auth.registration')}}" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors duration-200">
+                            Sign Up
                         </a>
                     {{else:}}
                         <span class="text-white text-sm">Welcome back!</span>
