@@ -34,22 +34,22 @@ it is illegal to modify the metadata injection file
 - **Configuration**: Uses `setup/pyrightconfig.json`
 
 ### Database
-- **Local Turso Database**: `/workspaces/pybase/runtime/bloggy.turso.db` - Used for both development and testing
-- **Environment variables**: `DATABASE_URL="sqlite://bloggy.turso.db"` for development
+- **Local SQLite Database**: `/workspaces/pybase/runtime/databases/main.db` - Used for both development and testing
+- **Environment variables**: `DATABASE_URL="sqlite://runtime/databases/main.db"` for development
 - **Migrations**: Run automatically before tests with `../venv/bin/emmett migrations up`
 
 ## Architecture Overview
 
 ### Core Framework
 - **Emmett Framework**: Python web framework similar to Flask/Django
-- **Database**: Local Turso Database
+- **Database**: Local SQLite Database
 - **ORM**: Emmett's built-in ORM with model validation
 - **Design Pattern**: Active Record pattern - models encapsulate both data and behavior
 
 ### Key Components
 
 #### Database Layer
-- `runtime/database_manager.py`: Database manager for Turso database connection
+- `runtime/database_manager.py`: Database manager for SQLite database connection
 - `runtime/models/`: All database models (User, Post, Comment, Role, Permission, OAuthAccount, OAuthToken)
 - `runtime/models/seeders.py`: Database seeding functionality
 - `runtime/validate_models.py`: Model validation for anti-patterns
@@ -102,7 +102,7 @@ runtime/                  # Main application code
 ├── auth/                # Authentication system
 ├── templates/           # HTML templates
 ├── static/              # Static assets
-└── databases/           # Local Turso database files
+└── databases/           # Local SQLite database files
 
 integration_tests/       # Test suites
 ├── tests.py                    # Main integration tests
@@ -117,9 +117,9 @@ setup/                   # Setup and configuration files
 
 ### Testing Strategy
 - **8 test suites** covering different aspects of the application
-- **Integration tests**: Real local Turso database and API testing
+- **Integration tests**: Real local SQLite database and API testing
 - **Chrome DevTools tests**: Real browser automation
-- **No mocking policy**: Tests use real services and databases (local Turso)
+- **No mocking policy**: Tests use real services and databases (local SQLite)
 - **Separate execution**: Each test suite runs independently with separate output files
 
 ### Default Credentials
@@ -134,4 +134,3 @@ setup/                   # Setup and configuration files
 - Model validation runs automatically on startup to check for anti-patterns
 - mem
 - never remove functionaly without explicit instruction from the user
-- turso db is sqlite compatible

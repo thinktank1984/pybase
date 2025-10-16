@@ -15,7 +15,7 @@ elif 'DATABASE_URL' in os.environ:
     TEST_DATABASE_URL = os.environ['DATABASE_URL']
 else:
     # Default to SQLite for host testing, fallback to PostgreSQL for Docker
-    TEST_DATABASE_URL = 'sqlite://bloggy_integration.db'
+    TEST_DATABASE_URL = 'sqlite://runtime/databases/main.db'
 
 os.environ['DATABASE_URL'] = TEST_DATABASE_URL
 
@@ -50,7 +50,7 @@ def setup_test_environment():
         test_db_url = os.environ['DATABASE_URL']
     else:
         # Default to SQLite for host testing, fallback to PostgreSQL for Docker
-        test_db_url = 'sqlite://bloggy.db'
+        test_db_url = 'sqlite://runtime/databases/main.db'
     
     # Update print statements based on database type
     if test_db_url.startswith('sqlite'):

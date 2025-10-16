@@ -60,13 +60,28 @@ app.config.auth.registration_verification = False
 app.config.auth.hmac_key = "november.5.1955"
 
 #: database configuration
-# Initialize DatabaseManager with Turso implementation
+# Initialize DatabaseManager with enhanced SQLite implementation
 db_manager = get_db_manager()
 DATABASE_URL = os.environ.get(
     'DATABASE_URL',
-    'sqlite://runtime/bloggy.turso.db'
+    'sqlite://runtime/databases/main.db'
 )
-db_manager.initialize(app, DATABASE_URL)
+
+# Enhanced concurrency configuration
+POOL_SIZE = int(os.environ.get('DB_POOL_SIZE', '10'))
+ENABLE_WAL = os.environ.get('DB_ENABLE_WAL', 'true').lower() == 'true'
+KEEP_ALIVE_TIMEOUT = int(os.environ.get('DB_KEEP_ALIVE_TIMEOUT', '300'))
+SEPARATE_READ_WRITE = os.environ.get('DB_SEPARATE_READ_WRITE', 'false').lower() == 'true'
+
+# Initialize database with enhanced concurrency features
+db_manager.initialize(
+    app=app,
+    database_url=DATABASE_URL,
+    pool_size=POOL_SIZE,
+    enable_wal=ENABLE_WAL,
+    keep_alive_timeout=KEEP_ALIVE_TIMEOUT,
+    separate_read_write=SEPARATE_READ_WRITE
+)
 
 #: inject OAuth providers into templates
 # Note: Disabled - @app.before_routes doesn't exist in this Emmett version

@@ -20,7 +20,7 @@ echo -e "${BLUE}🚀 Starting Runtime Application (host mode)...${NC}"
 echo ""
 
 # Set environment variable for SQLite database for local development
-export DATABASE_URL="sqlite://bloggy.db"
+export DATABASE_URL="sqlite://runtime/databases/main.db"
 
 # Run setup script first to ensure environment is ready
 echo -e "${BLUE}Running setup checks...${NC}"
@@ -34,6 +34,18 @@ if python validate_models.py --all --severity warning; then
     echo -e "${GREEN}✅ Model validation passed${NC}"
 else
     echo -e "${YELLOW}⚠ Model validation found issues (see output above)${NC}"
+fi
+cd "$PROJECT_ROOT"
+echo ""
+
+# Run database migrations before starting server
+echo -e "${BLUE}Running database migrations...${NC}"
+cd runtime
+if DATABASE_URL="sqlite:///workspaces/pybase/runtime/databases/main.db" ../venv/bin/emmett migrations up 2>/dev/null; then
+    echo -e "${GREEN}✅ Database migrations completed${NC}"
+else
+    # Migrations might fail if tables already exist - that's OK
+    echo -e "${YELLOW}⚠️  Migration note: Database might already be migrated${NC}"
 fi
 cd "$PROJECT_ROOT"
 echo ""

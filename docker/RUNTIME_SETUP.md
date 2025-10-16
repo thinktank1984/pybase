@@ -92,7 +92,7 @@ volumes:
 
 ### Database Persistence
 
-The SQLite database is stored in `runtime/databases/bloggy.db` which persists between container restarts because the full repository is mounted.
+The SQLite database is stored in `runtime/databases/main.db` which persists between container restarts because the full repository is mounted.
 
 ## Running Commands Inside the Container
 

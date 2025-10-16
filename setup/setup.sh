@@ -127,7 +127,7 @@ if [ "$USE_DOCKER" = true ]; then
     echo -e "${BLUE}Checking database setup...${NC}"
     
     # Check if database exists
-    if [ ! -f "$PROJECT_ROOT/runtime/databases/bloggy.db" ]; then
+    if [ ! -f "$PROJECT_ROOT/runtime/databases/main.db" ]; then
         echo -e "${YELLOW}⚠️  Database not found. Setting up...${NC}"
         
         # Start container temporarily to run migrations
@@ -231,7 +231,6 @@ echo ""
 echo -e "${BLUE}Installing Emmett framework and dependencies...${NC}"
 uv pip install --python venv/bin/python emmett>=2.5.0
 uv pip install --python venv/bin/python pytest>=7.0.0
-uv pip install --python venv/bin/python pyturso
 
 echo -e "${GREEN}✅ Dependencies installed${NC}"
 
@@ -246,19 +245,19 @@ mkdir -p databases
 # Check if migrations exist and run them
 if [ -d "migrations" ] && [ "$(ls -A migrations/*.py 2>/dev/null)" ]; then
     echo "Applying migrations..."
-    if uv run --python ../venv/bin/python emmett migrations up; then
+    if DATABASE_URL="sqlite:///workspaces/pybase/runtime/databases/main.db" uv run --python ../venv/bin/python emmett migrations up; then
         echo -e "${GREEN}✅ Migrations applied${NC}"
     else
         echo -e "${YELLOW}⚠️  Migration failed - trying to generate initial migration...${NC}"
-        uv run --python ../venv/bin/python emmett migrations generate
-        uv run --python ../venv/bin/python emmett migrations up || {
+        DATABASE_URL="sqlite:///workspaces/pybase/runtime/databases/main.db" uv run --python ../venv/bin/python emmett migrations generate
+        DATABASE_URL="sqlite:///workspaces/pybase/runtime/databases/main.db" uv run --python ../venv/bin/python emmett migrations up || {
             echo -e "${RED}❌ Migrations failed${NC}"
         }
     fi
 else
     echo "No migrations found, generating initial migration..."
-    uv run --python ../venv/bin/python emmett migrations generate
-    uv run --python ../venv/bin/python emmett migrations up || {
+    DATABASE_URL="sqlite:///workspaces/pybase/runtime/databases/main.db" uv run --python ../venv/bin/python emmett migrations generate
+    DATABASE_URL="sqlite:///workspaces/pybase/runtime/databases/main.db" uv run --python ../venv/bin/python emmett migrations up || {
         echo -e "${RED}❌ Migrations failed${NC}"
     }
 fi

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Host Setup Script for Turso Database
+# Host Setup Script for SQLite Database
 # This script sets up the environment for local development without Docker.
 
 set -e  # Exit on any error
@@ -12,7 +12,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-echo -e "${BLUE}🚀 Setting up Host Environment for Turso Database...${NC}"
+echo -e "${BLUE}🚀 Setting up Host Environment for SQLite Database...${NC}"
 echo ""
 
 # Navigate to project root
@@ -74,30 +74,29 @@ else
     echo -e "${GREEN}✅ Virtual environment already exists${NC}"
 fi
 
-# Install dependencies including turso
+# Install dependencies
 echo ""
-echo -e "${BLUE}Installing dependencies including Turso...${NC}"
+echo -e "${BLUE}Installing dependencies...${NC}"
 uv pip install --python venv/bin/python emmett>=2.5.0
 uv pip install --python venv/bin/python pytest>=7.0.0
-uv pip install --python venv/bin/python pyturso
 
 echo -e "${GREEN}✅ Dependencies installed${NC}"
 
-# Create Turso database directory
+# Create SQLite database directory
 echo ""
-echo -e "${BLUE}Setting up Turso database...${NC}"
+echo -e "${BLUE}Setting up SQLite database...${NC}"
 cd runtime || exit 1
 
 # Create databases directory if it doesn't exist
 mkdir -p databases
 
-# Create the Turso database file if it doesn't exist
-if [ ! -f "databases/bloggy.turso.db" ]; then
-    echo -e "${YELLOW}⚠️  Turso database file not found. Creating...${NC}"
-    touch databases/bloggy.turso.db
-    echo -e "${GREEN}✅ Turso database file created${NC}"
+# Create the SQLite database file if it doesn't exist
+if [ ! -f "databases/main.db" ]; then
+    echo -e "${YELLOW}⚠️  SQLite database file not found. Creating...${NC}"
+    touch databases/main.db
+    echo -e "${GREEN}✅ SQLite database file created${NC}"
 else
-    echo -e "${GREEN}✅ Turso database file exists${NC}"
+    echo -e "${GREEN}✅ SQLite database file exists${NC}"
 fi
 
 cd ..
@@ -118,9 +117,9 @@ echo ""
 echo "3️⃣  Access the application:"
 echo "   • Application: http://localhost:8000/"
 echo ""
-echo -e "${BLUE}📚 About Turso Database:${NC}"
-echo "   Local Turso database file: runtime/databases/bloggy.turso.db"
-echo "   Uses import turso and turso.connect() API pattern"
+echo -e "${BLUE}📚 About SQLite Database:${NC}"
+echo "   Local SQLite database file: runtime/databases/main.db"
+echo "   Uses native SQLite with Emmett ORM"
 echo ""
-echo -e "${GREEN}Happy coding with Turso! 🗄️${NC}"
+echo -e "${GREEN}Happy coding with SQLite! 🗄️${NC}"
 echo ""

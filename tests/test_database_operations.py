@@ -108,7 +108,7 @@ class TestDatabaseOperations:
 
         # Test URL resolution logic
         turso_url = os.environ.get('TURSO_DATABASE_URL')
-        database_url = os.environ.get('DATABASE_URL', 'sqlite://bloggy.db')
+        database_url = os.environ.get('DATABASE_URL', 'sqlite://runtime/databases/main.db')
 
         # Should use Turso URL when available
         expected_url = turso_url or database_url

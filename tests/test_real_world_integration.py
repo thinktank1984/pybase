@@ -28,7 +28,7 @@ class TestRealWorldIntegration:
 
         # Test URL resolution
         final_url = (os.environ.get('TURSO_DATABASE_URL') or
-                    os.environ.get('DATABASE_URL', 'sqlite://bloggy.db'))
+                    os.environ.get('DATABASE_URL', 'sqlite://runtime/databases/main.db'))
         detected_type = db_manager._detect_database_type(final_url)
 
         assert detected_type == 'turso'
@@ -55,7 +55,7 @@ class TestRealWorldIntegration:
 
         # Should fall back to DATABASE_URL or default SQLite
         final_url = (os.environ.get('TURSO_DATABASE_URL') or
-                    os.environ.get('DATABASE_URL', 'sqlite://bloggy.db'))
+                    os.environ.get('DATABASE_URL', 'sqlite://runtime/databases/main.db'))
         detected_type = db_manager._detect_database_type(final_url)
 
         assert detected_type == 'sqlite'
@@ -111,7 +111,7 @@ class TestRealWorldIntegration:
 
             # Test URL resolution
             final_url = (os.environ.get('TURSO_DATABASE_URL') or
-                        os.environ.get('DATABASE_URL', 'sqlite://bloggy.db'))
+                        os.environ.get('DATABASE_URL', 'sqlite://runtime/databases/bloggy.turso.db'))
             detected_type = db_manager._detect_database_type(final_url)
 
             assert detected_type == scenario['expected_type'], f"Failed scenario: {scenario['name']}"

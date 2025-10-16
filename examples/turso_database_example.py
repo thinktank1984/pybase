@@ -54,7 +54,7 @@ def main():
     print("\n4. Database Configuration (Without Full App):")
     try:
         # Demonstrate database configuration without full initialization
-        db_manager._db_type = db_manager._detect_database_type("sqlite://example_bloggy.db")
+        db_manager._db_type = db_manager._detect_database_type("sqlite://runtime/databases/bloggy.turso.db")
 
         print(f"   ✅ Database type detected: {db_manager.database_type}")
         print(f"   ✅ Is Turso: {db_manager.is_turso()}")

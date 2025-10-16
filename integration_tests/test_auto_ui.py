@@ -167,7 +167,7 @@ class TestAutoUIGenerator:
         """Set up test fixtures."""
         self.app = App(__name__)
         # Use SQLite for testing (configured via environment)
-        self.app.config.db.uri = os.getenv('DATABASE_URL', 'sqlite:///bloggy_test.db')
+        self.app.config.db.uri = os.getenv('DATABASE_URL', 'sqlite://runtime/databases/main.db')
         self.db = Database(self.app)
         self.db.define_models(TestPost, TestComment)
     
@@ -296,7 +296,7 @@ class TestAutoUIFunction:
         """Test auto_ui function creates and registers routes."""
         app = App(__name__)
         # Use SQLite for testing (configured via environment)
-        app.config.db.uri = os.getenv('DATABASE_URL', 'sqlite:///bloggy_test.db')
+        app.config.db.uri = os.getenv('DATABASE_URL', 'sqlite://runtime/databases/main.db')
         db = Database(app)
         db.define_models(TestPost)
         
