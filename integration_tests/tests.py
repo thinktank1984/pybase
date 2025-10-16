@@ -1452,13 +1452,13 @@ def test_admin_group_membership(logged_client):
     """Test admin user is member of admin group"""
     with db.connection():
         user = User.get(1)
-        # Check if user is in admin group (auth_memberships uses 'user' field)
-        membership = db(
-            (db.auth_memberships.user == 1) &
-            (db.auth_groups.role == 'admin') &
-            (db.auth_memberships.auth_group == db.auth_groups.id)
+        # Check if user has admin role using the new role system
+        user_roles = db(
+            (db.user_roles.user == user.id) &
+            (db.user_roles.role == db.roles.id) &
+            (db.roles.name == 'admin')
         ).select().first()
-        assert membership is not None
+        assert user_roles is not None
 
 
 # ==============================================================================
