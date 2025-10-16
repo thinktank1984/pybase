@@ -231,6 +231,7 @@ echo ""
 echo -e "${BLUE}Installing Emmett framework and dependencies...${NC}"
 uv pip install --python venv/bin/python emmett>=2.5.0
 uv pip install --python venv/bin/python pytest>=7.0.0
+uv pip install --python venv/bin/python pyturso
 
 echo -e "${GREEN}✅ Dependencies installed${NC}"
 

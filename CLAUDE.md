@@ -15,6 +15,8 @@ it is illegal to remove the database
 no mockup tests
 illegal to create or run mockup tests
 no inmemeory tests
+Never change /workspaces/pybase/inject_meta_data_into_context.json
+it is illegal to modify the metadata injection file
 
 ### Testing
 - **Run all tests**: `./run_tests.sh` (runs 8 test suites separately by default)
@@ -32,22 +34,22 @@ no inmemeory tests
 - **Configuration**: Uses `setup/pyrightconfig.json`
 
 ### Database
-- **SQLite for local development**: Database files in `runtime/databases/`
-- **Environment variables**: `DATABASE_URL="sqlite://bloggy_test.db"` for tests
+- **Local Turso Database**: Database file `bloggy.turso.db` in `runtime/databases/`
+- **Environment variables**: `DATABASE_URL="sqlite://bloggy.turso.db"` for development
 - **Migrations**: Run automatically before tests with `../venv/bin/emmett migrations up`
 
 ## Architecture Overview
 
 ### Core Framework
 - **Emmett Framework**: Python web framework similar to Flask/Django
-- **Database**: SQLite for development, PostgreSQL in Docker
+- **Database**: Local Turso Database
 - **ORM**: Emmett's built-in ORM with model validation
 - **Design Pattern**: Active Record pattern - models encapsulate both data and behavior
 
 ### Key Components
 
 #### Database Layer
-- `runtime/database_manager.py`: Singleton database manager for connection handling
+- `runtime/database_manager.py`: Database manager for Turso database connection
 - `runtime/models/`: All database models (User, Post, Comment, Role, Permission, OAuthAccount, OAuthToken)
 - `runtime/models/seeders.py`: Database seeding functionality
 - `runtime/validate_models.py`: Model validation for anti-patterns
@@ -100,7 +102,7 @@ runtime/                  # Main application code
 ├── auth/                # Authentication system
 ├── templates/           # HTML templates
 ├── static/              # Static assets
-└── databases/           # SQLite database files
+└── databases/           # Local Turso database files
 
 integration_tests/       # Test suites
 ├── tests.py                    # Main integration tests
@@ -115,9 +117,9 @@ setup/                   # Setup and configuration files
 
 ### Testing Strategy
 - **8 test suites** covering different aspects of the application
-- **Integration tests**: Real database and API testing
+- **Integration tests**: Real local Turso database and API testing
 - **Chrome DevTools tests**: Real browser automation
-- **No mocking policy**: Tests use real services and databases
+- **No mocking policy**: Tests use real services and databases (local Turso)
 - **Separate execution**: Each test suite runs independently with separate output files
 
 ### Default Credentials

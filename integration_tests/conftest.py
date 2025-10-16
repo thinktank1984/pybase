@@ -15,7 +15,7 @@ elif 'DATABASE_URL' in os.environ:
     TEST_DATABASE_URL = os.environ['DATABASE_URL']
 else:
     # Default to SQLite for host testing, fallback to PostgreSQL for Docker
-    TEST_DATABASE_URL = 'sqlite://bloggy.db'
+    TEST_DATABASE_URL = 'sqlite://bloggy_integration.db'
 
 os.environ['DATABASE_URL'] = TEST_DATABASE_URL
 

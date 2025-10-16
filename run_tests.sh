@@ -174,6 +174,8 @@ fi
 # Set environment variables for SQLite database for local development
 export DATABASE_URL="sqlite://bloggy_test.db"
 export TEST_DATABASE_URL="sqlite://bloggy_test.db"
+# Disable connection pooling for SQLite tests to avoid locking issues
+export DB_POOL_SIZE=0
 
 # Run database migrations before tests
 echo -e "${CYAN}🔄 Running database migrations...${NC}"

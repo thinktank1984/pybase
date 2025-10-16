@@ -1,0 +1,12 @@
+# Bloggy Application Requirements
+
+# Core Framework
+emmett>=2.5.0
+
+# Database
+pyturso
+
+# Testing
+pytest>=7.0.0
+
+# Additional dependencies as needed

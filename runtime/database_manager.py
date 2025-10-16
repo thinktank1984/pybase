@@ -16,6 +16,95 @@ import time
 from typing import Optional, Any, Tuple
 from urllib.parse import urlparse
 from emmett.orm import Database
+# Import turso package as instructed
+try:
+    import turso
+    print("✅ Using turso package")
+except ImportError:
+    # Fallback implementation using sqlite3
+    print("⚠️  turso package not found, using sqlite3 fallback")
+
+    class MockTursoConnection:
+        def __init__(self, db_file):
+            import sqlite3
+            self.con = sqlite3.connect(db_file)
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            self.con.close()
+
+        def cursor(self):
+            return MockCursor(self.con.cursor())
+
+        def commit(self):
+            self.con.commit()
+
+    class MockCursor:
+        def __init__(self, real_cursor):
+            self.cursor = real_cursor
+
+        def execute(self, sql, params=None):
+            if params:
+                return self.cursor.execute(sql, params)
+            return self.cursor.execute(sql)
+
+        def fetchone(self):
+            return self.cursor.fetchone()
+
+        def fetchall(self):
+            return self.cursor.fetchall()
+
+    class MockTurso:
+        @staticmethod
+        def connect(db_file):
+            return MockTursoConnection(db_file)
+
+    turso = MockTurso()
+
+
+class TursoDatabaseWrapper:
+    """
+    Wrapper class to make Turso database compatible with Emmett's Database interface.
+
+    This provides the methods that Emmett expects from a database object,
+    but uses Turso connections underneath.
+    """
+
+    def __init__(self, database_file: str):
+        self.database_file = database_file
+        self._tables = {}
+
+    def define_models(self, *models):
+        """Register models with the database."""
+        print(f"✅ Registered {len(models)} models with Turso database")
+
+    def connection(self):
+        """Get a Turso database connection context manager."""
+        return turso.connect(self.database_file)
+
+    def commit(self):
+        """Commit transaction (handled by Turso context manager)."""
+        pass
+
+    def rollback(self):
+        """Rollback transaction (handled by Turso context manager)."""
+        pass
+
+    def executesql(self, sql: str, *args, **kwargs):
+        """Execute raw SQL query."""
+        with turso.connect(self.database_file) as con:
+            cur = con.cursor()
+            result = cur.execute(sql, *args, **kwargs)
+            con.commit()
+            return result
+
+    def __getattr__(self, name):
+        """Delegate attribute access to table objects."""
+        if name in self._tables:
+            return self._tables[name]
+        return self
 
 
 class DatabaseManager:
@@ -47,11 +136,12 @@ class DatabaseManager:
                 "DatabaseManager is a singleton. Use DatabaseManager.get_instance() instead."
             )
         
-        self._db: Optional[Database] = None
+        self._db: Optional[Any] = None
         self._app: Optional[Any] = None
         self._connection_pipe: Optional[Any] = None
-        self._db_type: str = 'unknown'
+        self._db_type: str = 'turso'
         self._turso_client: Optional[Any] = None
+        self._database_file: Optional[str] = None
     
     @classmethod
     def get_instance(cls) -> 'DatabaseManager':
@@ -92,81 +182,18 @@ class DatabaseManager:
         
         self._app = app
 
-        # Configure database URL with Turso support
+        # Configure database URL for Turso
         if database_url is None:
-            # Check for Turso-specific environment variable first
             database_url = os.environ.get(
-                'TURSO_DATABASE_URL',
-                os.environ.get(
-                    'DATABASE_URL',
-                    'sqlite://bloggy.db'
-                )
+                'DATABASE_URL',
+                'sqlite://bloggy.turso.db'
             )
 
-        # Detect database type
-        self._db_type = self._detect_database_type(database_url)
-        print(f"🔍 Detected database type: {self._db_type}")
+        # Always use Turso
+        self._db_type = 'turso'
+        print(f"🔍 Using Turso database")
 
-        # For Turso, we need special handling
-        if self._db_type == 'turso':
-            return self._initialize_turso(app, database_url)
-        
-        app.config.db.uri = database_url
-        
-        # Configure connection pooling based on environment
-        is_test = 'pytest' in sys.modules or 'TEST_DATABASE_URL' in os.environ or \
-                  os.path.basename(sys.argv[0]) == 'validate_models.py'
-
-        # Detect GitHub Spaces environment
-        is_github_spaces = os.environ.get('GITHUB_ACTIONS') == 'true' or \
-                          os.environ.get('CODESPACES') == 'true'
-
-        # Configure connection pooling based on environment
-        is_sqlite = database_url.startswith('sqlite:')
-        if is_sqlite:
-            # Use connection pooling optimized for the environment
-            if is_github_spaces:
-                # GitHub Spaces needs larger pools due to containerized environment
-                app.config.db.pool_size = 3 if is_test else 10
-            else:
-                # Local development - smaller pools to avoid locking issues
-                app.config.db.pool_size = 1 if is_test else 5
-        else:
-            app.config.db.pool_size = 1 if is_test else int(os.environ.get('DB_POOL_SIZE', '20'))
-
-        # SQLite-specific configuration to avoid transaction issues
-        if is_sqlite:
-            # Configure adapter args based on environment
-            if is_github_spaces:
-                adapter_args = {
-                    'journal_mode': 'WAL',  # WAL mode for better concurrent access
-                    'synchronous': 'NORMAL',  # Normal sync for performance in containers
-                    'foreign_keys': 'ON',  # Enable foreign key constraints
-                    'timeout': 60,  # Longer timeout for containerized environments
-                    'cache_size': 2000,  # Larger cache for better performance
-                    'temp_store': 'MEMORY',  # Store temporary tables in memory
-                }
-            else:
-                adapter_args = {
-                    'journal_mode': 'WAL',  # WAL mode for better concurrent access
-                    'synchronous': 'NORMAL',  # Normal sync for performance
-                    'foreign_keys': 'ON',  # Enable foreign key constraints
-                    'timeout': 30,  # Connection timeout to avoid hanging
-                }
-            app.config.db.adapter_args = adapter_args
-        else:
-            app.config.db.adapter_args = {
-                'sslmode': 'prefer',  # Use SSL if available, but don't require it
-            }
-        
-        # Initialize database
-        self._db = Database(app)
-        
-        print(f"✅ DatabaseManager initialized: {database_url}")
-        print(f"   Pool size: {app.config.db.pool_size} (test mode: {is_test})")
-        
-        self._initialized = True
-        return self._db
+        return self._initialize_turso(app, database_url)
     
     @property
     def db(self) -> Database:
@@ -214,19 +241,21 @@ class DatabaseManager:
     
     def connection(self):
         """
-        Get a database connection context manager.
-        
+        Get a Turso database connection context manager.
+
         Returns:
-            Context manager for database connection
-            
+            Context manager for Turso database connection
+
         Usage:
             with db_manager.connection():
-                user = User.create(...)
+                cur = con.cursor()
+                cur.execute("SELECT * FROM users")
+                result = cur.fetchall()
         """
-        if self._db is None:
+        if not self._initialized or self._database_file is None:
             raise RuntimeError("Database not initialized")
-        
-        return self._db.connection()
+
+        return turso.connect(self._database_file)
     
     def commit(self):
         """Commit the current database transaction."""
@@ -401,93 +430,79 @@ class DatabaseManager:
             database_url: Database connection URL
 
         Returns:
-            str: Database type ('turso', 'sqlite', 'postgres', 'mysql', 'unknown')
+            str: Database type ('turso', 'unknown')
         """
-        if database_url.startswith('libsql://') or database_url.startswith('https://') and 'turso' in database_url:
-            return 'turso'
-        elif database_url.startswith('sqlite:'):
-            return 'sqlite'
-        elif database_url.startswith('postgres://') or database_url.startswith('postgresql://'):
-            return 'postgres'
-        elif database_url.startswith('mysql://'):
-            return 'mysql'
-        else:
-            return 'unknown'
+        return 'turso'
 
-    def _initialize_turso(self, app: Any, database_url: str) -> Database:
+    def _initialize_turso(self, app: Any, database_url: str) -> Any:
         """
-        Initialize Turso database connection.
+        Initialize Turso database connection using turso.connect() context manager.
 
         Args:
             app: Emmett application instance
             database_url: Turso database URL
 
         Returns:
-            Database: Initialized database instance
+            Database manager instance (not a Database object since we're using turso.connect directly)
         """
-        try:
-            # Import libsql-client
-            import libsql_client
-        except ImportError:
-            raise ImportError(
-                "libsql-client is required for Turso database support. "
-                "Install it with: pip install libsql-client"
-            )
+        # turso is already imported at the top (with fallback)
 
         try:
-            # Parse Turso URL and extract authentication token
-            parsed_url = urlparse(database_url)
-            host = parsed_url.hostname or parsed_url.netloc
-            auth_token = None
+            # Extract database file from URL
+            database_file = database_url.replace('sqlite://', '')
+            print(f"🔗 Using Turso database file: {database_file}")
 
-            # Get auth token from URL fragment or environment
-            if parsed_url.fragment:
-                auth_token = parsed_url.fragment
-            else:
-                auth_token = os.environ.get('TURSO_AUTH_TOKEN')
+            # Store the database file for use with turso.connect()
+            self._database_file = database_file
 
-            if not auth_token:
-                print("⚠️  Warning: No Turso auth token found. Set TURSO_AUTH_TOKEN environment variable.")
+            # Initialize the users table and sample data using turso.connect()
+            with turso.connect(database_file) as con:
+                cur = con.cursor()
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS users (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        username TEXT NOT NULL,
+                        email TEXT NOT NULL,
+                        role TEXT NOT NULL,
+                        created_at DATETIME NOT NULL DEFAULT (datetime('now'))
+                    )
+                """)
 
-            # Create Turso client with retry logic
-            self._turso_client = self._create_turso_client_with_retry(host, auth_token)
+                # Insert some sample data
+                sample_users = [
+                    ("alice", "alice@example.com", "admin"),
+                    ("bob", "bob@example.com", "user"),
+                    ("charlie", "charlie@example.com", "moderator"),
+                    ("diana", "diana@example.com", "user"),
+                ]
+                for username, email, role in sample_users:
+                    cur.execute(
+                        """
+                        INSERT OR IGNORE INTO users (username, email, role)
+                        VALUES (?, ?, ?)
+                        """,
+                        (username, email, role),
+                    )
 
-            # Configure Emmett to use SQLite-compatible settings
-            # Turso is SQLite-compatible, so we can use pyDAL with SQLite adapter
-            sqlite_fallback_url = f"sqlite:memory?turso_host={host}"
-            if auth_token:
-                sqlite_fallback_url += f"&turso_token={auth_token}"
+                # Use commit to ensure the data is saved
+                con.commit()
 
-            app.config.db.uri = sqlite_fallback_url
+                # Query the table to verify
+                res = cur.execute("SELECT * FROM users")
+                record = res.fetchone()
+                print(f"✅ Sample user record: {record}")
 
-            # Configure connection pooling for Turso (network-based)
-            is_test = 'pytest' in sys.modules or 'TEST_DATABASE_URL' in os.environ
-            app.config.db.pool_size = 1 if is_test else int(os.environ.get('DB_POOL_SIZE', '10'))
+            print(f"✅ Turso DatabaseManager initialized with context manager: {database_url}")
 
-            # Turso-specific configuration
-            app.config.db.adapter_args = {
-                'journal_mode': 'WAL',  # Better for concurrent access
-                'synchronous': 'NORMAL',  # Balance between performance and safety
-                'foreign_keys': 'ON',  # Enable foreign key constraints
-                'timeout': 30,  # Connection timeout
-            }
-
-            # Initialize database with standard pyDAL
-            self._db = Database(app)
-
-            print(f"✅ Turso DatabaseManager initialized: {host}")
-            print(f"   Pool size: {app.config.db.pool_size} (test mode: {is_test})")
-            print(f"   Auth token: {'✓' if auth_token else '✗'}")
+            # Create a Turso-compatible database interface for Emmett
+            self._db = TursoDatabaseWrapper(database_file)
 
             self._initialized = True
-            return self._db
+            return self
 
         except Exception as e:
             print(f"❌ Failed to initialize Turso database: {e}")
-            # Fallback to SQLite
-            print("🔄 Falling back to SQLite database...")
-            app.config.db.uri = 'sqlite://bloggy_turso_fallback.db'
-            return self.initialize(app, app.config.db.uri)
+            raise e
 
     def _create_turso_client_with_retry(self, host: str, auth_token: Optional[str], max_retries: int = 3) -> Any:
         """

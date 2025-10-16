@@ -1,6 +1,7 @@
 /proposal Support Turso Database · GitHub https://github.com/tursodatabase for backend
 /proposal Support Turso Database · GitHub https://github.com/tursodatabase for frontend
     
+generic aganets
 
 
 /proposal add-realtime-pub-sub-support

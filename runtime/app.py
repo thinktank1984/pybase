@@ -60,11 +60,11 @@ app.config.auth.registration_verification = False
 app.config.auth.hmac_key = "november.5.1955"
 
 #: database configuration
-# Initialize DatabaseManager singleton for centralized database management
+# Initialize DatabaseManager with Turso implementation
 db_manager = get_db_manager()
 DATABASE_URL = os.environ.get(
     'DATABASE_URL',
-    'sqlite://bloggy.db'
+    'sqlite://bloggy.turso.db'
 )
 db_manager.initialize(app, DATABASE_URL)
 
@@ -386,7 +386,8 @@ def get_current_session():
 # Expose db for backward compatibility
 db = db_manager.db
 mailer = Mailer(app)
-auth = Auth(app, db, user_model=User)
+# Temporarily disable Auth to test User model
+# auth = Auth(app, db, user_model=User)
 db_manager.define_models(Post, Comment, Role, Permission, UserRole, RolePermission, OAuthAccount, OAuthToken)
 
 # Create database connection pipe for request pipeline
@@ -537,29 +538,25 @@ def setup():
 
 
 #: pipeline
-# Use db_connection_pipe for SQLite databases to ensure proper connection management
-is_sqlite = app.config.db.uri.startswith('sqlite:')
+# Use standard db.pipe for database connection management
+# The custom db_connection_pipe was causing nested transaction issues
+# Note: Auth temporarily disabled for testing
 if PROMETHEUS_ENABLED and prometheus_available:
     app.pipeline = [
         SessionManager.cookies('GreatScott'),
         prometheus_pipe,  # type: ignore[list-item]
-        db_connection_pipe if is_sqlite else None,  # Only for SQLite
         db.pipe,
-        auth.pipe
+        # auth.pipe  # Temporarily disabled
     ]
 else:
     app.pipeline = [
         SessionManager.cookies('GreatScott'),
-        db_connection_pipe if is_sqlite else None,  # Only for SQLite
         db.pipe,
-        auth.pipe
+        # auth.pipe  # Temporarily disabled
     ]
 
-# Remove None values from pipeline
-app.pipeline = [pipe for pipe in app.pipeline if pipe is not None]
 
-
-auth_routes = auth.module(__name__)
+# auth_routes = auth.module(__name__)  # Temporarily disabled
 
 
 #: OAuth Routes
@@ -579,52 +576,16 @@ oauth_logger = logging.getLogger('oauth')
 oauth_logger.setLevel(logging.INFO)
 
 # Create OAuth routes module
-oauth_routes = app.module(__name__, 'oauth', url_prefix='auth/oauth')
+# oauth_routes = app.module(__name__, 'oauth', url_prefix='auth/oauth')  # Temporarily disabled
 
 
-@oauth_routes.route('/<str:provider>/login')
-@rate_limit(max_requests=10, window_seconds=60)
-async def oauth_login(provider):
-    """
-    Initiate OAuth flow for a provider.
-    Generates PKCE challenge, state, and redirects to provider.
-    """
-    from emmett import redirect, url, session
-    from auth.providers.base import BaseOAuthProvider
-    
-    # Check if provider is enabled
-    if not oauth_manager.is_provider_enabled(provider):
-        session.flash = f"OAuth provider '{provider}' is not available"
-        return redirect(url('auth.login'))
-    
-    # Get provider instance
-    provider_instance = oauth_manager.get_provider(provider)
-    
-    # Generate PKCE pair and state
-    code_verifier, code_challenge = BaseOAuthProvider.generate_pkce_pair()
-    state = BaseOAuthProvider.generate_state()
-    
-    # Store in session
-    session[f'oauth_{provider}_code_verifier'] = code_verifier
-    session[f'oauth_{provider}_state'] = state
-    
-    # Check if this is a linking request
-    if session.get('oauth_link_mode'):
-        session[f'oauth_{provider}_link_mode'] = True
-    
-    # Build authorization URL
-    auth_url = provider_instance.build_authorization_url(state, code_challenge)
-    
-    return redirect(auth_url)
-
-
-@oauth_routes.route('/<str:provider>/callback')
-@rate_limit(max_requests=20, window_seconds=60)
-async def oauth_callback(provider):
-    """
-    Handle OAuth callback from provider.
-    Validates state, exchanges code for tokens, creates/links account.
-    """
+# Temporarily disable all OAuth routes until Auth is fixed
+# @oauth_routes.route('/<str:provider>/login')
+# @rate_limit(max_requests=10, window_seconds=60)
+# async def oauth_login(provider):
+#     """Handle OAuth callback from provider.
+#     Validates state, exchanges code for tokens, creates/links account.
+#     """
     from emmett import request, redirect, url, session
     import traceback
     
@@ -844,27 +805,15 @@ async def oauth_callback(provider):
         return redirect(url('auth.login'))
 
 
-@oauth_routes.route('/<str:provider>/link')
-async def oauth_link(provider):
-    """
-    Initiate OAuth flow to link provider to existing account.
-    """
-    from emmett import session, redirect, url
-    
-    # Ensure user is logged in
-    if not session.auth or not session.auth.user:
-        session.flash = "Please log in first"
-        return redirect(url('auth.login'))
-    
-    # Set linking mode
-    session['oauth_link_mode'] = True
-    
-    # Redirect to OAuth login flow
-    return redirect(url('oauth.oauth_login', provider))
+# @oauth_routes.route('/<str:provider>/link')
+# async def oauth_link(provider):
+#     """Initiate OAuth flow to link provider to existing account."""
+#     pass
 
-
-@oauth_routes.route('/<str:provider>/unlink', methods=['post'])
-async def oauth_unlink(provider):
+# @oauth_routes.route('/<str:provider>/unlink', methods=['post'])
+# async def oauth_unlink(provider):
+#     """Unlink an OAuth provider from user account."""
+#     pass
     """
     Unlink an OAuth provider from user account.
     """

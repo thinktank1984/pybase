@@ -3,16 +3,37 @@
 User model with authentication utilities and API.
 """
 
-from emmett.orm import has_many
+from emmett.orm import has_many, Field
 from emmett.tools.auth import AuthUser
 from emmett import current, session
 
 
 class User(AuthUser):
     """User model extending Emmett's AuthUser with role-based permissions."""
-    
+
+    # Field definitions matching the migration
+    email = Field(validation={'is': 'email', 'presence': True})
+    password = Field(validation={'length': {'min': 6}})
+    first_name = Field(validation={'presence': True})
+    last_name = Field(validation={'presence': True})
+    registration_key = Field()
+    reset_password_key = Field()
+    registration_id = Field()
+
     has_many('posts', 'comments', 'user_roles', 'oauth_accounts')
-    
+
+    # Validation configuration for Emmett Auth
+    validation = {
+        'password': {
+            'required': True,
+            'min_length': 6
+        },
+        'email': {
+            'required': True,
+            'contains': '@'
+        }
+    }
+
     rest_rw = {
         'id': (True, False),
         'email': (True, False),

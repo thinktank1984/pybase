@@ -130,9 +130,9 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - EMMETT_ENV=development
-      # Database configuration
-      - DATABASE_URL=sqlite:///bloggy.db
-      - TEST_DATABASE_URL=sqlite:///bloggy_test.db
+      # Database configuration (local Turso database file)
+      - DATABASE_URL=sqlite://bloggy.turso.db
+      - TURSO_DATABASE_URL=sqlite://bloggy.turso.db
       - DB_POOL_SIZE=20
       # Valkey cache configuration (optional - enable with VALKEY_ENABLED=true)
       - VALKEY_ENABLED=false
