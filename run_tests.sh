@@ -174,10 +174,10 @@ fi
 # Set environment variable for SQLite database for local development
 export DATABASE_URL="sqlite://bloggy.db"
 
-# Check if pytest is available
-if ! command -v pytest &> /dev/null; then
-    echo -e "${RED}❌ pytest is required but not installed.${NC}"
-    echo "Please install pytest: pip install pytest"
+# Check if pytest is available in virtual environment
+if [ ! -f "./venv/bin/pytest" ]; then
+    echo -e "${RED}❌ pytest is required but not installed in virtual environment.${NC}"
+    echo "Please install pytest: ./venv/bin/pip install pytest"
     exit 1
 fi
 if [ "$SEPARATE_MODE" = true ]; then
@@ -194,49 +194,49 @@ if [ "$SEPARATE_MODE" = true ]; then
     TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
     
     echo -e "${YELLOW}[1/8]${NC} Running tests.py (main integration tests)..."
-    pytest runtime/integration_tests/tests.py -v --tb=short \
+    ./venv/bin/pytest integration_tests/tests.py -v --tb=short \
         > "${OUTPUT_DIR}/01_tests_${TIMESTAMP}.txt" 2>&1 || true
     echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/01_tests_${TIMESTAMP}.txt"
     echo ""
 
     echo -e "${YELLOW}[2/8]${NC} Running test_oauth_real.py (OAuth integration tests)..."
-    pytest runtime/integration_tests/test_oauth_real.py -v --tb=short \
+    ./venv/bin/pytest integration_tests/test_oauth_real.py -v --tb=short \
         > "${OUTPUT_DIR}/02_oauth_${TIMESTAMP}.txt" 2>&1 || true
     echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/02_oauth_${TIMESTAMP}.txt"
     echo ""
 
     echo -e "${YELLOW}[3/8]${NC} Running test_roles_integration.py (roles & permissions tests)..."
-    pytest runtime/integration_tests/test_roles_integration.py -v --tb=short \
+    ./venv/bin/pytest integration_tests/test_roles_integration.py -v --tb=short \
         > "${OUTPUT_DIR}/03_roles_integration_${TIMESTAMP}.txt" 2>&1 || true
     echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/03_roles_integration_${TIMESTAMP}.txt"
     echo ""
 
     echo -e "${YELLOW}[4/8]${NC} Running test_auto_ui.py (auto UI generation tests)..."
-    pytest runtime/integration_tests/test_auto_ui.py -v --tb=short \
+    ./venv/bin/pytest integration_tests/test_auto_ui.py -v --tb=short \
         > "${OUTPUT_DIR}/04_auto_ui_${TIMESTAMP}.txt" 2>&1 || true
     echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/04_auto_ui_${TIMESTAMP}.txt"
     echo ""
 
     echo -e "${YELLOW}[5/8]${NC} Running test_ui_chrome_real.py (Chrome UI tests)..."
-    pytest runtime/integration_tests/test_ui_chrome_real.py -v --tb=short \
+    ./venv/bin/pytest integration_tests/test_ui_chrome_real.py -v --tb=short \
         > "${OUTPUT_DIR}/05_chrome_ui_${TIMESTAMP}.txt" 2>&1 || true
     echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/05_chrome_ui_${TIMESTAMP}.txt"
     echo ""
 
     echo -e "${YELLOW}[6/8]${NC} Running test_roles_rest_api.py (roles REST API tests)..."
-    pytest runtime/integration_tests/test_roles_rest_api.py -v --tb=short \
+    ./venv/bin/pytest integration_tests/test_roles_rest_api.py -v --tb=short \
         > "${OUTPUT_DIR}/06_roles_rest_api_${TIMESTAMP}.txt" 2>&1 || true
     echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/06_roles_rest_api_${TIMESTAMP}.txt"
     echo ""
 
     echo -e "${YELLOW}[7/8]${NC} Running test_roles.py (basic role tests)..."
-    pytest runtime/integration_tests/test_roles.py -v --tb=short \
+    ./venv/bin/pytest integration_tests/test_roles.py -v --tb=short \
         > "${OUTPUT_DIR}/07_roles_${TIMESTAMP}.txt" 2>&1 || true
     echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/07_roles_${TIMESTAMP}.txt"
     echo ""
 
     echo -e "${YELLOW}[8/8]${NC} Running test_oauth_real_user.py (OAuth real user tests)..."
-    pytest runtime/integration_tests/test_oauth_real_user.py -v --tb=short \
+    ./venv/bin/pytest integration_tests/test_oauth_real_user.py -v --tb=short \
         > "${OUTPUT_DIR}/08_oauth_real_user_${TIMESTAMP}.txt" 2>&1 || true
     echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/08_oauth_real_user_${TIMESTAMP}.txt"
     echo ""
@@ -377,14 +377,14 @@ run_app_tests() {
     
     # Run all 8 test files explicitly
     TEST_FILES=(
-        "runtime/integration_tests/tests.py"
-        "runtime/integration_tests/test_oauth_real.py"
-        "runtime/integration_tests/test_roles_integration.py"
-        "runtime/integration_tests/test_auto_ui.py"
-        "runtime/integration_tests/test_ui_chrome_real.py"
-        "runtime/integration_tests/test_roles_rest_api.py"
-        "runtime/integration_tests/test_roles.py"
-        "runtime/integration_tests/test_oauth_real_user.py"
+        "integration_tests/tests.py"
+        "integration_tests/test_oauth_real.py"
+        "integration_tests/test_roles_integration.py"
+        "integration_tests/test_auto_ui.py"
+        "integration_tests/test_ui_chrome_real.py"
+        "integration_tests/test_roles_rest_api.py"
+        "integration_tests/test_roles.py"
+        "integration_tests/test_oauth_real_user.py"
     )
 
     TEST_CMD="pytest ${TEST_FILES[*]}"
@@ -474,7 +474,7 @@ run_chrome_tests() {
     echo -e "${CYAN}💻 Running on HOST${NC}"
     echo ""
 
-    TEST_CMD="pytest runtime/integration_tests/test_ui_chrome_real.py"
+    TEST_CMD="pytest integration_tests/test_ui_chrome_real.py"
         
         # Add verbosity
         if [ "$VERBOSE" = "vv" ]; then
