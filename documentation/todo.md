@@ -1,6 +1,5 @@
-/proposal Support Turso Database · GitHub https://github.com/tursodatabase
-    for backend
-    for frontend
+/proposal Support Turso Database · GitHub https://github.com/tursodatabase for backend
+/proposal Support Turso Database · GitHub https://github.com/tursodatabase for frontend
     
 
 

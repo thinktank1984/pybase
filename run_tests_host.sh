@@ -171,8 +171,9 @@ if [ ! -d "runtime" ]; then
     exit 1
 fi
 
-# Set environment variable for SQLite database for local development
-export DATABASE_URL="sqlite://bloggy.db"
+# Set environment variables for SQLite database for local development
+export DATABASE_URL="sqlite://bloggy_test.db"
+export TEST_DATABASE_URL="sqlite://bloggy_test.db"
 
 # Check if pytest is available in virtual environment
 if [ ! -f "./venv/bin/pytest" ]; then
@@ -254,18 +255,46 @@ if [ "$SEPARATE_MODE" = true ]; then
         if [ -f "$file" ]; then
             filename=$(basename "$file")
 
-            # Extract test counts from pytest output (macOS compatible)
-            if grep -q "passed" "$file"; then
-                # Get the summary line from pytest output
-                summary=$(grep -E "[0-9]+ passed" "$file" | tail -1)
+            # Check if pytest ran at all
+            if grep -q "test session starts" "$file"; then
+                # Get the final summary line from pytest output
+                summary=$(grep -E "=+ [0-9]+ .* in [0-9.]+s =+" "$file" | tail -1)
 
-                if echo "$summary" | grep -q "failed"; then
-                    echo -e "${RED}✗${NC} $filename: $summary"
-                elif echo "$summary" | grep -q "error"; then
-                    echo -e "${RED}✗${NC} $filename: $summary"
+                if [ -n "$summary" ]; then
+                    # Extract key information from summary
+                    if echo "$summary" | grep -q "failed"; then
+                        echo -e "${RED}✗${NC} $filename: $summary"
+                    elif echo "$summary" | grep -q "error"; then
+                        echo -e "${RED}✗${NC} $filename: $summary"
+                    elif echo "$summary" | grep -q "passed"; then
+                        echo -e "${GREEN}✓${NC} $filename: $summary"
+                    else
+                        echo -e "${YELLOW}⚠${NC} $filename: $summary"
+                    fi
                 else
-                    echo -e "${GREEN}✓${NC} $filename: $summary"
+                    # Look for alternative summary formats
+                    alt_summary=$(grep -E "[0-9]+ (passed|failed|error)" "$file" | tail -1)
+                    if [ -n "$alt_summary" ]; then
+                        if echo "$alt_summary" | grep -E "(failed|error)"; then
+                            echo -e "${RED}✗${NC} $filename: $alt_summary"
+                        else
+                            echo -e "${GREEN}✓${NC} $filename: $alt_summary"
+                        fi
+                    else
+                        echo -e "${YELLOW}⚠${NC} $filename: Tests ran but no summary found"
+                    fi
                 fi
+            elif grep -q "No module named" "$file"; then
+                # Import error
+                error_line=$(grep "No module named" "$file" | head -1)
+                echo -e "${RED}✗${NC} $filename: Import error - $error_line"
+            elif grep -q "collected 0 items" "$file"; then
+                # No tests found
+                echo -e "${YELLOW}⚠${NC} $filename: No tests collected"
+            elif grep -q "ERROR" "$file"; then
+                # General error during test collection/setup
+                error_line=$(grep "ERROR:" "$file" | head -1)
+                echo -e "${RED}✗${NC} $filename: Error - $error_line"
             else
                 echo -e "${RED}✗${NC} $filename: No test results found"
             fi

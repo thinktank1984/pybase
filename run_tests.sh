@@ -171,8 +171,9 @@ if [ ! -d "runtime" ]; then
     exit 1
 fi
 
-# Set environment variable for SQLite database for local development
-export DATABASE_URL="sqlite://bloggy.db"
+# Set environment variables for SQLite database for local development
+export DATABASE_URL="sqlite://bloggy_test.db"
+export TEST_DATABASE_URL="sqlite://bloggy_test.db"
 
 # Check if pytest is available in virtual environment
 if [ ! -f "./venv/bin/pytest" ]; then
