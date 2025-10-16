@@ -22,7 +22,7 @@ TEST_PATTERN=""
 SHOW_DURATIONS=false
 PYTEST_EXTRA_ARGS=""
 CLEAN_SCREENSHOTS=true  # Clean screenshots by default
-HEADED_MODE=false  # Run Chrome in visible/headed mode
+HEADED_MODE=false  # All tests run on host now
 SEPARATE_MODE=true  # Run tests separately with output files (DEFAULT)
 
 # Show help
@@ -53,7 +53,7 @@ show_help() {
     echo "  --keep-screenshots   Keep existing screenshots (cleanup enabled by default)"
     echo ""
     echo "Chrome Options:"
-    echo "  --headed             Run Chrome tests in visible/foreground mode (not headless)"
+    echo "  --headed             Run Chrome tests in visible/foreground mode (on host)"
     echo ""
     echo "Other Options:"
     echo "  -h, --help         Show this help message"
@@ -160,19 +160,26 @@ done
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${BLUE}🧪 Bloggy Test Runner (8 Test Suites)${NC}"
-if [ "$TEST_MODE" = "chrome" ] && [ "$HEADED_MODE" = true ]; then
-    echo -e "${BLUE}🐳 App tests in Docker | 💻 Chrome --headed on HOST${NC}"
-else
-    echo -e "${BLUE}🐳 ALL TESTS RUN IN DOCKER${NC}"
-fi
+    echo -e "${BLUE}💻 ALL TESTS RUN ON HOST${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
-# Migrations already applied in persistent Docker database - skip to avoid connection issues
-echo -e "${GREEN}✅ Using persistent Docker database (migrations already applied)${NC}"
-echo ""
+# Check if runtime directory exists
+if [ ! -d "runtime" ]; then
+    echo -e "${RED}❌ Runtime directory not found${NC}"
+    echo "Please run this script from the project root directory"
+    exit 1
+fi
 
-# Check if separate mode is requested - run each test suite separately with output files
+# Set environment variable for SQLite database for local development
+export DATABASE_URL="sqlite://bloggy.db"
+
+# Check if pytest is available
+if ! command -v pytest &> /dev/null; then
+    echo -e "${RED}❌ pytest is required but not installed.${NC}"
+    echo "Please install pytest: pip install pytest"
+    exit 1
+fi
 if [ "$SEPARATE_MODE" = true ]; then
     echo -e "${YELLOW}🔬 Running All 8 Test Suites Separately...${NC}"
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
@@ -187,57 +194,49 @@ if [ "$SEPARATE_MODE" = true ]; then
     TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
     
     echo -e "${YELLOW}[1/8]${NC} Running tests.py (main integration tests)..."
-    docker compose -f docker/docker-compose.yaml exec -T runtime \
-        pytest /app/integration_tests/tests.py -v --tb=short \
+    pytest runtime/integration_tests/tests.py -v --tb=short \
         > "${OUTPUT_DIR}/01_tests_${TIMESTAMP}.txt" 2>&1 || true
     echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/01_tests_${TIMESTAMP}.txt"
     echo ""
-    
+
     echo -e "${YELLOW}[2/8]${NC} Running test_oauth_real.py (OAuth integration tests)..."
-    docker compose -f docker/docker-compose.yaml exec -T runtime \
-        pytest /app/integration_tests/test_oauth_real.py -v --tb=short \
+    pytest runtime/integration_tests/test_oauth_real.py -v --tb=short \
         > "${OUTPUT_DIR}/02_oauth_${TIMESTAMP}.txt" 2>&1 || true
     echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/02_oauth_${TIMESTAMP}.txt"
     echo ""
-    
+
     echo -e "${YELLOW}[3/8]${NC} Running test_roles_integration.py (roles & permissions tests)..."
-    docker compose -f docker/docker-compose.yaml exec -T runtime \
-        pytest /app/integration_tests/test_roles_integration.py -v --tb=short \
+    pytest runtime/integration_tests/test_roles_integration.py -v --tb=short \
         > "${OUTPUT_DIR}/03_roles_integration_${TIMESTAMP}.txt" 2>&1 || true
     echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/03_roles_integration_${TIMESTAMP}.txt"
     echo ""
-    
+
     echo -e "${YELLOW}[4/8]${NC} Running test_auto_ui.py (auto UI generation tests)..."
-    docker compose -f docker/docker-compose.yaml exec -T runtime \
-        pytest /app/integration_tests/test_auto_ui.py -v --tb=short \
+    pytest runtime/integration_tests/test_auto_ui.py -v --tb=short \
         > "${OUTPUT_DIR}/04_auto_ui_${TIMESTAMP}.txt" 2>&1 || true
     echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/04_auto_ui_${TIMESTAMP}.txt"
     echo ""
-    
+
     echo -e "${YELLOW}[5/8]${NC} Running test_ui_chrome_real.py (Chrome UI tests)..."
-    docker compose -f docker/docker-compose.yaml exec -T runtime \
-        pytest /app/integration_tests/test_ui_chrome_real.py -v --tb=short \
+    pytest runtime/integration_tests/test_ui_chrome_real.py -v --tb=short \
         > "${OUTPUT_DIR}/05_chrome_ui_${TIMESTAMP}.txt" 2>&1 || true
     echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/05_chrome_ui_${TIMESTAMP}.txt"
     echo ""
-    
+
     echo -e "${YELLOW}[6/8]${NC} Running test_roles_rest_api.py (roles REST API tests)..."
-    docker compose -f docker/docker-compose.yaml exec -T runtime \
-        pytest /app/integration_tests/test_roles_rest_api.py -v --tb=short \
+    pytest runtime/integration_tests/test_roles_rest_api.py -v --tb=short \
         > "${OUTPUT_DIR}/06_roles_rest_api_${TIMESTAMP}.txt" 2>&1 || true
     echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/06_roles_rest_api_${TIMESTAMP}.txt"
     echo ""
-    
+
     echo -e "${YELLOW}[7/8]${NC} Running test_roles.py (basic role tests)..."
-    docker compose -f docker/docker-compose.yaml exec -T runtime \
-        pytest /app/integration_tests/test_roles.py -v --tb=short \
+    pytest runtime/integration_tests/test_roles.py -v --tb=short \
         > "${OUTPUT_DIR}/07_roles_${TIMESTAMP}.txt" 2>&1 || true
     echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/07_roles_${TIMESTAMP}.txt"
     echo ""
-    
+
     echo -e "${YELLOW}[8/8]${NC} Running test_oauth_real_user.py (OAuth real user tests)..."
-    docker compose -f docker/docker-compose.yaml exec -T runtime \
-        pytest /app/integration_tests/test_oauth_real_user.py -v --tb=short \
+    pytest runtime/integration_tests/test_oauth_real_user.py -v --tb=short \
         > "${OUTPUT_DIR}/08_oauth_real_user_${TIMESTAMP}.txt" 2>&1 || true
     echo -e "${GREEN}✓${NC} Output saved to ${OUTPUT_DIR}/08_oauth_real_user_${TIMESTAMP}.txt"
     echo ""
@@ -292,22 +291,8 @@ if [ "$SEPARATE_MODE" = true ]; then
     exit 0
 fi
 
-# Check if runtime directory exists
-if [ ! -d "runtime" ]; then
-    echo -e "${RED}❌ Runtime directory not found${NC}"
-    echo "Please run this script from the project root directory"
-    exit 1
-fi
-
-# Check if docker compose is available
-if ! command -v docker &> /dev/null; then
-    echo -e "${RED}❌ Docker is required but not installed.${NC}"
-    echo "Please install Docker: https://docs.docker.com/get-docker/"
-    exit 1
-fi
-
 PROJECT_ROOT=$(pwd)
-DOCKER_COMPOSE="docker compose -f docker/docker-compose.yaml"
+PYTEST_CMD="pytest"
 TEST_FAILED=0
 
 # Display test mode
@@ -380,7 +365,7 @@ clean_screenshots() {
 run_app_tests() {
     echo -e "${YELLOW}🔬 Running Application Tests (8 Test Suites)...${NC}"
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${CYAN}🐳 Running in Docker container: runtime${NC}"
+    echo -e "${CYAN}💻 Running on HOST${NC}"
     echo -e "${CYAN}📋 Test Suites: tests.py, oauth, roles, auto_ui, chrome,${NC}"
     echo -e "${CYAN}                roles_rest_api, roles (basic), oauth_real_user${NC}"
     echo ""
@@ -392,17 +377,17 @@ run_app_tests() {
     
     # Run all 8 test files explicitly
     TEST_FILES=(
-        "integration_tests/tests.py"
-        "integration_tests/test_oauth_real.py"
-        "integration_tests/test_roles_integration.py"
-        "integration_tests/test_auto_ui.py"
-        "integration_tests/test_ui_chrome_real.py"
-        "integration_tests/test_roles_rest_api.py"
-        "integration_tests/test_roles.py"
-        "integration_tests/test_oauth_real_user.py"
+        "runtime/integration_tests/tests.py"
+        "runtime/integration_tests/test_oauth_real.py"
+        "runtime/integration_tests/test_roles_integration.py"
+        "runtime/integration_tests/test_auto_ui.py"
+        "runtime/integration_tests/test_ui_chrome_real.py"
+        "runtime/integration_tests/test_roles_rest_api.py"
+        "runtime/integration_tests/test_roles.py"
+        "runtime/integration_tests/test_oauth_real_user.py"
     )
-    
-    TEST_CMD="cd /app && pytest ${TEST_FILES[*]}"
+
+    TEST_CMD="pytest ${TEST_FILES[*]}"
     
     # Add verbosity
     if [ "$VERBOSE" = "vv" ]; then
@@ -437,14 +422,14 @@ run_app_tests() {
         TEST_CMD="$TEST_CMD $PYTEST_EXTRA_ARGS"
     fi
     
-    echo -e "${CYAN}📝 Docker Command: docker compose exec runtime bash -c \"$TEST_CMD\"${NC}"
+    echo -e "${CYAN}📝 Host Command: $TEST_CMD${NC}"
     echo ""
-    
-    if $DOCKER_COMPOSE exec runtime bash -c "$TEST_CMD"; then
-        echo -e "${GREEN}✅ Application tests passed! (ran in Docker)${NC}"
+
+    if eval "$TEST_CMD"; then
+        echo -e "${GREEN}✅ Application tests passed! (ran on host)${NC}"
         return 0
     else
-        echo -e "${RED}❌ Application tests failed (ran in Docker)${NC}"
+        echo -e "${RED}❌ Application tests failed (ran on host)${NC}"
         return 1
     fi
 }
@@ -460,7 +445,7 @@ run_chrome_tests() {
     if [ "$HEADED_MODE" = true ]; then
         echo -e "${CYAN}💻 Running on HOST (--headed mode for visible browser)${NC}"
     else
-        echo -e "${CYAN}🐳 Running in Docker container: runtime${NC}"
+        echo -e "${CYAN}💻 Running on HOST (headless mode)${NC}"
     fi
     echo ""
     
@@ -473,44 +458,23 @@ run_chrome_tests() {
     # If not available, tests will fail with clear error message (no skipping per policy)
     
     # Real Chrome integration tests
-    echo -e "${CYAN}🌐 Running REAL Chrome integration tests via MCP...${NC}"
-    if [ "$HEADED_MODE" = true ]; then
-        echo -e "${CYAN}   👁️  VISIBLE MODE: Running on HOST (not Docker)${NC}"
-        echo -e "${CYAN}   Chrome window will be visible during tests${NC}"
-        echo -e "${CYAN}   You can watch the tests interact with the browser in real-time!${NC}"
-    else
-        echo -e "${CYAN}   This will run in Docker container via MCP Chrome DevTools${NC}"
-        echo -e "${CYAN}   Tip: Use --headed flag to run on host with visible browser${NC}"
-    fi
+    echo -e "${CYAN}🌐 Running REAL Chrome integration tests on HOST...${NC}"
     echo ""
     
     # Check if app is running
     echo -e "${CYAN}📡 Checking if app is accessible...${NC}"
     if ! curl -s http://localhost:8081 > /dev/null 2>&1; then
         echo -e "${RED}❌ App not accessible at http://localhost:8081${NC}"
-        echo -e "${YELLOW}   Start the app first:${NC}"
-        echo -e "${YELLOW}   docker compose -f docker/docker-compose.yaml up runtime -d${NC}"
+        echo -e "${YELLOW}   Start the app first${NC}"
         return 1
     fi
     echo -e "${GREEN}✅ App is running${NC}"
     echo ""
     
-    # Check if running in headed mode (runs on HOST) or headless mode (runs in Docker)
-    if [ "$HEADED_MODE" = true ]; then
-        # ============================================
-        # HEADED MODE: Run on HOST (visible browser)
-        # ============================================
-        echo -e "${CYAN}💻 Running on HOST (not Docker) for visible browser${NC}"
-        echo ""
-        
-        # Use venv pytest if it exists, otherwise assume pytest is in PATH
-        if [ -f "$PROJECT_ROOT/venv/bin/pytest" ]; then
-            PYTEST_CMD="$PROJECT_ROOT/venv/bin/pytest"
-        else
-            PYTEST_CMD="pytest"
-        fi
-        
-        TEST_CMD="$PYTEST_CMD integration_tests/test_ui_chrome_real.py"
+    echo -e "${CYAN}💻 Running on HOST${NC}"
+    echo ""
+
+    TEST_CMD="pytest runtime/integration_tests/test_ui_chrome_real.py"
         
         # Add verbosity
         if [ "$VERBOSE" = "vv" ]; then
@@ -538,12 +502,10 @@ run_chrome_tests() {
             TEST_CMD="$TEST_CMD $PYTEST_EXTRA_ARGS"
         fi
         
-        echo -e "${CYAN}📝 Host Command: CHROME_HEADED=true $TEST_CMD${NC}"
+        echo -e "${CYAN}📝 Host Command: $TEST_CMD${NC}"
         echo ""
-        
-        # Run on HOST with CHROME_HEADED environment variable
+
         cd "$PROJECT_ROOT"
-        export CHROME_HEADED=true
         if eval "$TEST_CMD"; then
             echo ""
             echo -e "${GREEN}✅ Chrome tests passed! (ran on HOST)${NC}"
@@ -554,56 +516,7 @@ run_chrome_tests() {
             echo -e "${RED}❌ Chrome tests failed (ran on HOST)${NC}"
             return 1
         fi
-    else
-        # ============================================
-        # HEADLESS MODE: Run in Docker container
-        # ============================================
-        echo -e "${CYAN}🐳 Running in Docker container (headless mode)${NC}"
-        echo ""
-        
-        TEST_CMD="cd /app && pytest integration_tests/test_ui_chrome_real.py"
-        
-        # Add verbosity
-        if [ "$VERBOSE" = "vv" ]; then
-            TEST_CMD="$TEST_CMD -vv"
-        elif [ "$VERBOSE" = true ]; then
-            TEST_CMD="$TEST_CMD -v"
-        fi
-        
-        # Add stop on failure
-        if [ "$STOP_ON_FAILURE" = true ]; then
-            TEST_CMD="$TEST_CMD -x"
-        fi
-        
-        # Add test pattern
-        if [ -n "$TEST_PATTERN" ]; then
-            TEST_CMD="$TEST_CMD -k \"$TEST_PATTERN\""
-            echo -e "${CYAN}🔍 Running tests matching: $TEST_PATTERN${NC}"
-        fi
-        
-        # Always add -s for Chrome tests (to see output)
-        TEST_CMD="$TEST_CMD -s"
-        
-        # Add extra pytest args
-        if [ -n "$PYTEST_EXTRA_ARGS" ]; then
-            TEST_CMD="$TEST_CMD $PYTEST_EXTRA_ARGS"
-        fi
-        
-        echo -e "${CYAN}📝 Docker Command: docker compose exec runtime bash -c \"$TEST_CMD\"${NC}"
-        echo ""
-        
-        # Run in Docker container
-        if $DOCKER_COMPOSE exec runtime bash -c "$TEST_CMD"; then
-            echo ""
-            echo -e "${GREEN}✅ Chrome tests passed! (ran in Docker)${NC}"
-            echo -e "${GREEN}📸 Screenshots saved to: runtime/screenshots/${NC}"
-            return 0
-        else
-            echo ""
-            echo -e "${RED}❌ Chrome tests failed (ran in Docker)${NC}"
-            return 1
-        fi
-    fi
+    }
 }
 
 # Run tests based on mode
