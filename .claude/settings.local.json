@@ -8,7 +8,8 @@
       "Bash(./run_tests.sh:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(./venv/bin/pytest:*)"
     ],
     "deny": [],
     "ask": []
