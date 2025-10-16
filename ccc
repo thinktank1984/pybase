@@ -43,4 +43,4 @@ fi
 echo "Starting Claude Code..."
 
 # No arguments - start interactive mode
-claude --model claude-sonnet-4-5@20250929  --dangerously-skip-permissions 
+claude   --dangerously-skip-permissions 

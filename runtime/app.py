@@ -536,21 +536,26 @@ def setup():
 
 
 #: pipeline
+# Only use db_connection_pipe for non-SQLite databases to avoid transaction conflicts
+is_sqlite = app.config.db.uri.startswith('sqlite:')
 if PROMETHEUS_ENABLED and prometheus_available:
     app.pipeline = [
         SessionManager.cookies('GreatScott'),
         prometheus_pipe,  # type: ignore[list-item]
-        db_connection_pipe,  # Explicit connection management for PostgreSQL
+        db_connection_pipe if not is_sqlite else None,  # Only for PostgreSQL
         db.pipe,
         auth.pipe
     ]
 else:
     app.pipeline = [
         SessionManager.cookies('GreatScott'),
-        db_connection_pipe,  # Explicit connection management for PostgreSQL
+        db_connection_pipe if not is_sqlite else None,  # Only for PostgreSQL
         db.pipe,
         auth.pipe
     ]
+
+# Remove None values from pipeline
+app.pipeline = [pipe for pipe in app.pipeline if pipe is not None]
 
 
 auth_routes = auth.module(__name__)
@@ -1103,3 +1108,9 @@ async def api_root():
             'users': '/api/users'
         }
     }
+
+
+@app.route('/test')
+async def test_route():
+    """Simple test route to check if server responds."""
+    return "Hello World! Server is working."
