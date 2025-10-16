@@ -537,20 +537,20 @@ def setup():
 
 
 #: pipeline
-# Only use db_connection_pipe for non-SQLite databases to avoid transaction conflicts
+# Use db_connection_pipe for SQLite databases to ensure proper connection management
 is_sqlite = app.config.db.uri.startswith('sqlite:')
 if PROMETHEUS_ENABLED and prometheus_available:
     app.pipeline = [
         SessionManager.cookies('GreatScott'),
         prometheus_pipe,  # type: ignore[list-item]
-        db_connection_pipe if not is_sqlite else None,  # Only for SQLite
+        db_connection_pipe if is_sqlite else None,  # Only for SQLite
         db.pipe,
         auth.pipe
     ]
 else:
     app.pipeline = [
         SessionManager.cookies('GreatScott'),
-        db_connection_pipe if not is_sqlite else None,  # Only for SQLite
+        db_connection_pipe if is_sqlite else None,  # Only for SQLite
         db.pipe,
         auth.pipe
     ]
