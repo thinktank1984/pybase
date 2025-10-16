@@ -91,7 +91,7 @@ class DatabaseManager:
         if database_url is None:
             database_url = os.environ.get(
                 'DATABASE_URL',
-                'postgres://bloggy:bloggy_password@postgres:5432/bloggy'
+                'sqlite://bloggy.db'
             )
         
         app.config.db.uri = database_url
@@ -260,7 +260,7 @@ class DatabaseManager:
         """
         Create a pipeline component for explicit database connection management.
         
-        This is required for PostgreSQL to ensure all database queries have
+        This is required for SQLite to ensure all database queries have
         access to a connection context.
         
         Returns:
@@ -274,7 +274,7 @@ class DatabaseManager:
             """
             Pipeline component that explicitly wraps requests in database connection contexts.
             
-            This is required for PostgreSQL to ensure all database queries (including those
+            This is required for SQLite to ensure all database queries (including those
             in auth handlers) have access to a connection context.
             """
             async def open(self):

@@ -66,7 +66,7 @@ class Role(BaseModel):
             from ..utils import get_db
             db = get_db()
             print(f"DEBUG get_by_name: db URI = {db.config.uri}")
-            # PostgreSQL requires explicit connection context
+            # SQLite requires explicit connection context
             with db.connection():
                 query = db(db.roles.name == name)
                 print(f"DEBUG get_by_name: query object = {query}")
@@ -92,7 +92,7 @@ class Role(BaseModel):
         try:
             from ..utils import get_db
             db = get_db()
-            # PostgreSQL requires explicit connection context
+            # SQLite requires explicit connection context
             with db.connection():
                 return db(db.roles).select(orderby='name')
         except Exception as e:
@@ -114,7 +114,7 @@ class Role(BaseModel):
             # Get role ID (works for both Model and Row objects)
             role_id = self.id if hasattr(self, 'id') else self['id']  # type: ignore[attr-defined, index]
             
-            # PostgreSQL requires explicit connection context
+            # SQLite requires explicit connection context
             with db.connection():
                 # Query permissions through role_permissions association
                 rows = db(

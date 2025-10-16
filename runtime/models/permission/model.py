@@ -96,7 +96,7 @@ class Permission(Model):
         try:
             from ..utils import get_db
             db = get_db()
-            # PostgreSQL requires explicit connection context
+            # SQLite requires explicit connection context
             with db.connection():
                 return db(db.permissions.name == name).select().first()
         except Exception as e:
@@ -117,7 +117,7 @@ class Permission(Model):
         try:
             from ..utils import get_db
             db = get_db()
-            # PostgreSQL requires explicit connection context
+            # SQLite requires explicit connection context
             with db.connection():
                 return db(db.permissions.resource == resource).select(orderby='action')
         except Exception as e:
@@ -135,7 +135,7 @@ class Permission(Model):
         try:
             from ..utils import get_db
             db = get_db()
-            # PostgreSQL requires explicit connection context
+            # SQLite requires explicit connection context
             with db.connection():
                 return db(db.permissions).select(orderby='resource|action')
         except Exception as e:
