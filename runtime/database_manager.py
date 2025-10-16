@@ -371,8 +371,7 @@ class DatabaseManager:
         
         return self._db(*args, **kwargs)
 
-
-  def _detect_database_type(self, database_url: str) -> str:
+    def _detect_database_type(self, database_url: str) -> str:
         """
         Detect database type from URL pattern.
 
