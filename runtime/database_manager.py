@@ -184,7 +184,7 @@ class DatabaseManager:
         if database_url is None:
             database_url = os.environ.get(
                 'DATABASE_URL',
-                'sqlite://runtime/databases/main.db'
+                'sqlite:///workspaces/pybase/runtime/databases/main.db'
             )
 
         print(f"🔍 Initializing Enhanced SQLite Database: {database_url}")

@@ -1,6 +1,6 @@
    
 generic agents 
-
+✗ Error tracking unavailable: emmett-sentry not installed
 
 /proposal add-realtime-pub-sub-support
 <>

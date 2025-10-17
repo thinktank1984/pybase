@@ -64,7 +64,7 @@ app.config.auth.hmac_key = "november.5.1955"
 db_manager = get_db_manager()
 DATABASE_URL = os.environ.get(
     'DATABASE_URL',
-    'sqlite://runtime/databases/main.db'
+    'sqlite:///workspaces/pybase/runtime/databases/main.db'
 )
 
 # Enhanced concurrency configuration

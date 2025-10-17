@@ -20,7 +20,7 @@ echo -e "${BLUE}🚀 Starting Runtime Application (host mode)...${NC}"
 echo ""
 
 # Set environment variable for SQLite database for local development
-export DATABASE_URL="sqlite://runtime/databases/main.db"
+export DATABASE_URL="sqlite:///workspaces/pybase/runtime/databases/main.db"
 
 # Run setup script first to ensure environment is ready
 echo -e "${BLUE}Running setup checks...${NC}"
